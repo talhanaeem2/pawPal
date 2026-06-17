@@ -659,9 +659,9 @@
   integrity sha512-6pFl5PW867oN0g/AV9dGg6d7U+aLwnrOuW2lC5i9LCfMmTFPDERhl+cKXQ5GOrll51xESVPmMos2964+txupCw==
 
 "@lovable.dev/vite-tanstack-config@^2.3.2":
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/@lovable.dev/vite-tanstack-config/-/vite-tanstack-config-2.5.1.tgz#92abe5a5071b5240eaec0e18879726bd304813ab"
-  integrity sha512-IftxTQL5UDRZixw+oJwb22lh9nnVXlXNm6qGOD8IYp0qlAFMbtluS6ETNmDDFNjuqdQZHx08+8o2MD8rll3Y5A==
+  version "2.5.2"
+  resolved "https://registry.yarnpkg.com/@lovable.dev/vite-tanstack-config/-/vite-tanstack-config-2.5.2.tgz#6c2ec9e3819bb839d7989bc527f02bc92be00af8"
+  integrity sha512-sIVBcEsP2gabGy8UGxbYo5LFZnKy0WRBzATUOeZWz3lQov7/9C8mu5LhwLPTcsoIGaY6EfByiTG8uaGb1r18Lg==
   dependencies:
     "@lovable.dev/vite-plugin-dev-server-bridge" "^1.0.1"
     "@lovable.dev/vite-plugin-hmr-gate" "^1.1.0"
@@ -1548,9 +1548,9 @@
     tslib "2.8.1"
 
 "@supabase/phoenix@^0.4.2":
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/@supabase/phoenix/-/phoenix-0.4.3.tgz#168c31843441b960e6d3c9bfad89356559e5393c"
-  integrity sha512-jZL/2uPEiK58RFJ+7rctex60AHTdtVWwqw4cqu+5JGrXdu/ZM7ZwttO+yRsRN/E/Xik6s+tmbvH7XAQux4m9nQ==
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/@supabase/phoenix/-/phoenix-0.4.4.tgz#982e47b902b5927df7e3bc49e1680142c8bdb5d9"
+  integrity sha512-Gt0pqoXuIqX/8dvG0OKp/wMCobXNH3klNbUPBNyOfN0YA1IswrM3HyWFMOPk1Jy+BRaIyDPcFx4jLBwHNmlyfQ==
 
 "@supabase/postgrest-js@2.108.2":
   version "2.108.2"
