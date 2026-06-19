@@ -24,8 +24,8 @@ export const Route = createFileRoute("/_authenticated/activity")({
   pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Activity · Pawpal" }] }),
   component: ActivityPage,
-  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
-  notFoundComponent: () => () => <NotFoundState />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => <NotFoundState />,
 });
 
 const icons: Record<string, typeof Footprints> = { walk: Footprints, play: Dumbbell, weight: Scale };
@@ -54,11 +54,11 @@ function ActivityPage() {
       </header>
 
       {logs.length === 0 ? (
-        <div className="rounded-3xl bg-card p-8 text-center shadow-[var(--shadow-soft)]">
+        <div className="rounded-3xl bg-card p-8 text-center shadow-(--shadow-soft)">
           <p className="text-sm text-muted-foreground">No activity yet. Log a walk or play session.</p>
         </div>
       ) : (
-        <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-[var(--shadow-soft)]">
+        <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
           {logs.map((a) => {
             const pet = pets.find((p) => p.id === a.pet_id);
             const Icon = icons[a.activity_type] ?? Footprints;

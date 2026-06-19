@@ -23,8 +23,8 @@ export const Route = createFileRoute("/_authenticated/schedule")({
   pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Schedule · Pawpal" }] }),
   component: SchedulePage,
-  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
-  notFoundComponent: () => () => <NotFoundState />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => <NotFoundState />,
 });
 
 function SchedulePage() {
@@ -59,11 +59,11 @@ function SchedulePage() {
       </header>
 
       {items.length === 0 ? (
-        <div className="rounded-3xl bg-card p-8 text-center shadow-[var(--shadow-soft)]">
+        <div className="rounded-3xl bg-card p-8 text-center shadow-(--shadow-soft)">
           <p className="text-sm text-muted-foreground">Nothing scheduled. Add a meal or medication.</p>
         </div>
       ) : (
-        <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-[var(--shadow-soft)]">
+        <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
           {items.map((s) => {
             const pet = pets.find((p) => p.id === s.pet_id);
             const doneToday = s.last_done_at && new Date(s.last_done_at).toDateString() === new Date().toDateString();

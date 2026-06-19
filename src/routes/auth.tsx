@@ -94,7 +94,7 @@ function AuthPage() {
       style={{ background: "linear-gradient(160deg, var(--sage-soft) 0%, var(--cream) 45%, var(--peach-soft) 100%)" }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-card shadow-[var(--shadow-soft)] flex items-center justify-center">
+          <div className="h-14 w-14 rounded-2xl bg-card shadow-(--shadow-soft) flex items-center justify-center">
             <PawPrint className="h-7 w-7 text-primary" strokeWidth={1.75} />
           </div>
           <h1 className="font-display text-3xl mt-4">Pawpal</h1>
@@ -103,7 +103,7 @@ function AuthPage() {
           </p>
         </div>
 
-        <div className="rounded-3xl bg-card p-6 shadow-[var(--shadow-soft)]">
+        <div className="rounded-3xl bg-card p-6 shadow-(--shadow-soft)">
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>

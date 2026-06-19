@@ -17,8 +17,8 @@ export const Route = createFileRoute("/_authenticated/home")({
   pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Home · Pawpal" }] }),
   component: Home,
-  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
-  notFoundComponent: () => () => <NotFoundState />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => <NotFoundState />,
 });
 
 function Home() {
@@ -33,7 +33,7 @@ function Home() {
 
   if (pets.length === 0) {
     return (
-      <div className="mt-10 rounded-3xl bg-card p-8 text-center shadow-[var(--shadow-soft)]">
+      <div className="mt-10 rounded-3xl bg-card p-8 text-center shadow-(--shadow-soft)">
         <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center">
           <PawPrint className="h-8 w-8 text-primary" strokeWidth={1.5} />
         </div>
@@ -58,7 +58,7 @@ function Home() {
       <div className="flex gap-3 overflow-x-auto -mx-5 px-5 pb-1">
         {pets.map((p) => (
           <Link key={p.id} to="/pets"
-            className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-[var(--shadow-soft)] hover:scale-[1.02] transition">
+            className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-(--shadow-soft) hover:scale-[1.02] transition">
             <div className="text-3xl">{speciesEmoji(p.species)}</div>
             <div className="font-medium mt-2 truncate">{p.name}</div>
             <div className="text-xs text-muted-foreground truncate">{p.breed ?? p.species}</div>
@@ -131,7 +131,7 @@ function Home() {
 
 function Section({ title, icon: Icon, href, children }: { title: string; icon: typeof Calendar; href: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl bg-card p-5 shadow-[var(--shadow-soft)]">
+    <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
