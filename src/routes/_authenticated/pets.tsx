@@ -93,8 +93,8 @@ function PetDialog() {
 
   const add = useMutation({
     mutationFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Not signed in");
+      // const { data: u } = await supabase.auth.getUser();
+      // if (!u.user) throw new Error("Not signed in");
       const { error } = await supabase.from("pets").insert({
         name: form.name.trim(),
         species: form.species,

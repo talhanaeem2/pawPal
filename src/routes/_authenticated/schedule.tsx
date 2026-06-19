@@ -95,8 +95,8 @@ function ScheduleDialog({ pets }: { pets: { id: string; name: string }[] }) {
 
   const add = useMutation({
     mutationFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Not signed in");
+      // const { data: u } = await supabase.auth.getUser();
+      // if (!u.user) throw new Error("Not signed in");
       const { error } = await supabase.from("schedule_items").insert({
         pet_id: form.pet_id,
         kind: form.kind,
