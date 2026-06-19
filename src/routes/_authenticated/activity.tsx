@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, activityQuery } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,15 +12,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Footprints, Dumbbell, Scale } from "lucide-react";
 import { toast } from "sonner";
 
+import Loader from "@/components/ui/loader";
+import ErrorState from "@/components/ui/error-state";
+import NotFoundState from "@/components/ui/not-found-state";
+
 export const Route = createFileRoute("/_authenticated/activity")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(petsQuery);
     context.queryClient.ensureQueryData(activityQuery);
   },
+  pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Activity · Pawpal" }] }),
   component: ActivityPage,
-  errorComponent: () => <p className="text-sm text-destructive">Something went wrong. Please try again.</p>,
-  notFoundComponent: () => <p>Not found.</p>,
+  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => () => <NotFoundState />,
 });
 
 const icons: Record<string, typeof Footprints> = { walk: Footprints, play: Dumbbell, weight: Scale };

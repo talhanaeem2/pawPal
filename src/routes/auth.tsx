@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PawPrint } from "lucide-react";
 
+import Loader from "@/components/ui/loader";
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  pendingComponent: () => null,
+  pendingComponent: () => <Loader />,
   head: () => ({
     meta: [
       { title: "Sign in · Pawpal" },

@@ -1,7 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, ErrorComponentProps, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, scheduleQuery, vetQuery, activityQuery, speciesEmoji } from "@/lib/pet-queries";
 import { PawPrint, Calendar, Stethoscope, Activity, Plus } from "lucide-react";
+
+import Loader from "@/components/ui/loader";
+import ErrorState from "@/components/ui/error-state";
+import NotFoundState from "@/components/ui/not-found-state";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: ({ context }) => {
@@ -10,10 +14,11 @@ export const Route = createFileRoute("/_authenticated/home")({
     context.queryClient.ensureQueryData(vetQuery);
     context.queryClient.ensureQueryData(activityQuery);
   },
+  pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Home · Pawpal" }] }),
   component: Home,
-  errorComponent: () => <p className="text-sm text-destructive">Something went wrong. Please try again.</p>,
-  notFoundComponent: () => <p>Not found.</p>,
+  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => () => <NotFoundState />,
 });
 
 function Home() {

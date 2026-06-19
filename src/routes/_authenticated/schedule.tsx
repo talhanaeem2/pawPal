@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, scheduleQuery, type ScheduleItem } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,15 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import Loader from "@/components/ui/loader";
+import ErrorState from "@/components/ui/error-state";
+import NotFoundState from "@/components/ui/not-found-state";
+
 export const Route = createFileRoute("/_authenticated/schedule")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(petsQuery);
     context.queryClient.ensureQueryData(scheduleQuery);
   },
+  pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Schedule · Pawpal" }] }),
   component: SchedulePage,
-  errorComponent: () => <p className="text-sm text-destructive">Something went wrong. Please try again.</p>,
-  notFoundComponent: () => <p>Not found.</p>,
+  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => () => <NotFoundState />,
 });
 
 function SchedulePage() {
