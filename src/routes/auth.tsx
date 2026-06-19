@@ -50,22 +50,28 @@ function AuthPage() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.BaseSyntheticEvent) {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: window.location.origin },
         });
+        ;
         if (error) throw error;
-        toast.success("Welcome! You're signed in.");
+
+        if (data.session) {
+          toast.success("Welcome! You're signed in.");
+          navigate({ to: "/", replace: true });
+        } else {
+          toast.success("Check your email to verify your account.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/home", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
