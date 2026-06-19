@@ -90,8 +90,6 @@ function ActivityDialog({ pets }: { pets: { id: string; name: string }[] }) {
 
   const add = useMutation({
     mutationFn: async () => {
-      // const { data: u } = await supabase.auth.getUser();
-      // if (!u.user) throw new Error("Not signed in");
       const { error } = await supabase.from("activity_logs").insert({
         pet_id: form.pet_id,
         activity_type: form.activity_type,

@@ -9,6 +9,7 @@ import { PawPrint } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  pendingComponent: () => null,
   head: () => ({
     meta: [
       { title: "Sign in · Pawpal" },

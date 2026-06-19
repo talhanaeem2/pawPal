@@ -2,14 +2,12 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { supabase } from "@/integrations/supabase/client";
 import { Home, PawPrint, Calendar, Stethoscope, Activity, LogOut } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+
+import Loader from "@/components/ui/loader";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
-  },
   component: AuthedLayout,
 });
 
@@ -25,6 +23,22 @@ function AuthedLayout() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!active) return;
+      if (error || !data.user) {
+        navigate({ to: "/auth", replace: true });
+      } else {
+        setChecked(true);
+      }
+    });
+    return () => { active = false; };
+  }, [navigate]);
+
+  if (!checked) return <Loader />;
 
   async function signOut() {
     await qc.cancelQueries();
@@ -61,9 +75,8 @@ function AuthedLayout() {
             const active = pathname === to || (to !== "/home" && pathname.startsWith(to));
             return (
               <Link key={to} to={to}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] transition ${
-                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}>
+                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] transition ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}>
                 <Icon className={`h-5 w-5 ${active ? "text-primary" : ""}`} strokeWidth={1.75} />
                 {label}
               </Link>

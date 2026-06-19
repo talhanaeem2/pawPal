@@ -117,8 +117,6 @@ function VetDialog({ pets }: { pets: { id: string; name: string }[] }) {
 
   const add = useMutation({
     mutationFn: async () => {
-      // const { data: u } = await supabase.auth.getUser();
-      // if (!u.user) throw new Error("Not signed in");
       const { error } = await supabase.from("vet_appointments").insert({
         pet_id: form.pet_id,
         date: new Date(form.date).toISOString(),
