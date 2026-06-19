@@ -24,8 +24,8 @@ export const Route = createFileRoute("/_authenticated/vet")({
   pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Vet · Pawpal" }] }),
   component: VetPage,
-  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
-  notFoundComponent: () => () => <NotFoundState />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => <NotFoundState />,
 });
 
 function VetPage() {
@@ -80,11 +80,11 @@ function Group({ title, items, pets, onToggle, onDelete, muted }: {
     <section>
       <h2 className="font-display text-lg mb-2">{title}</h2>
       {items.length === 0 ? (
-        <div className="rounded-3xl bg-card p-5 text-sm text-muted-foreground shadow-[var(--shadow-soft)]">
+        <div className="rounded-3xl bg-card p-5 text-sm text-muted-foreground shadow-(--shadow-soft)">
           {muted ? "Nothing yet." : "Nothing scheduled."}
         </div>
       ) : (
-        <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-[var(--shadow-soft)]">
+        <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
           {items.map((a) => {
             const pet = pets.find((p) => p.id === a.pet_id);
             return (

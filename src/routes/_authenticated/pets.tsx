@@ -1,4 +1,4 @@
-import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
+import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, speciesEmoji, type Pet } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,8 +32,8 @@ export const Route = createFileRoute("/_authenticated/pets")({
   pendingComponent: () => <Loader />,
   head: () => ({ meta: [{ title: "Pets · Pawpal" }] }),
   component: PetsPage,
-  errorComponent: () => ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
-  notFoundComponent: () => () => <NotFoundState />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  notFoundComponent: () => <NotFoundState />,
 });
 
 function PetsPage() {
@@ -38,7 +49,7 @@ function PetsPage() {
       </header>
 
       {pets.length === 0 ? (
-        <div className="rounded-3xl bg-card p-8 text-center shadow-[var(--shadow-soft)]">
+        <div className="rounded-3xl bg-card p-8 text-center shadow-(--shadow-soft)">
           <p className="text-sm text-muted-foreground">No pets yet. Add one to get started.</p>
         </div>
       ) : (
@@ -52,6 +63,8 @@ function PetsPage() {
 
 function PetCard({ pet }: { pet: Pet }) {
   const qc = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const del = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("pets").delete().eq("id", pet.id);
@@ -59,6 +72,7 @@ function PetCard({ pet }: { pet: Pet }) {
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["pets"] }); toast.success(`${pet.name} removed`); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete"),
+    onSettled: () => setConfirmOpen(false),
   });
 
   const age = pet.birthdate
@@ -66,7 +80,7 @@ function PetCard({ pet }: { pet: Pet }) {
     : null;
 
   return (
-    <li className="rounded-3xl bg-card p-5 shadow-[var(--shadow-soft)]">
+    <li className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="h-14 w-14 rounded-2xl bg-secondary/60 flex items-center justify-center text-3xl">
@@ -81,10 +95,32 @@ function PetCard({ pet }: { pet: Pet }) {
             </div>
           </div>
         </div>
-        <button onClick={() => confirm(`Remove ${pet.name}?`) && del.mutate()}
-          className="text-muted-foreground hover:text-destructive p-1.5">
-          <Trash2 className="h-4 w-4" />
-        </button>
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogTrigger asChild>
+            <button className="text-muted-foreground hover:text-destructive p-1.5">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove {pet.name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {pet.name} and all related schedule, vet, and activity records. This can't be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={del.isPending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); del.mutate(); }}
+                disabled={del.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {del.isPending ? "Removing…" : "Remove"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       {pet.notes && <p className="text-sm text-muted-foreground mt-3">{pet.notes}</p>}
     </li>
