@@ -11,19 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import Loader from "@/components/ui/loader";
-import ErrorState from "@/components/ui/error-state";
 import NotFoundState from "@/components/ui/not-found-state";
+import InlineLoader from "@/components/ui/inline-loader";
+import InlineErrorState from "@/components/ui/inline-error-state";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(petsQuery);
     context.queryClient.ensureQueryData(scheduleQuery);
   },
-  pendingComponent: () => <Loader />,
+  pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Schedule · Pawpal" }] }),
   component: SchedulePage,
-  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <InlineErrorState onRetry={reset} />,
   notFoundComponent: () => <NotFoundState />,
 });
 
