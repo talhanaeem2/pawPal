@@ -3,9 +3,9 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, scheduleQuery, vetQuery, activityQuery, speciesEmoji } from "@/lib/pet-queries";
 import { PawPrint, Calendar, Stethoscope, Activity, Plus } from "lucide-react";
 
-import Loader from "@/components/ui/loader";
-import ErrorState from "@/components/ui/error-state";
 import NotFoundState from "@/components/ui/not-found-state";
+import InlineErrorState from "@/components/ui/inline-error-state";
+import InlineLoader from "@/components/ui/inline-loader";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: ({ context }) => {
@@ -14,10 +14,10 @@ export const Route = createFileRoute("/_authenticated/home")({
     context.queryClient.ensureQueryData(vetQuery);
     context.queryClient.ensureQueryData(activityQuery);
   },
-  pendingComponent: () => <Loader />,
+  pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Home · Pawpal" }] }),
   component: Home,
-  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <InlineErrorState onRetry={reset} />,
   notFoundComponent: () => <NotFoundState />,
 });
 

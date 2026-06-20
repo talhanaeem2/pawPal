@@ -23,16 +23,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import Loader from "@/components/ui/loader";
-import ErrorState from "@/components/ui/error-state";
 import NotFoundState from "@/components/ui/not-found-state";
+import InlineLoader from "@/components/ui/inline-loader";
+import InlineErrorState from "@/components/ui/inline-error-state";
 
 export const Route = createFileRoute("/_authenticated/pets")({
   loader: ({ context }) => context.queryClient.ensureQueryData(petsQuery),
-  pendingComponent: () => <Loader />,
+  pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Pets · Pawpal" }] }),
   component: PetsPage,
-  errorComponent: ({ reset }: ErrorComponentProps) => <ErrorState onRetry={reset} />,
+  errorComponent: ({ reset }: ErrorComponentProps) => <InlineErrorState onRetry={reset} />,
   notFoundComponent: () => <NotFoundState />,
 });
 
