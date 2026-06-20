@@ -12,8 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Footprints, Dumbbell, Scale } from "lucide-react";
 import { toast } from "sonner";
 
-import Loader from "@/components/ui/loader";
-import ErrorState from "@/components/ui/error-state";
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
