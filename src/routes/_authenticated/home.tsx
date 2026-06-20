@@ -6,6 +6,7 @@ import { PawPrint, Calendar, Stethoscope, Activity, Plus } from "lucide-react";
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import InlineLoader from "@/components/ui/inline-loader";
+import PushPrompt from "@/components/ui/push-prompt";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: ({ context }) => {
@@ -54,6 +55,8 @@ function Home() {
         <p className="text-sm text-muted-foreground">{greeting()}</p>
         <h1 className="font-display text-3xl mt-1">Today with {pets.map((p) => p.name).slice(0, 2).join(" & ")}</h1>
       </div>
+
+      <PushPrompt />
 
       <div className="flex gap-3 overflow-x-auto -mx-5 px-5 pb-1">
         {pets.map((p) => (
