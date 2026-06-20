@@ -50,14 +50,14 @@ function AuthPage() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  async function submit(e: React.BaseSyntheticEvent) {
+  async function submit(e: React.SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}/auth` },
         });
         ;
         if (error) throw error;
