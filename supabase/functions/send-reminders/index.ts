@@ -16,6 +16,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const WINDOW_MINUTES = 5;
 const HEADS_UP_MINUTES = 10;
 
+// MVP: single fixed timezone offset (Pakistan Standard Time, UTC+5, no DST).
+// time_of_day is entered by users in local time but the server clock is UTC,
+// so we shift "now" forward by this offset before comparing against time_of_day.
+const LOCAL_OFFSET_MINUTES = 5 * 60;
+
 type DueNotification = {
   refType: string;
   refId: string;
@@ -47,20 +52,22 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
   }
 
   const out: DueNotification[] = [];
-  const today = todayDateStr(now);
+  const localNow = new Date(now.getTime() + LOCAL_OFFSET_MINUTES * 60_000);
+  const today = todayDateStr(localNow);
 
   for (const item of items ?? []) {
     if (item.frequency !== "daily") continue; // MVP: only daily-frequency items are time-triggered for now
 
     const doneToday =
-      item.last_done_at && todayDateStr(new Date(item.last_done_at)) === today;
+      item.last_done_at &&
+      todayDateStr(new Date(new Date(item.last_done_at).getTime() + LOCAL_OFFSET_MINUTES * 60_000)) === today;
     if (doneToday) continue;
 
     const [h, m] = String(item.time_of_day).split(":").map(Number);
-    const target = new Date(now);
-    target.setHours(h, m, 0, 0);
+    const target = new Date(localNow);
+    target.setUTCHours(h, m, 0, 0);
     const targetMs = target.getTime();
-    const nowMs = now.getTime();
+    const nowMs = localNow.getTime();
 
     const petName = (item as { pets?: { name?: string } }).pets?.name ?? "your pet";
 
