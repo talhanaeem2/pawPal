@@ -1,7 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { PawPrint, LogOut } from "lucide-react";
+import { useState } from "react";
+import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 
-function Header({ onSignOut }: { onSignOut: () => void }) {
+function Header({ onSignOut, loading }: { onSignOut: () => void; loading: boolean }) {
+    const [confirmOpen, setConfirmOpen] = useState(false);
+
     return (
         <header className="sticky top-0 z-20 backdrop-blur bg-background/80 border-b border-border/60">
             <div className="mx-auto max-w-2xl flex items-center justify-between px-5 h-14">
@@ -11,11 +16,25 @@ function Header({ onSignOut }: { onSignOut: () => void }) {
                     </div>
                     <span className="font-display text-lg">Pawpal</span>
                 </Link>
-                <button onClick={onSignOut}
-                    className="text-muted-foreground hover:text-foreground p-2 rounded-full"
-                    aria-label="Sign out">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setConfirmOpen(true)}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="Sign out"
+                >
                     <LogOut className="h-4 w-4" />
-                </button>
+                </Button>
+                <ConfirmDialog
+                    open={confirmOpen}
+                    onOpenChange={setConfirmOpen}
+                    title="Sign out?"
+                    description="You will need to log in again."
+                    confirmText="Sign out"
+                    confirmVariant="destructive"
+                    loading={loading}
+                    onConfirm={onSignOut}
+                />
             </div>
         </header>
     );

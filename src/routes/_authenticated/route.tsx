@@ -18,6 +18,7 @@ function AuthedLayout() {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [checked, setChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -35,15 +36,17 @@ function AuthedLayout() {
   if (!checked) return <Loader />;
 
   async function signOut() {
+    setLoading(true);
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
+    setLoading(false);
     navigate({ to: "/auth", replace: true });
   }
 
   return (
     <div className="min-h-screen pb-24">
-      <Header onSignOut={signOut} />
+      <Header onSignOut={signOut} loading={loading} />
       <main className="mx-auto max-w-2xl px-5 py-6">
         <Outlet />
       </main>

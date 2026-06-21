@@ -8,17 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +15,7 @@ import { toast } from "sonner";
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/_authenticated/pets")({
   loader: ({ context }) => context.queryClient.ensureQueryData(petsQuery),
@@ -96,31 +86,28 @@ function PetCard({ pet }: { pet: Pet }) {
           </div>
         </div>
 
-        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogTrigger asChild>
-            <button className="text-muted-foreground hover:text-destructive p-1.5">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove {pet.name}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete {pet.name} and all related schedule, vet, and activity records. This can't be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={del.isPending}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => { e.preventDefault(); del.mutate(); }}
-                disabled={del.isPending}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {del.isPending ? "Removing…" : "Remove"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setConfirmOpen(true)}
+            className="text-muted-foreground hover:text-destructive"
+            aria-label="Delete pet"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            title={`Remove ${pet.name}?`}
+            description={`This will permanently delete ${pet.name} and all related schedule, vet, and activity records. This can't be undone.`}
+            confirmText="Remove"
+            loading={del.isPending}
+            confirmVariant="destructive"
+            onConfirm={() => del.mutate()}
+          />
+        </>
       </div>
       {pet.notes && <p className="text-sm text-muted-foreground mt-3">{pet.notes}</p>}
     </li>
