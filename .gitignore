@@ -16,6 +16,7 @@ dist-ssr
 .nitro
 .vercel
 .env
+supabase/.temp
 *.local
 
 # Wrangler / Cloudflare
