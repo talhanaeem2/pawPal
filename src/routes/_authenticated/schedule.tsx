@@ -1,4 +1,4 @@
-import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
+import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, scheduleQuery, type ScheduleItem } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Check, Trash2 } from "lucide-react";
+import { Plus, Check, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   loader: ({ context }) => {
@@ -31,13 +32,22 @@ function SchedulePage() {
   const { data: pets } = useSuspenseQuery(petsQuery);
   const { data: items } = useSuspenseQuery(scheduleQuery);
   const qc = useQueryClient();
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const mark = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("schedule_items").update({ last_done_at: new Date().toISOString() }).eq("id", id);
+  const toggle = useMutation({
+    mutationFn: async ({ id, markDone }: { id: string; markDone: boolean }) => {
+      const { error } = await supabase
+        .from("schedule_items")
+        .update({ last_done_at: markDone ? new Date().toISOString() : null })
+        .eq("id", id);
       if (error) throw error;
+      return markDone;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["schedule_items"] }); toast.success("Marked done"); },
+    onSuccess: (markDone) => {
+      qc.invalidateQueries({ queryKey: ["schedule_items"] });
+      toast.success(markDone ? "Marked done" : "Marked undone");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
   const del = useMutation({
@@ -45,8 +55,12 @@ function SchedulePage() {
       const { error } = await supabase.from("schedule_items").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["schedule_items"] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["schedule_items"] }); toast.success("Removed"); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+    onSettled: () => setConfirmId(null),
   });
+
+  const confirmItem = items.find((i) => i.id === confirmId);
 
   return (
     <div className="space-y-5">
@@ -55,7 +69,10 @@ function SchedulePage() {
           <h1 className="font-display text-3xl">Schedule</h1>
           <p className="text-sm text-muted-foreground">Meals, meds & routines.</p>
         </div>
-        <ScheduleDialog pets={pets} />
+        <ScheduleDialog
+          pets={pets}
+          trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+        />
       </header>
 
       {items.length === 0 ? (
@@ -69,8 +86,10 @@ function SchedulePage() {
             const doneToday = s.last_done_at && new Date(s.last_done_at).toDateString() === new Date().toDateString();
             return (
               <li key={s.id} className="p-4 flex items-center gap-3">
-                <button onClick={() => mark.mutate(s.id)}
-                  className={`h-9 w-9 rounded-full border flex items-center justify-center transition ${doneToday ? "bg-primary border-primary text-primary-foreground" : "border-border hover:bg-accent/40"
+                <button
+                  onClick={() => toggle.mutate({ id: s.id, markDone: !doneToday })}
+                  disabled={toggle.isPending}
+                  className={`h-9 w-9 rounded-full border flex items-center justify-center transition disabled:opacity-60 ${doneToday ? "bg-primary border-primary text-primary-foreground" : "border-border hover:bg-accent/40"
                     }`}>
                   <Check className="h-4 w-4" />
                 </button>
@@ -81,56 +100,107 @@ function SchedulePage() {
                     {s.dosage ? ` · ${s.dosage}` : ""}
                   </div>
                 </div>
-                <button onClick={() => del.mutate(s.id)} className="text-muted-foreground hover:text-destructive p-1.5">
+                <ScheduleDialog
+                  pets={pets}
+                  item={s}
+                  trigger={
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" aria-label="Edit reminder">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setConfirmId(s.id)}
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label="Delete reminder"
+                >
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </Button>
               </li>
             );
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title={`Remove ${confirmItem?.title ?? "this reminder"}?`}
+        description="This reminder will be permanently deleted. This can't be undone."
+        confirmText="Remove"
+        loading={del.isPending}
+        confirmVariant="destructive"
+        onConfirm={() => confirmId && del.mutate(confirmId)}
+      />
     </div>
   );
 }
 
-function ScheduleDialog({ pets }: { pets: { id: string; name: string }[] }) {
+function emptyForm(pets: { id: string }[]) {
+  return { pet_id: pets[0]?.id ?? "", kind: "feeding", title: "", time_of_day: "", frequency: "daily", dosage: "" };
+}
+
+function formFromItem(item: ScheduleItem) {
+  return {
+    pet_id: item.pet_id,
+    kind: item.kind,
+    title: item.title,
+    time_of_day: item.time_of_day ?? "",
+    frequency: item.frequency,
+    dosage: item.dosage ?? "",
+  };
+}
+
+function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: ScheduleItem; trigger: React.ReactNode }) {
+  const isEdit = !!item;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ pet_id: pets[0]?.id ?? "", kind: "feeding", title: "", time_of_day: "", frequency: "daily", dosage: "" });
+  const [form, setForm] = useState(item ? formFromItem(item) : emptyForm(pets));
 
-  const add = useMutation({
+  function resetForm() {
+    setForm(item ? formFromItem(item) : emptyForm(pets));
+  }
+
+  const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("schedule_items").insert({
+      const payload = {
         pet_id: form.pet_id,
         kind: form.kind,
         title: form.title.trim(),
         time_of_day: form.time_of_day || null,
         frequency: form.frequency,
         dosage: form.dosage || null,
-      });
-      if (error) throw error;
+      };
+
+      if (isEdit) {
+        const { error } = await supabase.from("schedule_items").update(payload).eq("id", item!.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("schedule_items").insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["schedule_items"] });
-      toast.success("Added");
+      toast.success(isEdit ? "Updated" : "Added");
       setOpen(false);
-      setForm({ ...form, title: "", time_of_day: "", dosage: "" });
+      if (!isEdit) resetForm();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  if (pets.length === 0) {
+  if (pets.length === 0 && !isEdit) {
     return <Button disabled variant="outline" className="rounded-full">Add a pet first</Button>;
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
-        <DialogHeader><DialogTitle className="font-display">New reminder</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.title || !form.pet_id) return; add.mutate(); }} className="space-y-3">
+        <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit reminder" : "New reminder"}</DialogTitle></DialogHeader>
+        <form onSubmit={(e) => { e.preventDefault(); if (!form.title || !form.pet_id) return; save.mutate(); }} className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Pet</Label>
             <Select value={form.pet_id} onValueChange={(v) => setForm({ ...form, pet_id: v })}>
@@ -178,8 +248,8 @@ function ScheduleDialog({ pets }: { pets: { id: string; name: string }[] }) {
               <Input value={form.dosage} onChange={(e) => setForm({ ...form, dosage: e.target.value })} placeholder="1 cup" />
             </div>
           </div>
-          <Button type="submit" className="w-full rounded-full" disabled={add.isPending}>
-            {add.isPending ? "Saving…" : "Save"}
+          <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
+            {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
           </Button>
         </form>
       </DialogContent>
