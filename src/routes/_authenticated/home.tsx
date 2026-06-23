@@ -1,12 +1,13 @@
-import { createFileRoute, ErrorComponentProps, Link } from "@tanstack/react-router";
+import { createFileRoute, type ErrorComponentProps, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, scheduleQuery, vetQuery, activityQuery, speciesEmoji } from "@/lib/pet-queries";
-import { PawPrint, Calendar, Stethoscope, Activity, Plus } from "lucide-react";
+import { petsQuery, scheduleQuery, vetQuery, activityQuery } from "@/lib/pet-queries";
+import { Calendar, Stethoscope, Activity, Plus, PawPrint } from "lucide-react";
 
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import PushPrompt from "@/components/ui/push-prompt";
+import { PetAvatar } from "@/components/ui/pet-avatar";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: ({ context }) => {
@@ -62,8 +63,8 @@ function Home() {
         {pets.map((p) => (
           <Link key={p.id} to="/pets"
             className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-(--shadow-soft) hover:scale-[1.02] transition">
-            <div className="text-3xl">{speciesEmoji(p.species)}</div>
-            <div className="font-medium mt-2 truncate">{p.name}</div>
+            <PetAvatar pet={p} size="h-14 w-14" textSize="text-3xl" />
+            <div className="font-medium mt-2 truncate text-sm">{p.name}</div>
             <div className="text-xs text-muted-foreground truncate">{p.breed ?? p.species}</div>
           </Link>
         ))}
@@ -74,17 +75,23 @@ function Home() {
           <Empty text="No reminders yet." cta="Add one" href="/schedule" />
         ) : (
           <ul className="divide-y divide-border/60">
-            {today.map((s) => (
-              <li key={s.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-sm">{s.title}</div>
-                  <div className="text-xs text-muted-foreground capitalize">
-                    {s.kind} · {s.time_of_day?.slice(0, 5) ?? s.frequency}
+            {today.map((s) => {
+              const doneToday = s.last_done_at && new Date(s.last_done_at).toDateString() === new Date().toDateString();
+              return (
+                <li key={s.id} className="py-3 flex items-center justify-between">
+                  <div className={doneToday ? "opacity-50" : ""}>
+                    <div className="font-medium text-sm">{s.title}</div>
+                    <div className="text-xs text-muted-foreground capitalize">
+                      {s.kind} · {s.time_of_day?.slice(0, 5) ?? s.frequency}
+                    </div>
                   </div>
-                </div>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">{s.frequency}</span>
-              </li>
-            ))}
+                  {doneToday
+                    ? <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary capitalize">Done</span>
+                    : <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">{s.frequency}</span>
+                  }
+                </li>
+              );
+            })}
           </ul>
         )}
       </Section>
