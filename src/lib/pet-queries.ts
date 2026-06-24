@@ -1,16 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
+import { ScheduleItem, scheduleItemSchema } from "@/schemas/schedule";
 import { queryOptions } from "@tanstack/react-query";
+import z from "zod";
 
 export type Pet = {
   id: string; name: string; species: string; breed: string | null;
   birthdate: string | null; weight_kg: number | null; photo_url: string | null;
   notes: string | null; created_at: string;
+  gender: string | null;
+  neutered: boolean | null;
+  microchip: string | null;
 };
-export type ScheduleItem = {
-  id: string; pet_id: string; kind: string; title: string;
-  time_of_day: string | null; frequency: string; dosage: string | null;
-  notes: string | null; last_done_at: string | null;
-};
+
 export type VetAppt = {
   id: string; pet_id: string; date: string; reason: string;
   vet_name: string | null; notes: string | null; completed: boolean;
@@ -34,7 +35,14 @@ export const scheduleQuery = queryOptions({
   queryFn: async (): Promise<ScheduleItem[]> => {
     const { data, error } = await supabase.from("schedule_items").select("*").order("time_of_day", { ascending: true });
     if (error) throw error;
-    return (data ?? []) as ScheduleItem[];
+    const parsed = z.array(scheduleItemSchema).safeParse(data ?? []);
+
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return [];
+    }
+
+    return parsed.data;
   },
 });
 

@@ -35,7 +35,9 @@ function VetPage() {
   const qc = useQueryClient();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const now = Date.now();
-  const upcoming = appts.filter((a) => !a.completed && new Date(a.date).getTime() >= now - 86_400_000);
+  const upcoming = appts
+    .filter((a) => !a.completed && new Date(a.date).getTime() >= now - 86_400_000)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const past = appts.filter((a) => a.completed || new Date(a.date).getTime() < now - 86_400_000);
 
   const toggle = useMutation({

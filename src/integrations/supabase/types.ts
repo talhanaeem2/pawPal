@@ -112,8 +112,11 @@ export type Database = {
           birthdate: string | null
           breed: string | null
           created_at: string | null
+          gender: string | null
           id: string
+          microchip: string | null
           name: string | null
+          neutered: boolean | null
           notes: string | null
           photo_url: string | null
           species: string | null
@@ -125,8 +128,11 @@ export type Database = {
           birthdate?: string | null
           breed?: string | null
           created_at?: string | null
+          gender?: string | null
           id?: string
+          microchip?: string | null
           name?: string | null
+          neutered?: boolean | null
           notes?: string | null
           photo_url?: string | null
           species?: string | null
@@ -138,8 +144,11 @@ export type Database = {
           birthdate?: string | null
           breed?: string | null
           created_at?: string | null
+          gender?: string | null
           id?: string
+          microchip?: string | null
           name?: string | null
+          neutered?: boolean | null
           notes?: string | null
           photo_url?: string | null
           species?: string | null
@@ -179,6 +188,8 @@ export type Database = {
       schedule_items: {
         Row: {
           created_at: string | null
+          custom_frequency: string | null
+          custom_kind: string | null
           dosage: string | null
           frequency: string | null
           id: string
@@ -193,6 +204,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_frequency?: string | null
+          custom_kind?: string | null
           dosage?: string | null
           frequency?: string | null
           id?: string
@@ -207,6 +220,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_frequency?: string | null
+          custom_kind?: string | null
           dosage?: string | null
           frequency?: string | null
           id?: string
