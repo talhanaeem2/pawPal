@@ -275,7 +275,7 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
       <DialogContent className="rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? `Edit ${pet!.name}` : "New pet"}</DialogTitle></DialogHeader>
 
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.name) return; save.mutate(); }} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
           {/* Photo */}
           <div className="flex justify-center">
             <div className="relative h-20 w-20">

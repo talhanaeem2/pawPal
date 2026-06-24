@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Home, PawPrint, Calendar, Stethoscope, Activity } from "lucide-react";
+import { Home, PawPrint, Calendar, Activity, HeartPulse } from "lucide-react";
 
 export const navItems = [
     { to: "/home", label: "Home", icon: Home },
     { to: "/pets", label: "Pets", icon: PawPrint },
     { to: "/schedule", label: "Schedule", icon: Calendar },
-    { to: "/vet", label: "Vet", icon: Stethoscope },
+    { to: "/health", label: "Health", icon: HeartPulse },
     { to: "/activity", label: "Activity", icon: Activity },
 ] as const;
 

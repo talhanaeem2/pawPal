@@ -13,11 +13,14 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedVetRouteImport } from './routes/_authenticated/vet'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedPetsRouteImport } from './routes/_authenticated/pets'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
+import { Route as AuthenticatedHealthRouteRouteImport } from './routes/_authenticated/health/route'
+import { Route as AuthenticatedHealthIndexRouteImport } from './routes/_authenticated/health/index'
+import { Route as AuthenticatedHealthVetRouteImport } from './routes/_authenticated/health/vet'
+import { Route as AuthenticatedHealthVaccinationsRouteImport } from './routes/_authenticated/health/vaccinations'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -37,11 +40,6 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedVetRoute = AuthenticatedVetRouteImport.update({
-  id: '/vet',
-  path: '/vet',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedScheduleRoute = AuthenticatedScheduleRouteImport.update({
   id: '/schedule',
@@ -63,16 +61,42 @@ const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHealthRouteRoute =
+  AuthenticatedHealthRouteRouteImport.update({
+    id: '/health',
+    path: '/health',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedHealthIndexRoute =
+  AuthenticatedHealthIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedHealthRouteRoute,
+  } as any)
+const AuthenticatedHealthVetRoute = AuthenticatedHealthVetRouteImport.update({
+  id: '/vet',
+  path: '/vet',
+  getParentRoute: () => AuthenticatedHealthRouteRoute,
+} as any)
+const AuthenticatedHealthVaccinationsRoute =
+  AuthenticatedHealthVaccinationsRouteImport.update({
+    id: '/vaccinations',
+    path: '/vaccinations',
+    getParentRoute: () => AuthenticatedHealthRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/health': typeof AuthenticatedHealthRouteRouteWithChildren
   '/activity': typeof AuthenticatedActivityRoute
   '/home': typeof AuthenticatedHomeRoute
   '/pets': typeof AuthenticatedPetsRoute
   '/schedule': typeof AuthenticatedScheduleRoute
-  '/vet': typeof AuthenticatedVetRoute
+  '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
+  '/health/vet': typeof AuthenticatedHealthVetRoute
+  '/health/': typeof AuthenticatedHealthIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,7 +106,9 @@ export interface FileRoutesByTo {
   '/home': typeof AuthenticatedHomeRoute
   '/pets': typeof AuthenticatedPetsRoute
   '/schedule': typeof AuthenticatedScheduleRoute
-  '/vet': typeof AuthenticatedVetRoute
+  '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
+  '/health/vet': typeof AuthenticatedHealthVetRoute
+  '/health': typeof AuthenticatedHealthIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -90,11 +116,14 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/health': typeof AuthenticatedHealthRouteRouteWithChildren
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/pets': typeof AuthenticatedPetsRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
-  '/_authenticated/vet': typeof AuthenticatedVetRoute
+  '/_authenticated/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
+  '/_authenticated/health/vet': typeof AuthenticatedHealthVetRoute
+  '/_authenticated/health/': typeof AuthenticatedHealthIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -102,11 +131,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/health'
     | '/activity'
     | '/home'
     | '/pets'
     | '/schedule'
-    | '/vet'
+    | '/health/vaccinations'
+    | '/health/vet'
+    | '/health/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -116,18 +148,23 @@ export interface FileRouteTypes {
     | '/home'
     | '/pets'
     | '/schedule'
-    | '/vet'
+    | '/health/vaccinations'
+    | '/health/vet'
+    | '/health'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/sitemap.xml'
+    | '/_authenticated/health'
     | '/_authenticated/activity'
     | '/_authenticated/home'
     | '/_authenticated/pets'
     | '/_authenticated/schedule'
-    | '/_authenticated/vet'
+    | '/_authenticated/health/vaccinations'
+    | '/_authenticated/health/vet'
+    | '/_authenticated/health/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,13 +204,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/vet': {
-      id: '/_authenticated/vet'
-      path: '/vet'
-      fullPath: '/vet'
-      preLoaderRoute: typeof AuthenticatedVetRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/schedule': {
       id: '/_authenticated/schedule'
       path: '/schedule'
@@ -202,23 +232,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActivityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/health': {
+      id: '/_authenticated/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof AuthenticatedHealthRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/health/': {
+      id: '/_authenticated/health/'
+      path: '/'
+      fullPath: '/health/'
+      preLoaderRoute: typeof AuthenticatedHealthIndexRouteImport
+      parentRoute: typeof AuthenticatedHealthRouteRoute
+    }
+    '/_authenticated/health/vet': {
+      id: '/_authenticated/health/vet'
+      path: '/vet'
+      fullPath: '/health/vet'
+      preLoaderRoute: typeof AuthenticatedHealthVetRouteImport
+      parentRoute: typeof AuthenticatedHealthRouteRoute
+    }
+    '/_authenticated/health/vaccinations': {
+      id: '/_authenticated/health/vaccinations'
+      path: '/vaccinations'
+      fullPath: '/health/vaccinations'
+      preLoaderRoute: typeof AuthenticatedHealthVaccinationsRouteImport
+      parentRoute: typeof AuthenticatedHealthRouteRoute
+    }
   }
 }
 
+interface AuthenticatedHealthRouteRouteChildren {
+  AuthenticatedHealthVaccinationsRoute: typeof AuthenticatedHealthVaccinationsRoute
+  AuthenticatedHealthVetRoute: typeof AuthenticatedHealthVetRoute
+  AuthenticatedHealthIndexRoute: typeof AuthenticatedHealthIndexRoute
+}
+
+const AuthenticatedHealthRouteRouteChildren: AuthenticatedHealthRouteRouteChildren =
+  {
+    AuthenticatedHealthVaccinationsRoute: AuthenticatedHealthVaccinationsRoute,
+    AuthenticatedHealthVetRoute: AuthenticatedHealthVetRoute,
+    AuthenticatedHealthIndexRoute: AuthenticatedHealthIndexRoute,
+  }
+
+const AuthenticatedHealthRouteRouteWithChildren =
+  AuthenticatedHealthRouteRoute._addFileChildren(
+    AuthenticatedHealthRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedHealthRouteRoute: typeof AuthenticatedHealthRouteRouteWithChildren
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedPetsRoute: typeof AuthenticatedPetsRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
-  AuthenticatedVetRoute: typeof AuthenticatedVetRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedHealthRouteRoute: AuthenticatedHealthRouteRouteWithChildren,
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedPetsRoute: AuthenticatedPetsRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
-  AuthenticatedVetRoute: AuthenticatedVetRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

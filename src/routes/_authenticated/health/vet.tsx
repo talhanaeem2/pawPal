@@ -1,4 +1,4 @@
-import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
+import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, vetQuery } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,8 +18,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { createEmptyVetAppointmentForm, VetAppointment, vetAppointmentFormSchema, vetAppointmentToForm } from "@/schemas/vet";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { Field } from "@/components/ui/field";
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 
-export const Route = createFileRoute("/_authenticated/vet")({
+export const Route = createFileRoute("/_authenticated/health/vet")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(petsQuery);
     context.queryClient.ensureQueryData(vetQuery);
@@ -64,6 +65,21 @@ function VetPage() {
 
   return (
     <div className="space-y-5">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/health">Health</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+
+          <BreadcrumbSeparator />
+
+          <BreadcrumbItem>
+            <BreadcrumbPage>Vet</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <header className="flex items-end justify-between">
         <div>
           <h1 className="font-display text-3xl">Vet</h1>
@@ -205,7 +221,7 @@ function VetDialog({ pets, item, trigger }: { pets: { id: string; name: string }
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit appointment" : "New appointment"}</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.reason || !form.values.date) return; save.mutate(); }} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
           <Field label="Pet">
             <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>

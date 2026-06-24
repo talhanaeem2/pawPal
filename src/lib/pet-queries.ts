@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ActivityLog, activityLogSchema } from "@/schemas/activity";
 import { Pet, petSchema } from "@/schemas/pets";
 import { ScheduleItem, scheduleItemSchema } from "@/schemas/schedule";
+import { Vaccination, vaccinationSchema } from "@/schemas/vacination";
 import { VetAppointment, vetAppointmentSchema } from "@/schemas/vet";
 import { queryOptions } from "@tanstack/react-query";
 import z from "zod";
@@ -44,6 +45,22 @@ export const vetQuery = queryOptions({
     const { data, error } = await supabase.from("vet_appointments").select("*").order("date", { ascending: true });
     if (error) throw error;
     const parsed = z.array(vetAppointmentSchema).safeParse(data ?? []);
+
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return [];
+    }
+
+    return parsed.data;
+  },
+});
+
+export const vaccinationsQuery = queryOptions({
+  queryKey: ["vaccinations"],
+  queryFn: async (): Promise<Vaccination[]> => {
+    const { data, error } = await supabase.from("vaccinations").select("*").order("created_at", { ascending: true });
+    if (error) throw error;
+    const parsed = z.array(vaccinationSchema).safeParse(data ?? []);
 
     if (!parsed.success) {
       console.error(parsed.error);

@@ -1,14 +1,16 @@
 import { createFileRoute, type ErrorComponentProps, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, scheduleQuery, vetQuery, activityQuery } from "@/lib/pet-queries";
-import { Calendar, Stethoscope, Activity, Plus, PawPrint } from "lucide-react";
+import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery } from "@/lib/pet-queries";
+import { Calendar, Stethoscope, Activity, Plus, PawPrint, Syringe } from "lucide-react";
 
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import PushPrompt from "@/components/ui/push-prompt";
 import { PetAvatar } from "@/components/ui/pet-avatar";
-import { formatFrequency, formatKind, formatTime, getPreviewList } from "@/lib/utils";
+import { formatFrequency, formatKind, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
+import { Section } from "@/components/ui/section";
+import { Empty } from "@/components/ui/empty";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: ({ context }) => {
@@ -16,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/home")({
     context.queryClient.ensureQueryData(scheduleQuery);
     context.queryClient.ensureQueryData(vetQuery);
     context.queryClient.ensureQueryData(activityQuery);
+    context.queryClient.ensureQueryData(vaccinationsQuery);
   },
   pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Home · Pawpal" }] }),
@@ -29,6 +32,10 @@ function Home() {
   const { data: schedule } = useSuspenseQuery(scheduleQuery);
   const { data: vet } = useSuspenseQuery(vetQuery);
   const { data: activity } = useSuspenseQuery(activityQuery);
+  const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
+
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
   const todayData = getPreviewList(schedule, 5);
   const upcomingVetSorted = vet
@@ -36,6 +43,18 @@ function Home() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const upcomingVetData = getPreviewList(upcomingVetSorted, 3);
   const recentActivityData = getPreviewList(activity, 3);
+
+  const vaccinationPreview = vaccinations
+    .filter((v) => {
+      if (v.completed_at || !v.next_due_at) return false;
+
+      const due = new Date(v.next_due_at).getTime();
+
+      return due < now || due - now <= thirtyDays;
+    })
+    .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
+
+  const vaccinationData = getPreviewList(vaccinationPreview, 3);
 
   if (pets.length === 0) {
     return (
@@ -105,9 +124,9 @@ function Home() {
         )}
       </Section>
 
-      <Section title="Upcoming vet" icon={Stethoscope} href="/vet">
+      <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
         {upcomingVetData.visible.length === 0 ? (
-          <Empty text="Nothing booked." cta="Schedule visit" href="/vet" />
+          <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" />
         ) : (
           <ul className="divide-y divide-border/60">
             {upcomingVetData.visible.map((v) => (
@@ -120,7 +139,7 @@ function Home() {
               </li>
             ))}
             {upcomingVetData.remaining > 0 && (
-              <Link to="/vet" className="block py-2 text-xs text-primary hover:underline">
+              <Link to="/health/vet" className="block py-2 text-xs text-primary hover:underline">
                 +{upcomingVetData.remaining} more visits →
               </Link>
             )}
@@ -154,30 +173,41 @@ function Home() {
           </ul>
         )}
       </Section>
-    </div>
-  );
-}
 
-function Section({ title, icon: Icon, href, children }: { title: string; icon: typeof Calendar; href: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
-          <h2 className="font-display text-lg">{title}</h2>
-        </div>
-        <Link to={href} className="text-xs text-muted-foreground hover:text-foreground">See all</Link>
-      </div>
-      {children}
-    </section>
-  );
-}
+      {vaccinationData.visible.length > 0 && (
+        <Section title="Vaccinations" icon={Syringe} href="/health/vaccinations">
+          <ul className="divide-y divide-border/60">
+            {vaccinationData.visible.map((v) => {
+              const tone = getVaccinationTone(
+                v.next_due_at,
+                v.completed_at,
+              );
 
-function Empty({ text, cta, href }: { text: string; cta: string; href: string }) {
-  return (
-    <div className="py-2 flex items-center justify-between">
-      <p className="text-sm text-muted-foreground">{text}</p>
-      <Link to={href} className="text-xs font-medium text-primary hover:underline">{cta} →</Link>
+              return (
+                <li key={v.id} className="py-3 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm">{v.vaccine_name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Due{" "}
+                      {new Date(v.next_due_at!).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <span
+                    className={`text-xs font-medium ${getVaccinationToneClass(tone)}`}
+                  >
+                    {getVaccinationToneLabel(tone)}
+                  </span>
+                </li>
+              )
+            })}
+            {vaccinationData.remaining > 0 && (
+              <Link to="/health/vaccinations" className="block py-2 text-xs text-primary hover:underline">
+                +{vaccinationData.remaining} more vaccinations →
+              </Link>
+            )}
+          </ul>
+        </Section>
+      )}
     </div>
   );
 }
