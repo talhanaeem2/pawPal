@@ -142,7 +142,7 @@ function Home() {
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {a.duration_min ? `${a.duration_min} min` : a.value ? `${a.value}` : ""}
+                  {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
                 </div>
               </li>
             ))}

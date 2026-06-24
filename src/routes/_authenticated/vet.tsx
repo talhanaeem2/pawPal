@@ -1,11 +1,10 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, vetQuery, type VetAppt } from "@/lib/pet-queries";
+import { petsQuery, vetQuery } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +15,9 @@ import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { createEmptyVetAppointmentForm, VetAppointment, vetAppointmentFormSchema, vetAppointmentToForm } from "@/schemas/vet";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { Field } from "@/components/ui/field";
 
 export const Route = createFileRoute("/_authenticated/vet")({
   loader: ({ context }) => {
@@ -89,7 +91,7 @@ function VetPage() {
 
 function Group({ title, items, pets, onToggle, onDelete, muted }: {
   title: string;
-  items: VetAppt[];
+  items: VetAppointment[];
   pets: { id: string; name: string }[];
   onToggle: (a: { id: string; completed: boolean }) => void;
   onDelete: (id: string) => void;
@@ -149,53 +151,43 @@ function Group({ title, items, pets, onToggle, onDelete, muted }: {
   );
 }
 
-function toLocalInputValue(iso: string) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function emptyForm(pets: { id: string }[]) {
-  return { pet_id: pets[0]?.id ?? "", date: "", reason: "", vet_name: "", notes: "" };
-}
-
-function formFromAppt(appt: VetAppt) {
-  return {
-    pet_id: appt.pet_id,
-    date: toLocalInputValue(appt.date),
-    reason: appt.reason,
-    vet_name: appt.vet_name ?? "",
-    notes: appt.notes ?? "",
-  };
-}
-
-function VetDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: VetAppt; trigger: React.ReactNode }) {
+function VetDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: VetAppointment; trigger: React.ReactNode }) {
   const isEdit = !!item;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(item ? formFromAppt(item) : emptyForm(pets));
+  const form = useZodForm(
+    vetAppointmentFormSchema,
+    item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm(pets[0]?.id)
+  );
 
   function resetForm() {
-    setForm(item ? formFromAppt(item) : emptyForm(pets));
+    form.reset(item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm(pets[0]?.id));
   }
 
   const save = useMutation({
     mutationFn: async () => {
+      const data = form.getValidated();
+
+      if (!data) {
+        toast.error("Fix validation errors first");
+        return;
+      }
       const payload = {
-        pet_id: form.pet_id,
-        date: new Date(form.date).toISOString(),
-        reason: form.reason.trim(),
-        vet_name: form.vet_name || null,
-        notes: form.notes || null,
+        pet_id: data.pet_id,
+        date: new Date(data.date).toISOString(),
+        reason: data.reason.trim(),
+        vet_name: data.vet_name || null,
+        completed: data.completed || false,
+        notes: data.notes || null,
       };
 
-      if (isEdit) {
-        const { error } = await supabase.from("vet_appointments").update(payload).eq("id", item!.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("vet_appointments").insert(payload);
-        if (error) throw error;
-      }
+      const query = item
+        ? supabase.from("vet_appointments").update(payload).eq("id", item.id)
+        : supabase.from("vet_appointments").insert(payload);
+
+      const { error } = await query;
+
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vet_appointments"] });
@@ -213,30 +205,25 @@ function VetDialog({ pets, item, trigger }: { pets: { id: string; name: string }
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit appointment" : "New appointment"}</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.reason || !form.date) return; save.mutate(); }} className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Pet</Label>
-            <Select value={form.pet_id} onValueChange={(v) => setForm({ ...form, pet_id: v })}>
+        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.reason || !form.values.date) return; save.mutate(); }} className="space-y-3">
+          <Field label="Pet">
+            <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
             </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">When</Label>
-            <Input type="datetime-local" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Reason</Label>
-            <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="Annual checkup" required />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Vet / clinic</Label>
-            <Input value={form.vet_name} onChange={(e) => setForm({ ...form, vet_name: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Notes</Label>
-            <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          </div>
+          </Field>
+          <Field label="When">
+            <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} required />
+          </Field>
+          <Field label="Reason">
+            <Input value={form.values.reason} onChange={(e) => form.setField("reason", e.target.value)} placeholder="Annual checkup" required />
+          </Field>
+          <Field label="Vet / Clinic">
+            <Input value={form.values.vet_name} onChange={(e) => form.setField("vet_name", e.target.value)} />
+          </Field>
+          <Field label="Notes">
+            <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
+          </Field>
           <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
             {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
           </Button>

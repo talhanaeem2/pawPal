@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Check, Trash2, Pencil } from "lucide-react";
@@ -176,11 +175,13 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
         notes: data.notes.trim() || null,
       };
 
-      if (item) {
-        await supabase.from("schedule_items").update(payload).eq("id", item.id);
-      } else {
-        await supabase.from("schedule_items").insert(payload);
-      }
+      const query = item
+        ? supabase.from("schedule_items").update(payload).eq("id", item.id)
+        : supabase.from("schedule_items").insert(payload);
+
+      const { error } = await query;
+
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["schedule_items"] });
