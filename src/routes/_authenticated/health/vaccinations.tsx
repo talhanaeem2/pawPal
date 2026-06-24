@@ -101,7 +101,7 @@ function VetPage() {
 
             <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
             <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
-            <Group title="History" items={history} pets={pets} onDelete={setConfirmId} />
+            <Group title="Completed" items={history} pets={pets} onDelete={setConfirmId} />
 
             <ConfirmDialog
                 open={!!confirmId}
@@ -235,9 +235,11 @@ function VaccinationsDialog({ pets, item, trigger }: { pets: { id: string; name:
                 pet_id: data.pet_id,
                 vaccine_name: data.vaccine_name.trim(),
                 administered_at: new Date(data.administered_at).toISOString(),
-                next_due_at: data.next_due_at
-                    ? new Date(data.next_due_at).toISOString()
-                    : null,
+                next_due_at: data.completed_at
+                    ? null
+                    : data.next_due_at
+                        ? new Date(data.next_due_at).toISOString()
+                        : null,
                 completed_at: data.completed_at ? new Date(data.completed_at).toISOString() : null,
                 administered_by: data.administered_by || null,
                 notes: data.notes || null,
@@ -281,7 +283,21 @@ function VaccinationsDialog({ pets, item, trigger }: { pets: { id: string; name:
                         <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
                     </Field>
                     <Field label="Next due">
-                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} />
+                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} disabled={!!form.values.completed_at} />
+                    </Field>
+                    <Field label="Completed">
+                        <div className="flex items-center h-10 gap-2">
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={!!form.values.completed_at}
+                                onClick={() => form.setField("completed_at", form.values.completed_at ? "" : new Date().toISOString())}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.completed_at ? "bg-primary" : "bg-input"}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.completed_at ? "translate-x-6" : "translate-x-1"}`} />
+                            </button>
+                            <span className="text-sm text-muted-foreground">{form.values.completed_at ? "Completed" : "Pending"}</span>
+                        </div>
                     </Field>
                     <Field label="Vet / Clinic">
                         <Input
@@ -293,12 +309,6 @@ function VaccinationsDialog({ pets, item, trigger }: { pets: { id: string; name:
                     <Field label="Notes">
                         <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
                     </Field>
-                    <input
-                        type="checkbox"
-                        checked={!!form.values.completed_at}
-                        onChange={() => form.setField("completed_at", !form.values.completed_at ? new Date().toISOString() : "")}
-                        className="h-4 w-4 accent-green-600"
-                    />
                     <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
                         {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
                     </Button>
