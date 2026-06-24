@@ -179,7 +179,7 @@ function ActivityDialog({ pets, item, trigger }: { pets: { id: string; name: str
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit log" : "Log activity"}</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.pet_id) return; save.mutate(); }} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Pet">
               <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>

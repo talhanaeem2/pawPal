@@ -201,7 +201,7 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit reminder" : "New reminder"}</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.title || !form.values.pet_id) return; save.mutate(); }} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
           <Field label="Pet">
             <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
