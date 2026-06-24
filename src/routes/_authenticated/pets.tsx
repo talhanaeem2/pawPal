@@ -1,11 +1,10 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, type Pet } from "@/lib/pet-queries";
+import { petsQuery } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +16,9 @@ import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PetAvatar } from "@/components/ui/pet-avatar";
+import { Field } from "@/components/ui/field";
+import { createEmptyPetForm, Pet, petFormSchema, petToForm } from "@/schemas/pets";
+import { useZodForm } from "@/hooks/use-zod-form";
 
 export const Route = createFileRoute("/_authenticated/pets")({
   loader: ({ context }) => context.queryClient.ensureQueryData(petsQuery),
@@ -36,11 +38,7 @@ function PetsPage() {
           <h1 className="font-display text-3xl">Pets</h1>
           <p className="text-sm text-muted-foreground">Your little household.</p>
         </div>
-        <PetDialog
-          trigger={
-            <Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>
-          }
-        />
+        <PetDialog trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>} />
       </header>
 
       {pets.length === 0 ? (
@@ -66,10 +64,8 @@ function PetCard({ pet }: { pet: Pet }) {
       if (error) throw error;
       const path = extractStoragePath(pet.photo_url);
       if (path) {
-        const { error: storageError } = await supabase.storage
-          .from("pet-photos")
-          .remove([path]);
-        if (storageError) throw storageError;
+        const { error: storageError } = await supabase.storage.from("pet-photos").remove([path]);
+        if (storageError) console.error("[storage] delete error:", storageError);
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["pets"] }); toast.success(`${pet.name} removed`); },
@@ -77,8 +73,40 @@ function PetCard({ pet }: { pet: Pet }) {
     onSettled: () => setConfirmOpen(false),
   });
 
-  const age = pet.birthdate
-    ? Math.max(0, Math.floor((Date.now() - new Date(pet.birthdate).getTime()) / 31557600000))
+  const ageLabel = (() => {
+    if (!pet.birthdate) return null;
+
+    const birth = new Date(pet.birthdate);
+    const now = new Date();
+
+    let months =
+      (now.getFullYear() - birth.getFullYear()) * 12 +
+      (now.getMonth() - birth.getMonth());
+
+    if (now.getDate() < birth.getDate()) {
+      months--;
+    }
+
+    if (months < 0) months = 0;
+
+    const years = Math.floor(months / 12);
+    const remainingMonths = months % 12;
+
+    if (years === 0) {
+      return `${remainingMonths}mo`;
+    }
+
+    if (remainingMonths === 0) {
+      return `${years}y`;
+    }
+
+    return `${years}y ${remainingMonths}mo`;
+  })();
+
+  const genderLabel = pet.gender && pet.gender !== "unknown"
+    ? pet.neutered
+      ? pet.gender === "male" ? "Neutered" : "Spayed"
+      : pet.gender === "male" ? "Male" : "Female"
     : null;
 
   return (
@@ -90,8 +118,9 @@ function PetCard({ pet }: { pet: Pet }) {
             <div className="font-display text-xl leading-tight">{pet.name}</div>
             <div className="text-xs text-muted-foreground capitalize">
               {pet.breed ?? pet.species}
-              {age !== null ? ` · ${age}y` : ""}
+              {ageLabel ? ` · ${ageLabel}` : ""}
               {pet.weight_kg ? ` · ${pet.weight_kg}kg` : ""}
+              {genderLabel ? ` · ${genderLabel}` : ""}
             </div>
           </div>
         </div>
@@ -105,17 +134,10 @@ function PetCard({ pet }: { pet: Pet }) {
               </Button>
             }
           />
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setConfirmOpen(true)}
-            className="text-muted-foreground hover:text-destructive"
-            aria-label="Delete pet"
-          >
+          <Button variant="ghost" size="icon" onClick={() => setConfirmOpen(true)}
+            className="text-muted-foreground hover:text-destructive" aria-label="Delete pet">
             <Trash2 className="h-4 w-4" />
           </Button>
-
           <ConfirmDialog
             open={confirmOpen}
             onOpenChange={setConfirmOpen}
@@ -133,40 +155,14 @@ function PetCard({ pet }: { pet: Pet }) {
   );
 }
 
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-function emptyForm() {
-  return { name: "", species: "dog", breed: "", birthdate: "", weight_kg: "", notes: "" };
-}
-
-function formFromPet(pet: Pet) {
-  return {
-    name: pet.name ?? "",
-    species: pet.species ?? "dog",
-    breed: pet.breed ?? "",
-    birthdate: pet.birthdate ?? "",
-    weight_kg: pet.weight_kg != null ? String(pet.weight_kg) : "",
-    notes: pet.notes ?? "",
-  };
-}
-
-// Extracts the storage object path from a Supabase Storage public URL.
-// Handles both URL formats:
-//   .../storage/v1/object/public/pet-photos/{path}
-//   .../object/public/pet-photos/{path}
 function extractStoragePath(url: string | null | undefined): string | null {
   if (!url) return null;
-  const markers = [
-    "/storage/v1/object/public/pet-photos/",
-    "/object/public/pet-photos/",
-  ];
+  const markers = ["/storage/v1/object/public/pet-photos/", "/object/public/pet-photos/"];
   for (const marker of markers) {
     const idx = url.indexOf(marker);
-    if (idx !== -1) {
-      const withQuery = decodeURIComponent(url.slice(idx + marker.length));
-      const path = withQuery.split("?")[0];
-      return path;
-    }
+    if (idx !== -1) return decodeURIComponent(url.slice(idx + marker.length)).split("?")[0];
   }
   return null;
 }
@@ -175,7 +171,10 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
   const isEdit = !!pet;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(pet ? formFromPet(pet) : emptyForm());
+  const form = useZodForm(
+    petFormSchema,
+    pet ? petToForm(pet) : createEmptyPetForm()
+  );
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(pet?.photo_url ?? null);
   const [photoRemoved, setPhotoRemoved] = useState(false);
@@ -185,14 +184,8 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file");
-      return;
-    }
-    if (file.size > MAX_PHOTO_BYTES) {
-      toast.error("Image must be under 5MB");
-      return;
-    }
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > MAX_PHOTO_BYTES) { toast.error("Image must be under 5MB"); return; }
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
     setPhotoRemoved(false);
@@ -207,71 +200,63 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
   }
 
   function resetForm() {
-    setForm(pet ? formFromPet(pet) : emptyForm());
+    form.reset(pet ? petToForm(pet) : createEmptyPetForm());
     setPhotoFile(null);
     setPhotoPreview(pet?.photo_url ?? null);
     setPhotoRemoved(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+
   async function uploadNewPhoto(): Promise<string> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error("Not signed in");
-
     const ext = photoFile!.name.split(".").pop() || "jpg";
     const path = `${userData.user.id}/${crypto.randomUUID()}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("pet-photos")
-      .upload(path, photoFile!, { upsert: false });
+    const { error: uploadError } = await supabase.storage.from("pet-photos").upload(path, photoFile!, { upsert: false });
     if (uploadError) throw uploadError;
-
     const { data: urlData } = supabase.storage.from("pet-photos").getPublicUrl(path);
     return urlData.publicUrl;
   }
 
   const save = useMutation({
     mutationFn: async () => {
-      setUploading(true);
+      const data = form.getValidated();
 
-      // undefined = leave photo_url untouched; null = clear it; string = new photo
-      let photo_url: string | null | undefined = undefined;
-      if (photoFile) {
-        photo_url = await uploadNewPhoto();
-      } else if (photoRemoved) {
-        photo_url = null;
+      if (!data) {
+        toast.error("Fix validation errors first");
+        return;
       }
 
+      setUploading(true);
+      let photo_url: string | null | undefined = undefined;
+      if (photoFile) photo_url = await uploadNewPhoto();
+      else if (photoRemoved) photo_url = null;
+
       const payload = {
-        name: form.name.trim(),
-        species: form.species,
-        breed: form.breed || null,
-        birthdate: form.birthdate || null,
-        weight_kg: form.weight_kg ? Number(form.weight_kg) : null,
-        notes: form.notes || null,
+        name: data.name.trim(),
+        species: data.species,
+        breed: data.breed || null,
+        birthdate: data.birthdate || null,
+        weight_kg: data.weight_kg ? Number(data.weight_kg) : null,
+        notes: data.notes || null,
+        gender: data.gender,
+        neutered: data.neutered,
+        microchip: data.microchip || null,
         ...(photo_url !== undefined ? { photo_url } : {}),
       };
 
-      if (isEdit) {
-        const { error } = await supabase.from("pets").update(payload).eq("id", pet!.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("pets").insert(payload);
-        if (error) throw error;
-      }
+      const query = pet
+        ? supabase.from("pets").update(payload).eq("id", pet.id)
+        : supabase.from("pets").insert(payload);
 
-      // Clean up the old photo from storage once the new state is saved,
-      // whenever it was replaced or explicitly removed.
-      // Clean up the old photo from storage once the new state is saved
+      const { error } = await query;
+
+      if (error) throw error;
+
       if (isEdit && photo_url !== undefined) {
         const oldPath = extractStoragePath(pet!.photo_url);
-
-        if (oldPath) {
-          const { error: storageError } = await supabase.storage
-            .from("pet-photos")
-            .remove([oldPath]);
-          if (storageError) throw storageError;
-        }
+        if (oldPath) await supabase.storage.from("pet-photos").remove([oldPath]);
       }
     },
     onSuccess: () => {
@@ -287,33 +272,25 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="rounded-3xl">
+      <DialogContent className="rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? `Edit ${pet!.name}` : "New pet"}</DialogTitle></DialogHeader>
 
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.name) return; save.mutate(); }} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.name) return; save.mutate(); }} className="space-y-3">
+          {/* Photo */}
           <div className="flex justify-center">
             <div className="relative h-20 w-20">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center overflow-hidden group"
-              >
-                {photoPreview ? (
-                  <img src={photoPreview} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />
-                )}
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center overflow-hidden group">
+                {photoPreview
+                  ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
+                  : <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />}
                 <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition flex items-center justify-center">
                   <Camera className="h-5 w-5 text-card opacity-0 group-hover:opacity-100 transition" strokeWidth={1.75} />
                 </div>
               </button>
               {photoPreview && (
-                <button
-                  type="button"
-                  onClick={onRemovePhoto}
-                  aria-label="Remove photo"
-                  className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-(--shadow-soft)"
-                >
+                <button type="button" onClick={onRemovePhoto} aria-label="Remove photo"
+                  className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-(--shadow-soft)">
                   <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </button>
               )}
@@ -321,10 +298,11 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
             <input ref={fileInputRef} type="file" accept="image/*" onChange={onPickPhoto} className="hidden" />
           </div>
 
+          {/* Basic info */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Name"><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></Field>
+            <Field label="Name"><Input value={form.values.name} onChange={(e) => form.setField("name", e.target.value)} required /></Field>
             <Field label="Species">
-              <Select value={form.species} onValueChange={(v) => setForm({ ...form, species: v })}>
+              <Select value={form.values.species} onValueChange={(v) => form.setField("species", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["dog", "cat", "rabbit", "bird", "fish", "reptile", "hamster", "other"].map((s) =>
@@ -332,25 +310,53 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Breed"><Input value={form.breed} onChange={(e) => setForm({ ...form, breed: e.target.value })} /></Field>
-            <Field label="Weight (kg)"><Input type="number" step="0.1" value={form.weight_kg} onChange={(e) => setForm({ ...form, weight_kg: e.target.value })} /></Field>
-            <Field label="Birthdate" className="col-span-2"><Input type="date" value={form.birthdate} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} /></Field>
+            <Field label="Breed">
+              <Input value={form.values.breed} onChange={(e) => form.setField("breed", e.target.value)} />
+            </Field>
+            <Field label="Weight (kg)">
+              <Input type="number" step="0.1" value={form.values.weight_kg} onChange={(e) => form.setField("weight_kg", e.target.value)} />
+            </Field>
+            <Field label="Birthdate" className="col-span-2">
+              <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} />
+            </Field>
           </div>
-          <Field label="Notes"><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>
+
+          {/* Gender + neutered */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Gender">
+              <Select value={form.values.gender} onValueChange={(v) => form.setField("gender", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unknown">Unknown</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label={form.values.gender === "female" ? "Spayed" : "Neutered"}>
+              <div className="flex items-center h-10 gap-2">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.values.neutered}
+                  onClick={() => form.setField("neutered", !form.values.neutered)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.neutered ? "bg-primary" : "bg-input"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.neutered ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+                <span className="text-sm text-muted-foreground">{form.values.neutered ? "Yes" : "No"}</span>
+              </div>
+            </Field>
+          </div>
+          <Field label="Microchip number">
+            <Input value={form.values.microchip} onChange={(e) => form.setField("microchip", e.target.value)} placeholder="Optional" />
+          </Field>
+          <Field label="Notes"><Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} /></Field>
           <Button type="submit" className="w-full rounded-full" disabled={save.isPending || uploading}>
             {save.isPending || uploading ? "Saving…" : isEdit ? "Save changes" : "Save"}
           </Button>
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`space-y-1.5 ${className}`}>
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      {children}
-    </div>
   );
 }

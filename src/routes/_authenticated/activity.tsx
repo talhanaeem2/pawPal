@@ -1,11 +1,10 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, activityQuery, type ActivityLog } from "@/lib/pet-queries";
+import { petsQuery, activityQuery } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +15,9 @@ import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActivityLog, activityLogFormSchema, activityLogToForm, createEmptyActivityLogForm } from "@/schemas/activity";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { Field } from "@/components/ui/field";
 
 export const Route = createFileRoute("/_authenticated/activity")({
   loader: ({ context }) => {
@@ -78,7 +80,7 @@ function ActivityPage() {
                   <div className="text-xs text-muted-foreground">
                     {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                     {a.duration_min ? ` · ${a.duration_min} min` : ""}
-                    {a.value ? ` · ${a.value}${a.activity_type === "weight" ? " kg" : ""}` : ""}
+                    {a.weight ? ` · ${a.weight}${a.activity_type === "weight" ? " kg" : ""}` : ""}
                   </div>
                   {a.notes && <p className="text-xs text-muted-foreground mt-1 truncate">{a.notes}</p>}
                 </div>
@@ -120,48 +122,46 @@ function ActivityPage() {
   );
 }
 
-function emptyForm(pets: { id: string }[]) {
-  return { pet_id: pets[0]?.id ?? "", activity_type: "walk", duration_min: "", value: "", notes: "" };
-}
-
-function formFromLog(log: ActivityLog) {
-  return {
-    pet_id: log.pet_id,
-    activity_type: log.activity_type,
-    duration_min: log.duration_min != null ? String(log.duration_min) : "",
-    value: log.value != null ? String(log.value) : "",
-    notes: log.notes ?? "",
-  };
-}
-
 function ActivityDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: ActivityLog; trigger: React.ReactNode }) {
   const isEdit = !!item;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(item ? formFromLog(item) : emptyForm(pets));
+  const form = useZodForm(
+    activityLogFormSchema,
+    item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id)
+  );
 
   function resetForm() {
-    setForm(item ? formFromLog(item) : emptyForm(pets));
+    form.reset(item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id));
   }
 
   const save = useMutation({
     mutationFn: async () => {
+      const data = form.getValidated();
+
+      if (!data) {
+        toast.error("Fix validation errors first");
+        return;
+      }
+
       const payload = {
-        pet_id: form.pet_id,
-        activity_type: form.activity_type,
-        duration_min: form.duration_min ? Number(form.duration_min) : null,
-        value: form.value ? Number(form.value) : null,
-        notes: form.notes || null,
+        pet_id: data.pet_id,
+        activity_type: data.activity_type,
+        duration_min: data.activity_type !== "weight" &&
+          data.duration_min ? Number(data.duration_min) : null,
+        weight: data.activity_type === "weight" &&
+          data.weight ? Number(data.weight) : null,
+        notes: data.notes || null,
         ...(isEdit ? {} : { occurred_at: new Date().toISOString() }),
       };
 
-      if (isEdit) {
-        const { error } = await supabase.from("activity_logs").update(payload).eq("id", item!.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("activity_logs").insert(payload);
-        if (error) throw error;
-      }
+      const query = item
+        ? supabase.from("activity_logs").update(payload).eq("id", item.id)
+        : supabase.from("activity_logs").insert(payload);
+
+      const { error } = await query;
+
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["activity_logs"] });
@@ -179,18 +179,24 @@ function ActivityDialog({ pets, item, trigger }: { pets: { id: string; name: str
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit log" : "Log activity"}</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.pet_id) return; save.mutate(); }} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.pet_id) return; save.mutate(); }} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Pet</Label>
-              <Select value={form.pet_id} onValueChange={(v) => setForm({ ...form, pet_id: v })}>
+            <Field label="Pet">
+              <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Type</Label>
-              <Select value={form.activity_type} onValueChange={(v) => setForm({ ...form, activity_type: v })}>
+            </Field>
+            <Field label="Type">
+              <Select value={form.values.activity_type} onValueChange={(v) => {
+                form.setField("activity_type", v);
+
+                if (v === "weight") {
+                  form.setField("duration_min", "");
+                } else {
+                  form.setField("weight", "");
+                }
+              }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="walk">Walk</SelectItem>
@@ -198,23 +204,20 @@ function ActivityDialog({ pets, item, trigger }: { pets: { id: string; name: str
                   <SelectItem value="weight">Weight</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </Field>
           </div>
-          {form.activity_type !== "weight" ? (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Duration (min)</Label>
-              <Input type="number" value={form.duration_min} onChange={(e) => setForm({ ...form, duration_min: e.target.value })} />
-            </div>
+          {form.values.activity_type !== "weight" ? (
+            <Field label="Duration (min)">
+              <Input type="number" value={form.values.duration_min} onChange={(e) => form.setField("duration_min", e.target.value)} />
+            </Field>
           ) : (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Weight (kg)</Label>
-              <Input type="number" step="0.1" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} required />
-            </div>
+            <Field label="Weight (kg)">
+              <Input type="number" step="0.1" value={form.values.weight} onChange={(e) => form.setField("weight", e.target.value)} required />
+            </Field>
           )}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Notes</Label>
-            <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          </div>
+          <Field label="Notes">
+            <Textarea rows={2} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
+          </Field>
           <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
             {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
           </Button>

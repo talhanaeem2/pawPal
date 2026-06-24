@@ -8,6 +8,7 @@ import InlineErrorState from "@/components/ui/inline-error-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import PushPrompt from "@/components/ui/push-prompt";
 import { PetAvatar } from "@/components/ui/pet-avatar";
+import { formatFrequency, formatKind, formatTime, getPreviewList } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: ({ context }) => {
@@ -29,9 +30,12 @@ function Home() {
   const { data: vet } = useSuspenseQuery(vetQuery);
   const { data: activity } = useSuspenseQuery(activityQuery);
 
-  const today = schedule.slice(0, 5);
-  const upcomingVet = vet.filter((v) => !v.completed && new Date(v.date) >= new Date(Date.now() - 86_400_000)).slice(0, 3);
-  const recentActivity = activity.slice(0, 3);
+  const todayData = getPreviewList(schedule, 5);
+  const upcomingVetSorted = vet
+    .filter((v) => !v.completed && new Date(v.date) >= new Date(Date.now() - 86_400_000))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const upcomingVetData = getPreviewList(upcomingVetSorted, 3);
+  const recentActivityData = getPreviewList(activity, 3);
 
   if (pets.length === 0) {
     return (
@@ -71,37 +75,42 @@ function Home() {
       </div>
 
       <Section title="Today's care" icon={Calendar} href="/schedule">
-        {today.length === 0 ? (
+        {todayData.visible.length === 0 ? (
           <Empty text="No reminders yet." cta="Add one" href="/schedule" />
         ) : (
           <ul className="divide-y divide-border/60">
-            {today.map((s) => {
+            {todayData.visible.map((s) => {
               const doneToday = s.last_done_at && new Date(s.last_done_at).toDateString() === new Date().toDateString();
               return (
                 <li key={s.id} className="py-3 flex items-center justify-between">
                   <div className={doneToday ? "opacity-50" : ""}>
                     <div className="font-medium text-sm">{s.title}</div>
                     <div className="text-xs text-muted-foreground capitalize">
-                      {s.kind} · {s.time_of_day?.slice(0, 5) ?? s.frequency}
+                      {formatKind(s)} · {s.time_of_day ? formatTime(s.time_of_day) : formatFrequency(s)}
                     </div>
                   </div>
                   {doneToday
                     ? <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary capitalize">Done</span>
-                    : <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">{s.frequency}</span>
+                    : <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">{formatFrequency(s)}</span>
                   }
                 </li>
               );
             })}
+            {todayData.remaining > 0 && (
+              <Link to="/schedule" className="block py-2 text-xs text-primary hover:underline">
+                +{todayData.remaining} more reminders →
+              </Link>
+            )}
           </ul>
         )}
       </Section>
 
       <Section title="Upcoming vet" icon={Stethoscope} href="/vet">
-        {upcomingVet.length === 0 ? (
+        {upcomingVetData.visible.length === 0 ? (
           <Empty text="Nothing booked." cta="Schedule visit" href="/vet" />
         ) : (
           <ul className="divide-y divide-border/60">
-            {upcomingVet.map((v) => (
+            {upcomingVetData.visible.map((v) => (
               <li key={v.id} className="py-3">
                 <div className="font-medium text-sm">{v.reason}</div>
                 <div className="text-xs text-muted-foreground">
@@ -110,16 +119,21 @@ function Home() {
                 </div>
               </li>
             ))}
+            {upcomingVetData.remaining > 0 && (
+              <Link to="/vet" className="block py-2 text-xs text-primary hover:underline">
+                +{upcomingVetData.remaining} more visits →
+              </Link>
+            )}
           </ul>
         )}
       </Section>
 
       <Section title="Recent activity" icon={Activity} href="/activity">
-        {recentActivity.length === 0 ? (
+        {recentActivityData.visible.length === 0 ? (
           <Empty text="No walks logged yet." cta="Log one" href="/activity" />
         ) : (
           <ul className="divide-y divide-border/60">
-            {recentActivity.map((a) => (
+            {recentActivityData.visible.map((a) => (
               <li key={a.id} className="py-3 flex items-center justify-between">
                 <div>
                   <div className="font-medium text-sm capitalize">{a.activity_type}</div>
@@ -128,10 +142,15 @@ function Home() {
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {a.duration_min ? `${a.duration_min} min` : a.value ? `${a.value}` : ""}
+                  {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
                 </div>
               </li>
             ))}
+            {recentActivityData.remaining > 0 && (
+              <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
+                +{recentActivityData.remaining} more activities →
+              </Link>
+            )}
           </ul>
         )}
       </Section>

@@ -1,11 +1,10 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, scheduleQuery, type ScheduleItem } from "@/lib/pet-queries";
+import { petsQuery, scheduleQuery } from "@/lib/pet-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Check, Trash2, Pencil } from "lucide-react";
@@ -15,6 +14,11 @@ import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatFrequency, formatKind, formatTime } from "@/lib/utils";
+import { createEmptyScheduleForm, scheduleFormSchema, ScheduleItem, scheduleToForm } from "@/schemas/schedule";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/ui/field";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   loader: ({ context }) => {
@@ -96,7 +100,7 @@ function SchedulePage() {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">{s.title}</div>
                   <div className="text-xs text-muted-foreground capitalize truncate">
-                    {pet?.name ?? "—"} · {s.kind} · {s.time_of_day?.slice(0, 5) ?? s.frequency}
+                    {pet?.name ?? "—"} · {formatKind(s)} · {s.time_of_day ? formatTime(s.time_of_day) : formatFrequency(s)}
                     {s.dosage ? ` · ${s.dosage}` : ""}
                   </div>
                 </div>
@@ -138,49 +142,46 @@ function SchedulePage() {
   );
 }
 
-function emptyForm(pets: { id: string }[]) {
-  return { pet_id: pets[0]?.id ?? "", kind: "feeding", title: "", time_of_day: "", frequency: "daily", dosage: "" };
-}
-
-function formFromItem(item: ScheduleItem) {
-  return {
-    pet_id: item.pet_id,
-    kind: item.kind,
-    title: item.title,
-    time_of_day: item.time_of_day ?? "",
-    frequency: item.frequency,
-    dosage: item.dosage ?? "",
-  };
-}
-
 function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: ScheduleItem; trigger: React.ReactNode }) {
   const isEdit = !!item;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(item ? formFromItem(item) : emptyForm(pets));
+  const form = useZodForm(
+    scheduleFormSchema,
+    item ? scheduleToForm(item) : createEmptyScheduleForm(pets[0]?.id)
+  );
 
   function resetForm() {
-    setForm(item ? formFromItem(item) : emptyForm(pets));
+    form.reset(item ? scheduleToForm(item) : createEmptyScheduleForm(pets[0]?.id));
   }
 
   const save = useMutation({
     mutationFn: async () => {
+      const data = form.getValidated();
+
+      if (!data) {
+        toast.error("Fix validation errors first");
+        return;
+      }
       const payload = {
-        pet_id: form.pet_id,
-        kind: form.kind,
-        title: form.title.trim(),
-        time_of_day: form.time_of_day || null,
-        frequency: form.frequency,
-        dosage: form.dosage || null,
+        pet_id: data.pet_id,
+        kind: data.kind,
+        custom_kind: data.kind === "other" ? data.custom_kind.trim() || null : null,
+        title: data.title.trim(),
+        time_of_day: data.time_of_day || null,
+        frequency: data.frequency,
+        custom_frequency: data.frequency === "as_needed" ? data.custom_frequency.trim() || null : null,
+        dosage: data.dosage || null,
+        notes: data.notes.trim() || null,
       };
 
-      if (isEdit) {
-        const { error } = await supabase.from("schedule_items").update(payload).eq("id", item!.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("schedule_items").insert(payload);
-        if (error) throw error;
-      }
+      const query = item
+        ? supabase.from("schedule_items").update(payload).eq("id", item.id)
+        : supabase.from("schedule_items").insert(payload);
+
+      const { error } = await query;
+
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["schedule_items"] });
@@ -200,30 +201,28 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit reminder" : "New reminder"}</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.title || !form.pet_id) return; save.mutate(); }} className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Pet</Label>
-            <Select value={form.pet_id} onValueChange={(v) => setForm({ ...form, pet_id: v })}>
+        <form onSubmit={(e) => { e.preventDefault(); if (!form.values.title || !form.values.pet_id) return; save.mutate(); }} className="space-y-3">
+          <Field label="Pet">
+            <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
             </Select>
-          </div>
+          </Field>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Type</Label>
-              <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v })}>
+            <Field label="Type">
+              <Select value={form.values.kind} onValueChange={(v) => form.setField("kind", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="feeding">Feeding</SelectItem>
                   <SelectItem value="medication">Medication</SelectItem>
                   <SelectItem value="grooming">Grooming</SelectItem>
+                  <SelectItem value="deworming">Deworming</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Frequency</Label>
-              <Select value={form.frequency} onValueChange={(v) => setForm({ ...form, frequency: v })}>
+            </Field>
+            <Field label="Frequency">
+              <Select value={form.values.frequency} onValueChange={(v) => form.setField("frequency", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="daily">Daily</SelectItem>
@@ -232,22 +231,43 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
                   <SelectItem value="as_needed">As needed</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </Field>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Title</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Morning kibble" required />
-          </div>
+          {form.values.kind === "other" && (
+            <Field label="Custom type" className="col-span-2">
+              <Input
+                value={form.values.custom_kind}
+                onChange={(e) => form.setField("custom_kind", e.target.value)}
+                placeholder="e.g. Vet check, Training, Supplements"
+                required
+              />
+            </Field>
+          )}
+          {form.values.frequency === "as_needed" && (
+            <Field label="Custom frequency" className="col-span-2">
+              <Input
+                value={form.values.custom_frequency}
+                onChange={(e) => form.setField("custom_frequency", e.target.value)}
+                placeholder="e.g. Every 3 months, 3 times a week, etc."
+                required
+              />
+            </Field>
+          )}
+          <Field label="Title">
+            <Input value={form.values.title} onChange={(e) => form.setField("title", e.target.value)} placeholder="Morning kibble" required />
+          </Field>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Time</Label>
-              <Input type="time" value={form.time_of_day} onChange={(e) => setForm({ ...form, time_of_day: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Dose / amount</Label>
-              <Input value={form.dosage} onChange={(e) => setForm({ ...form, dosage: e.target.value })} placeholder="1 cup" />
-            </div>
+            <Field label="Time">
+              <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} />
+            </Field>
+            <Field label="Dose / amount">
+              <Input value={form.values.dosage} onChange={(e) => form.setField("dosage", e.target.value)} placeholder="1 cup" />
+            </Field>
           </div>
+          <Field label="Notes">
+            <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
+          </Field>
+          {save.isError && <p className="text-sm text-destructive">{save.error instanceof Error ? save.error.message : "Failed to save"}</p>}
           <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
             {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
           </Button>
@@ -256,6 +276,3 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
     </Dialog>
   );
 }
-
-// silence unused-type warning
-export type _Si = ScheduleItem;

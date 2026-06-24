@@ -49,7 +49,7 @@ export type Database = {
           occurred_at: string | null
           pet_id: string | null
           user_id: string
-          value: number | null
+          weight: number | null
         }
         Insert: {
           activity_type?: string | null
@@ -60,7 +60,7 @@ export type Database = {
           occurred_at?: string | null
           pet_id?: string | null
           user_id?: string
-          value?: number | null
+          weight?: number | null
         }
         Update: {
           activity_type?: string | null
@@ -71,7 +71,7 @@ export type Database = {
           occurred_at?: string | null
           pet_id?: string | null
           user_id?: string
-          value?: number | null
+          weight?: number | null
         }
         Relationships: [
           {
@@ -112,8 +112,11 @@ export type Database = {
           birthdate: string | null
           breed: string | null
           created_at: string | null
+          gender: string | null
           id: string
+          microchip: string | null
           name: string | null
+          neutered: boolean
           notes: string | null
           photo_url: string | null
           species: string | null
@@ -125,8 +128,11 @@ export type Database = {
           birthdate?: string | null
           breed?: string | null
           created_at?: string | null
+          gender?: string | null
           id?: string
+          microchip?: string | null
           name?: string | null
+          neutered?: boolean
           notes?: string | null
           photo_url?: string | null
           species?: string | null
@@ -138,8 +144,11 @@ export type Database = {
           birthdate?: string | null
           breed?: string | null
           created_at?: string | null
+          gender?: string | null
           id?: string
+          microchip?: string | null
           name?: string | null
+          neutered?: boolean
           notes?: string | null
           photo_url?: string | null
           species?: string | null
@@ -179,6 +188,8 @@ export type Database = {
       schedule_items: {
         Row: {
           created_at: string | null
+          custom_frequency: string | null
+          custom_kind: string | null
           dosage: string | null
           frequency: string | null
           id: string
@@ -193,6 +204,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_frequency?: string | null
+          custom_kind?: string | null
           dosage?: string | null
           frequency?: string | null
           id?: string
@@ -207,6 +220,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_frequency?: string | null
+          custom_kind?: string | null
           dosage?: string | null
           frequency?: string | null
           id?: string
@@ -231,7 +246,7 @@ export type Database = {
       }
       vet_appointments: {
         Row: {
-          completed: boolean | null
+          completed: boolean
           created_at: string | null
           date: string | null
           id: string
@@ -243,7 +258,7 @@ export type Database = {
           vet_name: string | null
         }
         Insert: {
-          completed?: boolean | null
+          completed: boolean
           created_at?: string | null
           date?: string | null
           id?: string
@@ -255,7 +270,7 @@ export type Database = {
           vet_name?: string | null
         }
         Update: {
-          completed?: boolean | null
+          completed?: boolean
           created_at?: string | null
           date?: string | null
           id?: string

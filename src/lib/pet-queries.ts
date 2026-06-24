@@ -1,31 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
+import { ActivityLog, activityLogSchema } from "@/schemas/activity";
+import { Pet, petSchema } from "@/schemas/pets";
+import { ScheduleItem, scheduleItemSchema } from "@/schemas/schedule";
+import { VetAppointment, vetAppointmentSchema } from "@/schemas/vet";
 import { queryOptions } from "@tanstack/react-query";
-
-export type Pet = {
-  id: string; name: string; species: string; breed: string | null;
-  birthdate: string | null; weight_kg: number | null; photo_url: string | null;
-  notes: string | null; created_at: string;
-};
-export type ScheduleItem = {
-  id: string; pet_id: string; kind: string; title: string;
-  time_of_day: string | null; frequency: string; dosage: string | null;
-  notes: string | null; last_done_at: string | null;
-};
-export type VetAppt = {
-  id: string; pet_id: string; date: string; reason: string;
-  vet_name: string | null; notes: string | null; completed: boolean;
-};
-export type ActivityLog = {
-  id: string; pet_id: string; activity_type: string; duration_min: number | null;
-  value: number | null; notes: string | null; occurred_at: string;
-};
+import z from "zod";
 
 export const petsQuery = queryOptions({
   queryKey: ["pets"],
   queryFn: async (): Promise<Pet[]> => {
     const { data, error } = await supabase.from("pets").select("*").order("created_at", { ascending: true });
     if (error) throw error;
-    return (data ?? []) as Pet[];
+    const parsed = z.array(petSchema).safeParse(data ?? []);
+
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return [];
+    }
+
+    return parsed.data;
   },
 });
 
@@ -34,16 +27,30 @@ export const scheduleQuery = queryOptions({
   queryFn: async (): Promise<ScheduleItem[]> => {
     const { data, error } = await supabase.from("schedule_items").select("*").order("time_of_day", { ascending: true });
     if (error) throw error;
-    return (data ?? []) as ScheduleItem[];
+    const parsed = z.array(scheduleItemSchema).safeParse(data ?? []);
+
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return [];
+    }
+
+    return parsed.data;
   },
 });
 
 export const vetQuery = queryOptions({
   queryKey: ["vet_appointments"],
-  queryFn: async (): Promise<VetAppt[]> => {
+  queryFn: async (): Promise<VetAppointment[]> => {
     const { data, error } = await supabase.from("vet_appointments").select("*").order("date", { ascending: true });
     if (error) throw error;
-    return (data ?? []) as VetAppt[];
+    const parsed = z.array(vetAppointmentSchema).safeParse(data ?? []);
+
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return [];
+    }
+
+    return parsed.data;
   },
 });
 
@@ -52,7 +59,14 @@ export const activityQuery = queryOptions({
   queryFn: async (): Promise<ActivityLog[]> => {
     const { data, error } = await supabase.from("activity_logs").select("*").order("occurred_at", { ascending: false }).limit(50);
     if (error) throw error;
-    return (data ?? []) as ActivityLog[];
+    const parsed = z.array(activityLogSchema).safeParse(data ?? []);
+
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return [];
+    }
+
+    return parsed.data;
   },
 });
 
