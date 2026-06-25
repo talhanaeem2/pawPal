@@ -59,8 +59,8 @@ function HealthPage() {
                     <ul className="divide-y divide-border/60">
                         {upcomingVetData.visible.map((v) => (
                             <li key={v.id} className="py-3">
-                                <div className="font-medium text-sm">{v.reason}</div>
-                                <div className="text-xs text-muted-foreground">
+                                <div className="font-medium text-sm capitalize">{v.reason}</div>
+                                <div className="text-xs text-muted-foreground capitalize">
                                     {new Date(v.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                                     {v.vet_name ? ` · ${v.vet_name}` : ""}
                                 </div>
@@ -85,14 +85,14 @@ function HealthPage() {
 
                             return (
                                 <li key={v.id} className="py-3">
-                                    <div className="font-medium text-sm">{v.vaccine_name}</div>
+                                    <div className="font-medium text-sm capitalize">{v.vaccine_name}</div>
                                     <div className="text-xs text-muted-foreground">
                                         {pet?.name ?? "—"} · Due{" "}
                                         {new Date(v.next_due_at!).toLocaleDateString()}
                                     </div>
 
                                     {v.administered_by && (
-                                        <div className="text-xs text-muted-foreground">
+                                        <div className="text-xs text-muted-foreground capitalize">
                                             {v.administered_by}
                                         </div>
                                     )}
