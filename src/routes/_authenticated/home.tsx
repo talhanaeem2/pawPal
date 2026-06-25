@@ -37,30 +37,68 @@ function Home() {
   const now = Date.now();
   const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
+  const today = new Date().toDateString();
+
   const groupedSchedule = Object.values(
     schedule.reduce((acc, item) => {
-      const key = `${item.kind}|${item.time_of_day ?? ""}`;
+      const key = [
+        item.kind,
+        item.time_of_day ?? "",
+        item.frequency,
+        item.custom_frequency ?? "",
+      ].join("|");
 
       if (!acc[key]) {
-        acc[key] = {
-          kind: item.kind,
-          time_of_day: item.time_of_day,
-          items: [],
-        };
+        acc[key] = [];
       }
 
-      acc[key].items.push(item);
+      acc[key].push(item);
 
       return acc;
-    }, {} as Record<
-      string,
-      {
-        kind: string;
-        time_of_day: string | null;
-        items: typeof schedule;
-      }
-    >)
-  );
+    }, {} as Record<string, typeof schedule>)
+  ).flatMap((items) => {
+    const doneItems = items.filter(
+      (item) =>
+        item.last_done_at &&
+        new Date(item.last_done_at).toDateString() === today
+    );
+
+    const pendingItems = items.filter(
+      (item) =>
+        !item.last_done_at ||
+        new Date(item.last_done_at).toDateString() !== today
+    );
+
+    const groups: Array<{
+      kind: string;
+      time_of_day: string | null;
+      items: typeof schedule;
+    }> = [];
+
+    if (doneItems.length > 0) {
+      groups.push({
+        kind: items[0].kind,
+        time_of_day: items[0].time_of_day,
+        items: doneItems,
+      });
+    }
+
+    if (pendingItems.length > 1) {
+      groups.push({
+        kind: items[0].kind,
+        time_of_day: items[0].time_of_day,
+        items: pendingItems,
+      });
+    } else if (pendingItems.length === 1) {
+      groups.push({
+        kind: items[0].kind,
+        time_of_day: items[0].time_of_day,
+        items: pendingItems,
+      });
+    }
+
+    return groups;
+  });
 
   const todayData = getPreviewList(groupedSchedule, 5);
   const upcomingVetSorted = vet
