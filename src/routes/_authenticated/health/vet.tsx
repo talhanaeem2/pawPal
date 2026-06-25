@@ -127,12 +127,12 @@ function Group({ title, items, pets, onToggle, onDelete, muted }: {
             return (
               <li key={a.id} className="p-4 flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className={`font-medium text-sm ${a.completed ? "line-through text-muted-foreground" : ""}`}>{a.reason}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className={`font-medium text-sm capitalize ${a.completed ? "line-through text-muted-foreground" : ""}`}>{a.reason}</div>
+                  <div className="text-xs text-muted-foreground capitalize">
                     {pet?.name ?? "—"} · {new Date(a.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                     {a.vet_name ? ` · ${a.vet_name}` : ""}
                   </div>
-                  {a.notes && <p className="text-xs text-muted-foreground mt-1">{a.notes}</p>}
+                  {a.notes && <p className="text-xs text-muted-foreground mt-1 capitalize">{a.notes}</p>}
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => onToggle({ id: a.id, completed: a.completed })}

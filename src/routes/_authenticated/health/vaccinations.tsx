@@ -151,10 +151,10 @@ function Group({ title, items, pets, onDelete }: {
                             <li key={v.id} className="p-4 flex flex-col">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex-1 min-w-0">
-                                        <div className={"font-medium text-sm"}>
+                                        <div className={"font-medium text-sm capitalize"}>
                                             {v.vaccine_name}
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
+                                        <div className="text-xs text-muted-foreground capitalize">
                                             {pet?.name ?? "—"}
                                             {v.administered_by ? ` · ${v.administered_by}` : ""}
                                         </div>
@@ -172,7 +172,7 @@ function Group({ title, items, pets, onDelete }: {
                                         )}
 
                                         {v.notes && (
-                                            <p className="text-xs text-muted-foreground mt-1">
+                                            <p className="text-xs text-muted-foreground mt-1 capitalize">
                                                 {v.notes}
                                             </p>
                                         )}

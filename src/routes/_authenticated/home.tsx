@@ -37,7 +37,32 @@ function Home() {
   const now = Date.now();
   const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
-  const todayData = getPreviewList(schedule, 5);
+  const groupedSchedule = Object.values(
+    schedule.reduce((acc, item) => {
+      const key = `${item.kind}|${item.time_of_day ?? ""}`;
+
+      if (!acc[key]) {
+        acc[key] = {
+          kind: item.kind,
+          time_of_day: item.time_of_day,
+          items: [],
+        };
+      }
+
+      acc[key].items.push(item);
+
+      return acc;
+    }, {} as Record<
+      string,
+      {
+        kind: string;
+        time_of_day: string | null;
+        items: typeof schedule;
+      }
+    >)
+  );
+
+  const todayData = getPreviewList(groupedSchedule, 5);
   const upcomingVetSorted = vet
     .filter((v) => !v.completed && new Date(v.date) >= new Date(Date.now() - 86_400_000))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -98,20 +123,84 @@ function Home() {
           <Empty text="No reminders yet." cta="Add one" href="/schedule" />
         ) : (
           <ul className="divide-y divide-border/60">
-            {todayData.visible.map((s) => {
-              const doneToday = s.last_done_at && new Date(s.last_done_at).toDateString() === new Date().toDateString();
+            {todayData.visible.map((group) => {
+              const isGrouped = group.items.length > 1;
+              const today = new Date().toDateString();
+
+              const doneTodayGroup = group.items.every(
+                (item) =>
+                  item.last_done_at &&
+                  new Date(item.last_done_at).toDateString() === today
+              );
+
+              if (isGrouped) {
+                return (
+                  <li
+                    key={`${group.kind}-${group.time_of_day}`}
+                    className="py-3 flex items-center justify-between"
+                  >
+                    <div className={doneTodayGroup ? "opacity-50" : ""}>
+                      <div className="font-medium text-sm capitalize">
+                        {group.kind}
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        {group.items.length} pets
+                        {group.time_of_day
+                          ? ` · ${formatTime(group.time_of_day)}`
+                          : ""}
+                      </div>
+                    </div>
+
+                    {doneTodayGroup ? (
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary">
+                        Done
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">
+                        {formatFrequency(group.items[0])}
+                      </span>
+                    )}
+                  </li>
+                );
+              }
+
+              const item = group.items[0];
+
+              const doneToday =
+                item.last_done_at &&
+                new Date(item.last_done_at).toDateString() ===
+                new Date().toDateString();
+
+              const pet = pets.find((p) => p.id === item.pet_id);
+
               return (
-                <li key={s.id} className="py-3 flex items-center justify-between">
+                <li
+                  key={item.id}
+                  className="py-3 flex items-center justify-between"
+                >
                   <div className={doneToday ? "opacity-50" : ""}>
-                    <div className="font-medium text-sm">{s.title}</div>
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {formatKind(s)} · {s.time_of_day ? formatTime(s.time_of_day) : formatFrequency(s)}
+                    <div className="font-medium text-sm capitalize">
+                      {formatKind(item)}
+
+                      <div className="text-xs text-muted-foreground capitalize">
+                        {pet?.name ?? item.title} ·{" "}
+                        {item.time_of_day
+                          ? formatTime(item.time_of_day)
+                          : formatFrequency(item)}
+                      </div>
                     </div>
                   </div>
-                  {doneToday
-                    ? <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary capitalize">Done</span>
-                    : <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">{formatFrequency(s)}</span>
-                  }
+
+                  {doneToday ? (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary">
+                      Done
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">
+                      {formatFrequency(item)}
+                    </span>
+                  )}
                 </li>
               );
             })}
@@ -131,8 +220,8 @@ function Home() {
           <ul className="divide-y divide-border/60">
             {upcomingVetData.visible.map((v) => (
               <li key={v.id} className="py-3">
-                <div className="font-medium text-sm">{v.reason}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="font-medium text-sm capitalize">{v.reason}</div>
+                <div className="text-xs text-muted-foreground capitalize">
                   {new Date(v.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                   {v.vet_name ? ` · ${v.vet_name}` : ""}
                 </div>
@@ -186,7 +275,7 @@ function Home() {
               return (
                 <li key={v.id} className="py-3 flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-sm">{v.vaccine_name}</div>
+                    <div className="font-medium text-sm capitalize">{v.vaccine_name}</div>
                     <div className="text-xs text-muted-foreground">
                       Due{" "}
                       {new Date(v.next_due_at!).toLocaleDateString()}
