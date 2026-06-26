@@ -1,6 +1,6 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery } from "@/lib/pet-queries";
+import { petsQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { PetAvatar } from "@/components/ui/pet-avatar";
 import { Field } from "@/components/ui/field";
 import { createEmptyPetForm, Pet, petFormSchema, petToForm } from "@/schemas/pets";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { useAuth } from "@/contexts/auth-context";
 
 export const Route = createFileRoute("/_authenticated/pets")({
   loader: ({ context }) => context.queryClient.ensureQueryData(petsQuery),
@@ -168,6 +169,7 @@ function extractStoragePath(url: string | null | undefined): string | null {
 }
 
 function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
+  const { user } = useAuth();
   const isEdit = !!pet;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -209,10 +211,8 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
 
 
   async function uploadNewPhoto(): Promise<string> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error("Not signed in");
     const ext = photoFile!.name.split(".").pop() || "jpg";
-    const path = `${userData.user.id}/${crypto.randomUUID()}.${ext}`;
+    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
     const { error: uploadError } = await supabase.storage.from("pet-photos").upload(path, photoFile!, { upsert: false });
     if (uploadError) throw uploadError;
     const { data: urlData } = supabase.storage.from("pet-photos").getPublicUrl(path);

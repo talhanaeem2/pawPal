@@ -4,7 +4,7 @@ import { ShieldPlus, Syringe, ChevronRight, Stethoscope } from "lucide-react";
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
-import { petsQuery, vaccinationsQuery, vetQuery } from "@/lib/pet-queries";
+import { petsQuery, vaccinationsQuery, vetQuery } from "@/lib/queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getPreviewList } from "@/lib/utils";
 import { Section } from "@/components/ui/section";

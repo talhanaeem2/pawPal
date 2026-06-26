@@ -1,6 +1,6 @@
 import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, vetQuery } from "@/lib/pet-queries";
+import { petsQuery, vetQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

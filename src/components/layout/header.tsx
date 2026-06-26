@@ -1,11 +1,18 @@
 import { Link } from "@tanstack/react-router";
-import { PawPrint, LogOut } from "lucide-react";
 import { useState } from "react";
+import { PawPrint, LogOut, User, Bell, Settings } from "lucide-react";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { UserAvatar } from "../ui/user-avatar";
+import { useAuth } from "@/contexts/auth-context";
 
 function Header({ onSignOut, loading }: { onSignOut: () => void; loading: boolean }) {
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const { user } = useAuth();
+
+    const avatarUrl = user?.user_metadata?.avatar_url;
+    const name = user?.user_metadata?.full_name || user?.user_metadata?.name;
 
     return (
         <header className="sticky top-0 z-20 backdrop-blur bg-background/80 border-b border-border/60">
@@ -16,15 +23,49 @@ function Header({ onSignOut, loading }: { onSignOut: () => void; loading: boolea
                     </div>
                     <span className="font-display text-lg">Pawpal</span>
                 </Link>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setConfirmOpen(true)}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="Sign out"
-                >
-                    <LogOut className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <UserAvatar
+                                name={name}
+                                avatarUrl={avatarUrl}
+                            />
+                        </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                            <Link to="/">
+                                <User className="mr-2 h-4 w-4" />
+                                Profile
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                            <Link to="/">
+                                <Bell className="mr-2 h-4 w-4" />
+                                Notifications
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                            <Link to="/">
+                                <Settings className="mr-2 h-4 w-4" />
+                                Settings
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setConfirmOpen(true)}
+                        >
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Sign out
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <ConfirmDialog
                     open={confirmOpen}
                     onOpenChange={setConfirmOpen}

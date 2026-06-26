@@ -158,6 +158,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          locale: string
+          notifications_enabled: boolean
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name: string
+          id: string
+          locale?: string
+          notifications_enabled?: boolean
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          locale?: string
+          notifications_enabled?: boolean
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -184,6 +217,45 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      schedule_item_pets: {
+        Row: {
+          created_at: string
+          id: string
+          last_done_at: string | null
+          pet_id: string
+          schedule_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_done_at?: string | null
+          pet_id: string
+          schedule_item_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_done_at?: string | null
+          pet_id?: string
+          schedule_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_item_pets_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_item_pets_schedule_item_id_fkey"
+            columns: ["schedule_item_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schedule_items: {
         Row: {

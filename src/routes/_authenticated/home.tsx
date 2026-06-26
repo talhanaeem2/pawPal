@@ -1,6 +1,6 @@
 import { createFileRoute, type ErrorComponentProps, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery } from "@/lib/pet-queries";
+import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery } from "@/lib/queries";
 import { Calendar, Stethoscope, Activity, Plus, PawPrint, Syringe } from "lucide-react";
 
 import NotFoundState from "@/components/ui/not-found-state";

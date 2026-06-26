@@ -1,4 +1,4 @@
-import { speciesEmoji } from "@/lib/pet-queries";
+import { speciesEmoji } from "@/lib/queries";
 
 export function PetAvatar({
     pet,

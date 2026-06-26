@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityLog, activityLogSchema } from "@/schemas/activity";
 import { Pet, petSchema } from "@/schemas/pets";
+import { Profile, profileSchema } from "@/schemas/profile";
 import { ScheduleItem, scheduleItemSchema } from "@/schemas/schedule";
 import { Vaccination, vaccinationSchema } from "@/schemas/vacination";
 import { VetAppointment, vetAppointmentSchema } from "@/schemas/vet";
@@ -86,6 +87,29 @@ export const activityQuery = queryOptions({
     return parsed.data;
   },
 });
+
+export const profileQuery = (userId: string) =>
+  queryOptions({
+    queryKey: ["profile", userId],
+    queryFn: async (): Promise<Profile> => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (error) throw error;
+
+      const parsed = profileSchema.safeParse(data);
+
+      if (!parsed.success) {
+        console.error(parsed.error);
+        throw new Error("Invalid profile data");
+      }
+
+      return parsed.data;
+    },
+  });
 
 export const speciesEmoji = (s: string) => {
   const map: Record<string, string> = { dog: "🐶", cat: "🐱", rabbit: "🐰", bird: "🐦", fish: "🐠", reptile: "🦎", hamster: "🐹" };

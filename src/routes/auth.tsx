@@ -52,19 +52,21 @@ function AuthPage() {
 
   async function submit(e: React.SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     e.preventDefault();
+    if (loading) return;
+
     setLoading(true);
+
     try {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: `${window.location.origin}/auth` },
         });
-        ;
+
         if (error) throw error;
 
         if (data.session) {
           toast.success("Welcome! You're signed in.");
-          navigate({ to: "/", replace: true });
         } else {
           toast.success("Check your email to verify your account.");
         }
@@ -80,17 +82,21 @@ function AuthPage() {
   }
 
   async function google() {
+    if (loading) return;
+
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth`,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth`,
+        },
+      });
 
-    if (error) {
-      toast.error("Google sign-in failed");
+      if (error) throw error;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);
     }
   }
@@ -135,8 +141,16 @@ function AuthPage() {
             Continue with Google
           </Button>
 
-          <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="mt-5 w-full text-center text-sm text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setEmail("");
+              setPassword("");
+            }}
+            className="mt-5 w-full text-center text-sm text-muted-foreground hover:text-foreground"
+          >
             {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
           </button>
         </div>
