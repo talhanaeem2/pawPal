@@ -67,7 +67,11 @@ function AuthedLayout() {
         return;
       }
 
-      setUser(session.user);
+      setUser((prev) => {
+        if (!prev) return session.user;
+        if (prev.id !== session.user.id) return session.user;
+        return prev;
+      });
     });
 
     return () => subscription.unsubscribe();

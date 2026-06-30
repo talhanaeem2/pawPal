@@ -266,9 +266,7 @@ export type Database = {
           frequency: string | null
           id: string
           kind: string | null
-          last_done_at: string | null
           notes: string | null
-          pet_id: string | null
           time_of_day: string | null
           title: string | null
           updated_at: string | null
@@ -282,9 +280,7 @@ export type Database = {
           frequency?: string | null
           id?: string
           kind?: string | null
-          last_done_at?: string | null
           notes?: string | null
-          pet_id?: string | null
           time_of_day?: string | null
           title?: string | null
           updated_at?: string | null
@@ -298,23 +294,13 @@ export type Database = {
           frequency?: string | null
           id?: string
           kind?: string | null
-          last_done_at?: string | null
           notes?: string | null
-          pet_id?: string | null
           time_of_day?: string | null
           title?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "schedule_items_pet_id_fkey"
-            columns: ["pet_id"]
-            isOneToOne: false
-            referencedRelation: "pets"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       vaccinations: {
         Row: {
