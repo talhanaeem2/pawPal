@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { scheduleItemPetSchema } from "./schedule-item-pets";
+import { scheduleItemPetSchema, schedulePetFormSchema } from "./schedule-item-pets";
 
 // DB SCHEMA (Supabase shape)
 export const scheduleItemSchema = z.object({
@@ -10,8 +10,6 @@ export const scheduleItemSchema = z.object({
     time_of_day: z.string().nullable(),
     frequency: z.string(),
     custom_frequency: z.string().nullable(),
-    dosage: z.string().nullable(),
-    notes: z.string().nullable(),
 });
 
 export type ScheduleItem = z.infer<typeof scheduleItemSchema>;
@@ -31,8 +29,7 @@ export const scheduleFormSchema = z.object({
     time_of_day: z.string().default(""),
     frequency: z.string(),
     custom_frequency: z.string().default(""),
-    dosage: z.string().default(""),
-    notes: z.string().default(""),
+    pet_details: z.array(schedulePetFormSchema),
 });
 
 export type ScheduleForm = z.infer<typeof scheduleFormSchema>;
@@ -46,8 +43,7 @@ export const scheduleFormDefaults: ScheduleForm = {
     time_of_day: "",
     frequency: "daily",
     custom_frequency: "",
-    dosage: "",
-    notes: "",
+    pet_details: [],
 };
 
 // DB → Form
@@ -60,8 +56,11 @@ export function scheduleToForm(item: ScheduleWithPets): ScheduleForm {
         time_of_day: item.time_of_day ?? "",
         frequency: item.frequency,
         custom_frequency: item.custom_frequency ?? "",
-        dosage: item.dosage ?? "",
-        notes: item.notes ?? "",
+        pet_details: item.schedule_item_pets.map((p) => ({
+            pet_id: p.pet_id,
+            dosage: p.dosage ?? "",
+            notes: p.notes ?? "",
+        }))
     };
 }
 
@@ -70,5 +69,14 @@ export function createEmptyScheduleForm(petId?: string): ScheduleForm {
     return {
         ...scheduleFormDefaults,
         pet_ids: petId ? [petId] : [],
+        pet_details: petId
+            ? [
+                {
+                    pet_id: petId,
+                    dosage: "",
+                    notes: "",
+                },
+            ]
+            : [],
     };
 }

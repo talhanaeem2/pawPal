@@ -15,6 +15,14 @@ export function useZodForm<T>(
             ...prev,
             [key]: value,
         }));
+
+        setErrors((prev) => {
+            if (!(key in prev)) return prev;
+
+            const next = { ...prev };
+            delete next[key as string];
+            return next;
+        });
     }
 
     function reset(newValues?: T) {
@@ -22,29 +30,35 @@ export function useZodForm<T>(
         setErrors({});
     }
 
-    function validate(): boolean {
+    function parse() {
         const result = schema.safeParse(values);
 
         if (result.success) {
             setErrors({});
-            return true;
+            return result;
         }
 
         const fieldErrors: Record<string, string> = {};
 
         for (const issue of result.error.issues) {
             const path = issue.path[0];
-            if (typeof path === "string") {
+
+            if (typeof path === "string" && !fieldErrors[path]) {
                 fieldErrors[path] = issue.message;
             }
         }
 
         setErrors(fieldErrors);
-        return false;
+
+        return result;
     }
 
-    function getValidated(): T | null {
-        const result = schema.safeParse(values);
+    function validate() {
+        return parse().success;
+    }
+
+    function getValidated() {
+        const result = parse();
         return result.success ? result.data : null;
     }
 

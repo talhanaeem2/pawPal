@@ -27,6 +27,7 @@ export const petsQuery = queryOptions({
 export const scheduleQuery = queryOptions({
   queryKey: ["schedule_items"],
   queryFn: async (): Promise<ScheduleWithPets[]> => {
+
     const { data, error } = await supabase
       .from("schedule_items")
       .select(`
@@ -35,11 +36,18 @@ export const scheduleQuery = queryOptions({
           id,
           pet_id,
           schedule_item_id,
-          last_done_at
+          dosage,
+          notes,
+          schedule_completions (
+            id,
+            completed_on
+          )
         )
       `)
       .order("time_of_day", { ascending: true });
+
     if (error) throw error;
+
     const parsed = z.array(scheduleWithPetsSchema).safeParse(data ?? []);
 
     if (!parsed.success) {

@@ -93,9 +93,15 @@ export function getVaccinationToneLabel(tone: VaccinationTone) {
 }
 
 export function formatPetNames(names: string[]) {
-  if (names.length <= 3) {
-    return names.join(", ");
+  const validNames = names.filter(Boolean);
+
+  if (validNames.length <= 3) {
+    return validNames.join(", ");
   }
 
-  return `${names.slice(0, 3).join(", ")} +${names.length - 3}`;
+  return `${validNames.slice(0, 3).join(", ")} +${validNames.length - 3}`;
+}
+
+export function todayDateString() {
+  return new Date().toISOString().slice(0, 10);
 }
