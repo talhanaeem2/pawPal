@@ -8,7 +8,7 @@ import InlineErrorState from "@/components/ui/inline-error-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import PushPrompt from "@/components/ui/push-prompt";
 import { PetAvatar } from "@/components/ui/pet-avatar";
-import { formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
+import { formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel, todayDateString } from "@/lib/utils";
 import { Section } from "@/components/ui/section";
 import { Empty } from "@/components/ui/empty";
 
@@ -36,6 +36,7 @@ function Home() {
 
   const now = Date.now();
   const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  const today = todayDateString();
 
   const todayData = getPreviewList(schedule, 5);
   const upcomingVetSorted = vet
@@ -99,7 +100,6 @@ function Home() {
         ) : (
           <ul className="divide-y divide-border/60">
             {todayData.visible.map((item) => {
-              const today = new Date().toDateString();
               const petStatuses = item.schedule_item_pets
                 .map((schedulePet) => ({
                   ...schedulePet,
