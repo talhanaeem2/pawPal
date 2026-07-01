@@ -40,6 +40,7 @@ function SchedulePage() {
   const { data: items } = useSuspenseQuery(scheduleQuery);
   const qc = useQueryClient();
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const today = todayDateString();
 
   const toggle = useMutation({
     mutationFn: async ({
@@ -117,22 +118,31 @@ function SchedulePage() {
 
       return {
         markDone,
-        multiplePets
+        allPets: !scheduleItemPetId,
+        multiplePets,
       };
     },
 
-    onSuccess: ({ markDone, multiplePets }) => {
+    onSuccess: ({ markDone, multiplePets, allPets }) => {
       qc.invalidateQueries({ queryKey: ["schedule_items"] });
 
-      toast.success(
-        markDone
-          ? multiplePets
-            ? "Marked all pets done"
-            : "Marked done"
-          : multiplePets
-            ? "Marked all pets undone"
-            : "Marked undone"
-      );
+      let message: string;
+
+      if (markDone) {
+        if (allPets && multiplePets) {
+          message = "Marked all pets done";
+        } else {
+          message = "Marked done";
+        }
+      } else {
+        if (allPets && multiplePets) {
+          message = "Marked all pets undone";
+        } else {
+          message = "Marked undone";
+        }
+      }
+
+      toast.success(message);
     },
 
     onError: (e) =>
@@ -150,7 +160,6 @@ function SchedulePage() {
   });
 
   const confirmItem = items.find((i) => i.id === confirmId);
-  const today = todayDateString();
 
   return (
     <div className="space-y-5">
