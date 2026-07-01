@@ -1,5 +1,5 @@
 import { User as UserIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type UserAvatarProps = {
     name?: string | null;
@@ -25,6 +25,10 @@ export function UserAvatar({
     className = "h-8 w-8",
 }: UserAvatarProps) {
     const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+        setImageError(false);
+    }, [avatarUrl]);
 
     const initials = getInitials(name);
 

@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ActivityLog, activityLogSchema } from "@/schemas/activity";
 import { Pet, petSchema } from "@/schemas/pets";
 import { Profile, profileSchema } from "@/schemas/profile";
-import { ScheduleItem, scheduleItemSchema } from "@/schemas/schedule";
+import { ScheduleWithPets, scheduleWithPetsSchema } from "@/schemas/schedule";
 import { Vaccination, vaccinationSchema } from "@/schemas/vacination";
 import { VetAppointment, vetAppointmentSchema } from "@/schemas/vet";
 import { queryOptions } from "@tanstack/react-query";
@@ -26,10 +26,29 @@ export const petsQuery = queryOptions({
 
 export const scheduleQuery = queryOptions({
   queryKey: ["schedule_items"],
-  queryFn: async (): Promise<ScheduleItem[]> => {
-    const { data, error } = await supabase.from("schedule_items").select("*").order("time_of_day", { ascending: true });
+  queryFn: async (): Promise<ScheduleWithPets[]> => {
+
+    const { data, error } = await supabase
+      .from("schedule_items")
+      .select(`
+        *,
+        schedule_item_pets (
+          id,
+          pet_id,
+          schedule_item_id,
+          dosage,
+          notes,
+          schedule_completions (
+            id,
+            completed_on
+          )
+        )
+      `)
+      .order("time_of_day", { ascending: true });
+
     if (error) throw error;
-    const parsed = z.array(scheduleItemSchema).safeParse(data ?? []);
+
+    const parsed = z.array(scheduleWithPetsSchema).safeParse(data ?? []);
 
     if (!parsed.success) {
       console.error(parsed.error);

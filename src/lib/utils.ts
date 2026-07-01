@@ -91,3 +91,17 @@ export function getVaccinationToneLabel(tone: VaccinationTone) {
       return "Scheduled";
   }
 }
+
+export function formatPetNames(names: string[]) {
+  const validNames = names.filter(Boolean);
+
+  if (validNames.length <= 3) {
+    return validNames.join(", ");
+  }
+
+  return `${validNames.slice(0, 3).join(", ")} +${validNames.length - 3}`;
+}
+
+export function todayDateString() {
+  return new Date().toISOString().slice(0, 10);
+}

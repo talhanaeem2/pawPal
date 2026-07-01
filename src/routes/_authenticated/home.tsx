@@ -8,7 +8,7 @@ import InlineErrorState from "@/components/ui/inline-error-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import PushPrompt from "@/components/ui/push-prompt";
 import { PetAvatar } from "@/components/ui/pet-avatar";
-import { formatFrequency, formatKind, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
+import { formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
 import { Section } from "@/components/ui/section";
 import { Empty } from "@/components/ui/empty";
 
@@ -37,70 +37,7 @@ function Home() {
   const now = Date.now();
   const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
-  const today = new Date().toDateString();
-
-  const groupedSchedule = Object.values(
-    schedule.reduce((acc, item) => {
-      const key = [
-        item.kind,
-        item.time_of_day ?? "",
-        item.frequency,
-        item.custom_frequency ?? "",
-      ].join("|");
-
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-
-      acc[key].push(item);
-
-      return acc;
-    }, {} as Record<string, typeof schedule>)
-  ).flatMap((items) => {
-    const doneItems = items.filter(
-      (item) =>
-        item.last_done_at &&
-        new Date(item.last_done_at).toDateString() === today
-    );
-
-    const pendingItems = items.filter(
-      (item) =>
-        !item.last_done_at ||
-        new Date(item.last_done_at).toDateString() !== today
-    );
-
-    const groups: Array<{
-      kind: string;
-      time_of_day: string | null;
-      items: typeof schedule;
-    }> = [];
-
-    if (doneItems.length > 0) {
-      groups.push({
-        kind: items[0].kind,
-        time_of_day: items[0].time_of_day,
-        items: doneItems,
-      });
-    }
-
-    if (pendingItems.length > 1) {
-      groups.push({
-        kind: items[0].kind,
-        time_of_day: items[0].time_of_day,
-        items: pendingItems,
-      });
-    } else if (pendingItems.length === 1) {
-      groups.push({
-        kind: items[0].kind,
-        time_of_day: items[0].time_of_day,
-        items: pendingItems,
-      });
-    }
-
-    return groups;
-  });
-
-  const todayData = getPreviewList(groupedSchedule, 5);
+  const todayData = getPreviewList(schedule, 5);
   const upcomingVetSorted = vet
     .filter((v) => !v.completed && new Date(v.date) >= new Date(Date.now() - 86_400_000))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -161,56 +98,29 @@ function Home() {
           <Empty text="No reminders yet." cta="Add one" href="/schedule" />
         ) : (
           <ul className="divide-y divide-border/60">
-            {todayData.visible.map((group) => {
-              const isGrouped = group.items.length > 1;
+            {todayData.visible.map((item) => {
               const today = new Date().toDateString();
-
-              const doneTodayGroup = group.items.every(
-                (item) =>
-                  item.last_done_at &&
-                  new Date(item.last_done_at).toDateString() === today
-              );
-
-              if (isGrouped) {
-                return (
-                  <li
-                    key={`${group.kind}-${group.time_of_day}`}
-                    className="py-3 flex items-center justify-between"
-                  >
-                    <div className={doneTodayGroup ? "opacity-50" : ""}>
-                      <div className="font-medium text-sm capitalize">
-                        {group.kind}
-                      </div>
-
-                      <div className="text-xs text-muted-foreground">
-                        {group.items.length} pets
-                        {group.time_of_day
-                          ? ` · ${formatTime(group.time_of_day)}`
-                          : ""}
-                      </div>
-                    </div>
-
-                    {doneTodayGroup ? (
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary">
-                        Done
-                      </span>
-                    ) : (
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">
-                        {formatFrequency(group.items[0])}
-                      </span>
-                    )}
-                  </li>
+              const petStatuses = item.schedule_item_pets
+                .map((schedulePet) => ({
+                  ...schedulePet,
+                  pet: pets.find((p) => p.id === schedulePet.pet_id),
+                  done: schedulePet.schedule_completions.some(
+                    (c) => c.completed_on === today
+                  ),
+                }))
+                .sort((a, b) =>
+                  (a.pet?.name ?? "").localeCompare(b.pet?.name ?? "")
                 );
-              }
-
-              const item = group.items[0];
 
               const doneToday =
-                item.last_done_at &&
-                new Date(item.last_done_at).toDateString() ===
-                new Date().toDateString();
+                petStatuses.length > 0 &&
+                petStatuses.every((p) => p.done);
 
-              const pet = pets.find((p) => p.id === item.pet_id);
+              const petLabel = formatPetNames(
+                petStatuses
+                  .map((p) => p.pet?.name)
+                  .filter((name): name is string => !!name)
+              );
 
               return (
                 <li
@@ -219,14 +129,15 @@ function Home() {
                 >
                   <div className={doneToday ? "opacity-50" : ""}>
                     <div className="font-medium text-sm capitalize">
-                      {formatKind(item)}
+                      {item.title}
+                    </div>
 
-                      <div className="text-xs text-muted-foreground capitalize">
-                        {pet?.name ?? item.title} ·{" "}
-                        {item.time_of_day
-                          ? formatTime(item.time_of_day)
-                          : formatFrequency(item)}
-                      </div>
+                    <div className="text-xs text-muted-foreground capitalize">
+                      {petLabel && `${petLabel} · `}
+                      {formatKind(item)} ·{" "}
+                      {item.time_of_day
+                        ? formatTime(item.time_of_day)
+                        : formatFrequency(item)}
                     </div>
                   </div>
 

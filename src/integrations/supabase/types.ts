@@ -218,25 +218,60 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_completions: {
+        Row: {
+          completed_at: string
+          completed_on: string
+          created_at: string
+          id: string
+          schedule_item_pet_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_on?: string
+          created_at?: string
+          id?: string
+          schedule_item_pet_id: string
+        }
+        Update: {
+          completed_at?: string
+          completed_on?: string
+          created_at?: string
+          id?: string
+          schedule_item_pet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_completions_schedule_item_pet_id_fkey"
+            columns: ["schedule_item_pet_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_item_pets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedule_item_pets: {
         Row: {
           created_at: string
+          dosage: string | null
           id: string
-          last_done_at: string | null
+          notes: string | null
           pet_id: string
           schedule_item_id: string
         }
         Insert: {
           created_at?: string
+          dosage?: string | null
           id?: string
-          last_done_at?: string | null
+          notes?: string | null
           pet_id: string
           schedule_item_id: string
         }
         Update: {
           created_at?: string
+          dosage?: string | null
           id?: string
-          last_done_at?: string | null
+          notes?: string | null
           pet_id?: string
           schedule_item_id?: string
         }
@@ -262,13 +297,9 @@ export type Database = {
           created_at: string | null
           custom_frequency: string | null
           custom_kind: string | null
-          dosage: string | null
           frequency: string | null
           id: string
           kind: string | null
-          last_done_at: string | null
-          notes: string | null
-          pet_id: string | null
           time_of_day: string | null
           title: string | null
           updated_at: string | null
@@ -278,13 +309,9 @@ export type Database = {
           created_at?: string | null
           custom_frequency?: string | null
           custom_kind?: string | null
-          dosage?: string | null
           frequency?: string | null
           id?: string
           kind?: string | null
-          last_done_at?: string | null
-          notes?: string | null
-          pet_id?: string | null
           time_of_day?: string | null
           title?: string | null
           updated_at?: string | null
@@ -294,27 +321,15 @@ export type Database = {
           created_at?: string | null
           custom_frequency?: string | null
           custom_kind?: string | null
-          dosage?: string | null
           frequency?: string | null
           id?: string
           kind?: string | null
-          last_done_at?: string | null
-          notes?: string | null
-          pet_id?: string | null
           time_of_day?: string | null
           title?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "schedule_items_pet_id_fkey"
-            columns: ["pet_id"]
-            isOneToOne: false
-            referencedRelation: "pets"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       vaccinations: {
         Row: {
