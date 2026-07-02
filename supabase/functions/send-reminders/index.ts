@@ -43,7 +43,14 @@ function todayDateStr(d: Date) {
 async function findDueScheduleNotifications(now: Date): Promise<DueNotification[]> {
   const { data: items, error } = await supabase
     .from("schedule_items")
-    .select("id, user_id, pet_id, title, kind, time_of_day, frequency, last_done_at, pets(name)")
+    .select(`id, user_id, title, kind, time_of_day, frequency, 
+    schedule_item_pets (
+    pet_id,
+    pets (name),
+    schedule_completions (
+      completed_on
+    )
+  )`)
     .not("time_of_day", "is", null);
 
   if (error) {
@@ -58,18 +65,37 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
   for (const item of items ?? []) {
     if (item.frequency !== "daily") continue; // MVP: only daily-frequency items are time-triggered for now
 
-    const doneToday =
-      item.last_done_at &&
-      todayDateStr(new Date(new Date(item.last_done_at).getTime() + LOCAL_OFFSET_MINUTES * 60_000)) === today;
-    if (doneToday) continue;
+    const petStatuses = item.schedule_item_pets ?? [];
+
+    const pendingPets = petStatuses.filter((pet) => {
+      const completions = pet.schedule_completions ?? [];
+
+      if (completions.length === 0) {
+        return true;
+      }
+
+      const latest = completions.reduce((a, b) =>
+        a.completed_on > b.completed_on ? a : b
+      );
+
+      return latest.completed_on !== today;
+    });
 
     const [h, m] = String(item.time_of_day).split(":").map(Number);
     const target = new Date(localNow);
-    target.setUTCHours(h, m, 0, 0);
+    target.setHours(h, m, 0, 0);
     const targetMs = target.getTime();
     const nowMs = localNow.getTime();
 
-    const petName = (item as { pets?: { name?: string } }).pets?.name ?? "your pet";
+    if (pendingPets.length === 0) {
+      continue;
+    }
+
+    const petNames = pendingPets
+      .flatMap((p) => p.pets ?? [])
+      .map((pet) => pet.name)
+      .filter((n): n is string => !!n)
+      .sort();
 
     if (withinWindow(targetMs, nowMs, WINDOW_MINUTES)) {
       out.push({
@@ -78,7 +104,11 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
         fireDate: today,
         userId: item.user_id,
         title: `Time for ${item.title}`,
-        body: `${petName} · ${item.kind}`,
+        body: buildScheduleBody(
+          item.kind,
+          petNames,
+          false,
+        ),
       });
     } else if (withinWindow(targetMs - HEADS_UP_MINUTES * 60_000, nowMs, WINDOW_MINUTES)) {
       out.push({
@@ -87,7 +117,11 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
         fireDate: today,
         userId: item.user_id,
         title: `Coming up: ${item.title}`,
-        body: `In ${HEADS_UP_MINUTES} minutes · ${petName}`,
+        body: buildScheduleBody(
+          item.kind,
+          petNames,
+          true,
+        ),
       });
     }
   }
@@ -139,6 +173,46 @@ async function findDueVetNotifications(now: Date): Promise<DueNotification[]> {
   return out;
 }
 
+function formatPetNames(names: string[]): string {
+  if (names.length === 1) {
+    return names[0];
+  }
+
+  if (names.length === 2) {
+    return `${names[0]} and ${names[1]}`;
+  }
+
+  if (names.length === 3) {
+    return `${names[0]}, ${names[1]} and ${names[2]}`;
+  }
+
+  const shown = names.slice(0, 3).join(", ");
+  return `${shown} +${names.length - 3} more`;
+}
+
+function buildScheduleBody(
+  kind: string | undefined,
+  names: string[],
+  isHeadsUp: boolean,
+) {
+  const pets = formatPetNames(names);
+
+  const action =
+    kind
+      ? kind.charAt(0).toUpperCase() + kind.slice(1)
+      : "Task";
+
+  if (names.length <= 3) {
+    return isHeadsUp
+      ? `In ${HEADS_UP_MINUTES} minutes · ${action} for ${pets}`
+      : `${action} for ${pets}`;
+  }
+
+  return isHeadsUp
+    ? `In ${HEADS_UP_MINUTES} minutes · ${pets} need ${action}`
+    : `${pets} need ${action}`;
+}
+
 async function sendToUser(userId: string, payload: { title: string; body: string }) {
   const { data: subs, error } = await supabase
     .from("push_subscriptions")
@@ -177,6 +251,8 @@ export default {
     }
 
     const now = new Date();
+    now.setSeconds(0, 0);
+
     const due = [
       ...(await findDueScheduleNotifications(now)),
       ...(await findDueVetNotifications(now)),

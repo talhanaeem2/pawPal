@@ -1,12 +1,13 @@
 import { createContext, useContext } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Tables } from "@/integrations/supabase/types";
-
-type Profile = Tables<"profiles">;
+import { Profile } from "@/schemas/profile";
 
 type AuthContextValue = {
     user: User;
     profile: Profile;
+    refetchProfile: () => Promise<unknown>;
+    signOut: () => void;
+    signingOut: boolean;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

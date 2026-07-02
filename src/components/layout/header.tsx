@@ -7,12 +7,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { UserAvatar } from "../ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 
-function Header({ onSignOut, loading }: { onSignOut: () => void; loading: boolean }) {
+function Header() {
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const { user } = useAuth();
+    const { profile, signOut, signingOut } = useAuth();
 
-    const avatarUrl = user?.user_metadata?.avatar_url;
-    const name = user?.user_metadata?.full_name || user?.user_metadata?.name;
+    const avatarUrl = profile?.avatar_url;
+    const name = profile?.display_name;
 
     return (
         <header className="sticky top-0 z-20 backdrop-blur bg-background/80 border-b border-border/60">
@@ -35,13 +35,13 @@ function Header({ onSignOut, loading }: { onSignOut: () => void; loading: boolea
 
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                            <Link to="/">
+                            <Link to="/profile">
                                 <User className="mr-2 h-4 w-4" />
                                 Profile
                             </Link>
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem asChild>
+                        {/* <DropdownMenuItem asChild>
                             <Link to="/">
                                 <Bell className="mr-2 h-4 w-4" />
                                 Notifications
@@ -53,7 +53,7 @@ function Header({ onSignOut, loading }: { onSignOut: () => void; loading: boolea
                                 <Settings className="mr-2 h-4 w-4" />
                                 Settings
                             </Link>
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
 
                         <DropdownMenuSeparator />
 
@@ -73,8 +73,8 @@ function Header({ onSignOut, loading }: { onSignOut: () => void; loading: boolea
                     description="You will need to log in again."
                     confirmText="Sign out"
                     confirmVariant="destructive"
-                    loading={loading}
-                    onConfirm={onSignOut}
+                    loading={signingOut}
+                    onConfirm={signOut}
                 />
             </div>
         </header>

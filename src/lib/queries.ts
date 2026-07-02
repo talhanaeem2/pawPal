@@ -119,14 +119,7 @@ export const profileQuery = (userId: string) =>
 
       if (error) throw error;
 
-      const parsed = profileSchema.safeParse(data);
-
-      if (!parsed.success) {
-        console.error(parsed.error);
-        throw new Error("Invalid profile data");
-      }
-
-      return parsed.data;
+      return profileSchema.parse(data);
     },
   });
 

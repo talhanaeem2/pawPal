@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPetsRouteImport } from './routes/_authenticated/pets'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
@@ -44,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedScheduleRoute = AuthenticatedScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPetsRoute = AuthenticatedPetsRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/activity': typeof AuthenticatedActivityRoute
   '/home': typeof AuthenticatedHomeRoute
   '/pets': typeof AuthenticatedPetsRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/activity': typeof AuthenticatedActivityRoute
   '/home': typeof AuthenticatedHomeRoute
   '/pets': typeof AuthenticatedPetsRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/pets': typeof AuthenticatedPetsRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/_authenticated/health/vet': typeof AuthenticatedHealthVetRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/home'
     | '/pets'
+    | '/profile'
     | '/schedule'
     | '/health/vaccinations'
     | '/health/vet'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/home'
     | '/pets'
+    | '/profile'
     | '/schedule'
     | '/health/vaccinations'
     | '/health/vet'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/_authenticated/activity'
     | '/_authenticated/home'
     | '/_authenticated/pets'
+    | '/_authenticated/profile'
     | '/_authenticated/schedule'
     | '/_authenticated/health/vaccinations'
     | '/_authenticated/health/vet'
@@ -209,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof AuthenticatedScheduleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/pets': {
@@ -286,6 +305,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedPetsRoute: typeof AuthenticatedPetsRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
 }
 
@@ -294,6 +314,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedPetsRoute: AuthenticatedPetsRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
 }
 

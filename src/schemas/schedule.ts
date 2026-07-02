@@ -25,9 +25,9 @@ export const scheduleFormSchema = z.object({
     pet_ids: z.array(z.string()).min(1, "Select at least one pet"),
     kind: z.string(),
     custom_kind: z.string().default(""),
-    title: z.string().trim().min(1),
+    title: z.string().trim().min(1, "Title is required"),
     time_of_day: z.string().default(""),
-    frequency: z.string(),
+    frequency: z.string().min(1, "Frequency is required"),
     custom_frequency: z.string().default(""),
     pet_details: z.array(schedulePetFormSchema),
 });

@@ -23,7 +23,7 @@ function AuthedLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [user, setUser] = useState<User | null>(null);
   const [checked, setChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const {
     data: profile,
     isLoading: profileLoading,
@@ -94,18 +94,22 @@ function AuthedLayout() {
   }
 
   async function signOut() {
-    setLoading(true);
-    await supabase.auth.signOut();
+    try {
+      setSigningOut(true);
 
-    await qc.cancelQueries();
-    qc.clear();
-    setLoading(false);
+      await supabase.auth.signOut();
+
+      await qc.cancelQueries();
+      qc.clear();
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile }}>
+    <AuthContext.Provider value={{ user, profile, refetchProfile: refetch, signOut, signingOut, }}>
       <div className="min-h-screen pb-24">
-        <Header onSignOut={signOut} loading={loading} />
+        <Header />
         <main className="mx-auto max-w-2xl px-5 py-6">
           <Outlet />
         </main>

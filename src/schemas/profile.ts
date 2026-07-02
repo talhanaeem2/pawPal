@@ -14,7 +14,7 @@ export const profileSchema = z.object({
 export type Profile = z.infer<typeof profileSchema>;
 
 export const profileFormSchema = z.object({
-    display_name: z.string().trim().min(1),
+    display_name: z.string().trim().min(1, "Name is required"),
     avatar_url: z.string().default(""),
     timezone: z.string().default("UTC"),
     locale: z.string().default("en"),
