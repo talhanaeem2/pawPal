@@ -227,10 +227,7 @@ function VaccinationsDialog({ pets, item, trigger }: { pets: { id: string; name:
         mutationFn: async () => {
             const data = form.getValidated();
 
-            if (!data) {
-                toast.error("Fix validation errors first");
-                return;
-            }
+            if (!data) return;
             const payload = {
                 pet_id: data.pet_id,
                 vaccine_name: data.vaccine_name.trim(),

@@ -184,10 +184,7 @@ function VetDialog({ pets, item, trigger }: { pets: { id: string; name: string }
     mutationFn: async () => {
       const data = form.getValidated();
 
-      if (!data) {
-        toast.error("Fix validation errors first");
-        return;
-      }
+      if (!data) return;
       const payload = {
         pet_id: data.pet_id,
         date: new Date(data.date).toISOString(),

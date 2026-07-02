@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -19,6 +20,34 @@ function getInitials(name?: string | null) {
     return parts[0].slice(0, 2).toUpperCase();
 }
 
+function getContentSize(size: string) {
+    if (size.includes("20") || size.includes("24")) {
+        return {
+            text: "text-2xl",
+            icon: "h-10 w-10",
+        };
+    }
+
+    if (size.includes("16")) {
+        return {
+            text: "text-xl",
+            icon: "h-8 w-8",
+        };
+    }
+
+    if (size.includes("12")) {
+        return {
+            text: "text-base",
+            icon: "h-6 w-6",
+        };
+    }
+
+    return {
+        text: "text-xs",
+        icon: "h-4 w-4",
+    };
+}
+
 export function UserAvatar({
     name,
     avatarUrl,
@@ -31,33 +60,34 @@ export function UserAvatar({
     }, [avatarUrl]);
 
     const initials = getInitials(name);
+    const size = getContentSize(className);
 
     if (avatarUrl && !imageError) {
         return (
             <img
                 src={avatarUrl}
                 alt={name ?? "User"}
-                className={`${className} rounded-full object-cover`}
                 onError={() => setImageError(true)}
+                className={cn(
+                    "rounded-full object-cover shrink-0",
+                    className
+                )}
             />
-        );
-    }
-
-    if (initials) {
-        return (
-            <div
-                className={`${className} rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium`}
-            >
-                {initials}
-            </div>
         );
     }
 
     return (
         <div
-            className={`${className} rounded-full bg-primary/20 flex items-center justify-center`}
+            className={cn(
+                "rounded-full bg-primary/20 flex items-center justify-center shrink-0 font-semibold select-none",
+                className
+            )}
         >
-            <UserIcon className="h-4 w-4" />
+            {initials ? (
+                <span className={size.text}>{initials}</span>
+            ) : (
+                <UserIcon className={size.icon} />
+            )}
         </div>
     );
 }

@@ -630,11 +630,8 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
           onSubmit={(e) => {
             e.preventDefault();
             const data = form.getValidated();
-            console.log(form.errors);
-            if (!data) {
-              toast.error("Fix validation errors first");
-              return;
-            }
+
+            if (!data) return;
             save.mutate(data);
           }}
           className="flex flex-1 flex-col min-h-0"

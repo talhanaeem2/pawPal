@@ -14,8 +14,8 @@ export type VetAppointment = z.infer<typeof vetAppointmentSchema>;
 
 export const vetAppointmentFormSchema = z.object({
     pet_id: z.string().min(1),
-    date: z.string().min(1),
-    reason: z.string().trim().min(1),
+    date: z.string().min(1, "Date is required"),
+    reason: z.string().trim().min(1, "Reason is required"),
     vet_name: z.string().default(""),
     notes: z.string().default(""),
     completed: z.boolean().default(false),

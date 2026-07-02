@@ -14,7 +14,7 @@ export type ActivityLog = z.infer<typeof activityLogSchema>;
 
 export const activityLogFormSchema = z.object({
     pet_id: z.string().min(1),
-    activity_type: z.string().trim().min(1),
+    activity_type: z.string().trim().min(1, "Activity type is required"),
     duration_min: z.string().default(""),
     weight: z.string().default(""),
     notes: z.string().default(""),

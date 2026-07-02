@@ -20,6 +20,7 @@ import { Field } from "@/components/ui/field";
 import { createEmptyPetForm, Pet, petFormSchema, petToForm } from "@/schemas/pets";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useAuth } from "@/contexts/auth-context";
+import { extractStoragePath } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/pets")({
   loader: ({ context }) => context.queryClient.ensureQueryData(petsQuery),
@@ -63,7 +64,7 @@ function PetCard({ pet }: { pet: Pet }) {
     mutationFn: async () => {
       const { error } = await supabase.from("pets").delete().eq("id", pet.id);
       if (error) throw error;
-      const path = extractStoragePath(pet.photo_url);
+      const path = extractStoragePath(pet.photo_url, "pet-photos");
       if (path) {
         const { error: storageError } = await supabase.storage.from("pet-photos").remove([path]);
         if (storageError) console.error("[storage] delete error:", storageError);
@@ -158,16 +159,6 @@ function PetCard({ pet }: { pet: Pet }) {
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-function extractStoragePath(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const markers = ["/storage/v1/object/public/pet-photos/", "/object/public/pet-photos/"];
-  for (const marker of markers) {
-    const idx = url.indexOf(marker);
-    if (idx !== -1) return decodeURIComponent(url.slice(idx + marker.length)).split("?")[0];
-  }
-  return null;
-}
-
 function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
   const { user } = useAuth();
   const isEdit = !!pet;
@@ -223,10 +214,7 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
     mutationFn: async () => {
       const data = form.getValidated();
 
-      if (!data) {
-        toast.error("Fix validation errors first");
-        return;
-      }
+      if (!data) return;
 
       setUploading(true);
       let photo_url: string | null | undefined = undefined;
@@ -255,7 +243,7 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
       if (error) throw error;
 
       if (isEdit && photo_url !== undefined) {
-        const oldPath = extractStoragePath(pet!.photo_url);
+        const oldPath = extractStoragePath(pet!.photo_url, "pet-photos");
         if (oldPath) await supabase.storage.from("pet-photos").remove([oldPath]);
       }
     },

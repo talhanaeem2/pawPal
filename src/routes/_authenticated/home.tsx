@@ -9,7 +9,7 @@ import InlineLoader from "@/components/ui/inline-loader";
 import PushPrompt from "@/components/ui/push-prompt";
 import { PetAvatar } from "@/components/ui/pet-avatar";
 import { formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel, todayDateString } from "@/lib/utils";
-import { Section } from "@/components/ui/section";
+import { Section } from "@/components/layout/section";
 import { Empty } from "@/components/ui/empty";
 
 export const Route = createFileRoute("/_authenticated/home")({
@@ -83,7 +83,7 @@ function Home() {
 
       <PushPrompt />
 
-      <div className="flex gap-3 overflow-x-auto -mx-5 px-5 pb-1">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
         {pets.map((p) => (
           <Link key={p.id} to="/pets"
             className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-(--shadow-soft) hover:scale-[1.02] transition">

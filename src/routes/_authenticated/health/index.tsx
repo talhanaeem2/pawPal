@@ -7,7 +7,7 @@ import InlineErrorState from "@/components/ui/inline-error-state";
 import { petsQuery, vaccinationsQuery, vetQuery } from "@/lib/queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getPreviewList } from "@/lib/utils";
-import { Section } from "@/components/ui/section";
+import { Section } from "@/components/layout/section";
 import { Empty } from "@/components/ui/empty";
 
 export const Route = createFileRoute("/_authenticated/health/")({

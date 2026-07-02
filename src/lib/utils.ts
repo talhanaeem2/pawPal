@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { ScheduleItem } from "@/schemas/schedule";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -104,4 +105,38 @@ export function formatPetNames(names: string[]) {
 
 export function todayDateString() {
   return new Date().toISOString().slice(0, 10);
+}
+
+export async function getCurrentUserId() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  return user.id;
+}
+
+export function extractStoragePath(
+  url: string | null | undefined,
+  bucket: string
+): string | null {
+  if (!url) return null;
+
+  const markers = [
+    `/storage/v1/object/public/${bucket}/`,
+    `/object/public/${bucket}/`,
+  ];
+
+  for (const marker of markers) {
+    const idx = url.indexOf(marker);
+
+    if (idx !== -1) {
+      return decodeURIComponent(url.slice(idx + marker.length)).split("?")[0];
+    }
+  }
+
+  return null;
 }
