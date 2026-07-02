@@ -251,7 +251,6 @@ export default {
     }
 
     const now = new Date();
-    now.setSeconds(0, 0);
 
     const due = [
       ...(await findDueScheduleNotifications(now)),
