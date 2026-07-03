@@ -709,7 +709,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Frequency">
+              <Field label="Frequency" error={form.errors.frequency}>
                 <Select value={form.values.frequency} onValueChange={(v) => form.setField("frequency", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -742,7 +742,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
               </Field>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Title">
+              <Field label="Title" error={form.errors.title}>
                 <Input value={form.values.title} onChange={(e) => form.setField("title", e.target.value)} placeholder="Morning kibble" required />
               </Field>
               <Field label="Time">

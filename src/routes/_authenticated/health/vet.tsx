@@ -261,10 +261,10 @@ function VetDialog({ pets, item, trigger, initialOpen }: { pets: { id: string; n
               <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field label="When">
+          <Field label="When" error={form.errors.date}>
             <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} required />
           </Field>
-          <Field label="Reason">
+          <Field label="Reason" error={form.errors.reason}>
             <Input value={form.values.reason} onChange={(e) => form.setField("reason", e.target.value)} placeholder="Annual checkup" required />
           </Field>
           <Field label="Vet / Clinic">

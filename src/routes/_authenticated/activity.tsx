@@ -221,7 +221,7 @@ function ActivityDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                 <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Type">
+            <Field label="Type" error={form.errors.activity_type}>
               <Select value={form.values.activity_type} onValueChange={(v) => {
                 form.setField("activity_type", v);
 

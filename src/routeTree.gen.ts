@@ -22,6 +22,7 @@ import { Route as AuthenticatedHealthRouteRouteImport } from './routes/_authenti
 import { Route as AuthenticatedHealthIndexRouteImport } from './routes/_authenticated/health/index'
 import { Route as AuthenticatedHealthVetRouteImport } from './routes/_authenticated/health/vet'
 import { Route as AuthenticatedHealthVaccinationsRouteImport } from './routes/_authenticated/health/vaccinations'
+import { Route as AuthenticatedHealthDewormingRouteImport } from './routes/_authenticated/health/deworming'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -90,6 +91,12 @@ const AuthenticatedHealthVaccinationsRoute =
     path: '/vaccinations',
     getParentRoute: () => AuthenticatedHealthRouteRoute,
   } as any)
+const AuthenticatedHealthDewormingRoute =
+  AuthenticatedHealthDewormingRouteImport.update({
+    id: '/deworming',
+    path: '/deworming',
+    getParentRoute: () => AuthenticatedHealthRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/pets': typeof AuthenticatedPetsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
+  '/health/deworming': typeof AuthenticatedHealthDewormingRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
   '/health/': typeof AuthenticatedHealthIndexRoute
@@ -114,6 +122,7 @@ export interface FileRoutesByTo {
   '/pets': typeof AuthenticatedPetsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
+  '/health/deworming': typeof AuthenticatedHealthDewormingRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
   '/health': typeof AuthenticatedHealthIndexRoute
@@ -130,6 +139,7 @@ export interface FileRoutesById {
   '/_authenticated/pets': typeof AuthenticatedPetsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
+  '/_authenticated/health/deworming': typeof AuthenticatedHealthDewormingRoute
   '/_authenticated/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/_authenticated/health/vet': typeof AuthenticatedHealthVetRoute
   '/_authenticated/health/': typeof AuthenticatedHealthIndexRoute
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/pets'
     | '/profile'
     | '/schedule'
+    | '/health/deworming'
     | '/health/vaccinations'
     | '/health/vet'
     | '/health/'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/pets'
     | '/profile'
     | '/schedule'
+    | '/health/deworming'
     | '/health/vaccinations'
     | '/health/vet'
     | '/health'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pets'
     | '/_authenticated/profile'
     | '/_authenticated/schedule'
+    | '/_authenticated/health/deworming'
     | '/_authenticated/health/vaccinations'
     | '/_authenticated/health/vet'
     | '/_authenticated/health/'
@@ -279,10 +292,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthVaccinationsRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
     }
+    '/_authenticated/health/deworming': {
+      id: '/_authenticated/health/deworming'
+      path: '/deworming'
+      fullPath: '/health/deworming'
+      preLoaderRoute: typeof AuthenticatedHealthDewormingRouteImport
+      parentRoute: typeof AuthenticatedHealthRouteRoute
+    }
   }
 }
 
 interface AuthenticatedHealthRouteRouteChildren {
+  AuthenticatedHealthDewormingRoute: typeof AuthenticatedHealthDewormingRoute
   AuthenticatedHealthVaccinationsRoute: typeof AuthenticatedHealthVaccinationsRoute
   AuthenticatedHealthVetRoute: typeof AuthenticatedHealthVetRoute
   AuthenticatedHealthIndexRoute: typeof AuthenticatedHealthIndexRoute
@@ -290,6 +311,7 @@ interface AuthenticatedHealthRouteRouteChildren {
 
 const AuthenticatedHealthRouteRouteChildren: AuthenticatedHealthRouteRouteChildren =
   {
+    AuthenticatedHealthDewormingRoute: AuthenticatedHealthDewormingRoute,
     AuthenticatedHealthVaccinationsRoute: AuthenticatedHealthVaccinationsRoute,
     AuthenticatedHealthVetRoute: AuthenticatedHealthVetRoute,
     AuthenticatedHealthIndexRoute: AuthenticatedHealthIndexRoute,

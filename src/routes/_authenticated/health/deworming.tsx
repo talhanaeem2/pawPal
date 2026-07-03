@@ -1,6 +1,6 @@
 import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, vaccinationsQuery } from "@/lib/queries";
+import { dewormingsQuery, petsQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,66 +18,58 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { Field } from "@/components/ui/field";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
-import { createEmptyVaccinationForm, Vaccination, vaccinationFormSchema, vaccinationToForm } from "@/schemas/vacination";
-import { getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
 import z from "zod";
+import { createEmptyDewormingForm, Deworming, dewormingFormSchema, dewormingToForm } from "@/schemas/deworming";
+import { getDewormingDueTone, getDewormingDueToneClass, getDewormingDueToneLabel } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/health/vaccinations")({
+export const Route = createFileRoute("/_authenticated/health/deworming")({
     validateSearch: z.object({
         new: z.boolean().optional(),
     }),
     loader: ({ context }) => {
         context.queryClient.ensureQueryData(petsQuery);
-        context.queryClient.ensureQueryData(vaccinationsQuery);
+        context.queryClient.ensureQueryData(dewormingsQuery);
     },
     pendingComponent: () => <InlineLoader />,
-    head: () => ({ meta: [{ title: "Vaccinations · Pawpal" }] }),
-    component: VetPage,
+    head: () => ({ meta: [{ title: "Deworming · Pawpal" }] }),
+    component: DewormingPage,
     errorComponent: ({ reset }: ErrorComponentProps) => <InlineErrorState onRetry={reset} />,
     notFoundComponent: () => <NotFoundState />,
 });
 
-function VetPage() {
+function DewormingPage() {
     const { data: pets } = useSuspenseQuery(petsQuery);
-    const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
+    const { data: dewormings } = useSuspenseQuery(dewormingsQuery);
     const qc = useQueryClient();
     const { new: openCreate } = Route.useSearch();
     const [confirmId, setConfirmId] = useState<string | null>(null);
     const now = Date.now();
 
-    function getVaccinationStatus(v: Vaccination) {
-        if (v.completed_at) return "completed";
-
-        if (v.next_due_at && new Date(v.next_due_at).getTime() < now) {
-            return "overdue";
-        }
-
-        return "upcoming";
+    function getDewormingStatus(d: Deworming) {
+        return new Date(d.next_due_at).getTime() < now
+            ? "overdue"
+            : "upcoming";
     }
 
-    const upcoming = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "upcoming")
+    const upcoming = dewormings
+        .filter((v) => getDewormingStatus(v) === "upcoming")
         .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
 
-    const overdue = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "overdue")
+    const overdue = dewormings
+        .filter((v) => getDewormingStatus(v) === "overdue")
         .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
-
-    const history = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "completed")
-        .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
 
     const del = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from("vaccinations").delete().eq("id", id);
+            const { error } = await supabase.from("dewormings").delete().eq("id", id);
             if (error) throw error;
         },
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ["vaccinations"] }); toast.success("Removed"); },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ["dewormings"] }); toast.success("Removed"); },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
         onSettled: () => setConfirmId(null),
     });
 
-    const confirmItem = vaccinations.find((a) => a.id === confirmId);
+    const confirmItem = dewormings.find((a) => a.id === confirmId);
 
     return (
         <div className="space-y-5">
@@ -92,16 +84,16 @@ function VetPage() {
                     <BreadcrumbSeparator />
 
                     <BreadcrumbItem>
-                        <BreadcrumbPage>Vaccinations</BreadcrumbPage>
+                        <BreadcrumbPage>Deworming</BreadcrumbPage>
                     </BreadcrumbItem>
                 </BreadcrumbList>
             </Breadcrumb>
             <header className="flex items-end justify-between">
                 <div>
-                    <h1 className="font-display text-3xl">Vaccinations</h1>
-                    <p className="text-sm text-muted-foreground">Vaccine records & due dates.</p>
+                    <h1 className="font-display text-3xl">Dewormings</h1>
+                    <p className="text-sm text-muted-foreground">Deworming records & due dates.</p>
                 </div>
-                <VaccinationsDialog
+                <DewormingDialog
                     pets={pets}
                     initialOpen={openCreate}
                     trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
@@ -110,13 +102,12 @@ function VetPage() {
 
             <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
             <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
-            <Group title="Completed" items={history} pets={pets} onDelete={setConfirmId} />
 
             <ConfirmDialog
                 open={!!confirmId}
                 onOpenChange={(o) => !o && setConfirmId(null)}
-                title={`Remove ${confirmItem?.vaccine_name ?? "this vaccine"}?`}
-                description="This vaccine record will be permanently deleted. This can't be undone."
+                title={`Remove ${confirmItem?.product_name ?? "this deworming"}?`}
+                description="This deworming record will be permanently deleted. This can't be undone."
                 confirmText="Remove"
                 loading={del.isPending}
                 confirmVariant="destructive"
@@ -128,17 +119,17 @@ function VetPage() {
 
 function Group({ title, items, pets, onDelete }: {
     title: string;
-    items: Vaccination[];
+    items: Deworming[];
     pets: { id: string; name: string }[];
     onDelete: (id: string) => void;
 }) {
 
     const emptyMessage =
         title === "Upcoming"
-            ? "No upcoming vaccines."
+            ? "No upcoming dewormings."
             : title === "Overdue"
-                ? "No overdue vaccines."
-                : "No completed vaccines yet.";
+                ? "No overdue dewormings."
+                : "No deworming history yet.";
 
     return (
         <section>
@@ -149,49 +140,46 @@ function Group({ title, items, pets, onDelete }: {
                 </div>
             ) : (
                 <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
-                    {items.map((v) => {
-                        const pet = pets.find((p) => p.id === v.pet_id);
-                        const tone = getVaccinationTone(
-                            v.next_due_at,
-                            v.completed_at,
-                        );
+                    {items.map((d) => {
+                        const pet = pets.find((p) => p.id === d.pet_id);
+                        const tone = getDewormingDueTone(d.next_due_at);
 
                         return (
-                            <li key={v.id} className="p-4 flex flex-col">
+                            <li key={d.id} className="p-4 flex flex-col">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex-1 min-w-0">
                                         <div className={"font-medium text-sm capitalize"}>
-                                            {v.vaccine_name}
+                                            {d.product_name}
                                         </div>
                                         <div className="text-xs text-muted-foreground capitalize">
                                             {pet?.name ?? "—"}
-                                            {v.administered_by ? ` · ${v.administered_by}` : ""}
+                                            {d.administered_by ? ` · ${d.administered_by}` : ""}
                                         </div>
 
                                         <div className="text-xs text-muted-foreground">
                                             Given{" "}
-                                            {new Date(v.administered_at).toLocaleDateString()}
+                                            {new Date(d.administered_at).toLocaleDateString()}
                                         </div>
 
-                                        {v.next_due_at && (
+                                        {d.next_due_at && (
                                             <div className="text-xs text-muted-foreground">
                                                 Due{" "}
-                                                {new Date(v.next_due_at).toLocaleDateString()}
+                                                {new Date(d.next_due_at).toLocaleDateString()}
                                             </div>
                                         )}
 
-                                        {v.notes && (
+                                        {d.notes && (
                                             <p className="text-xs text-muted-foreground mt-1 capitalize">
-                                                {v.notes}
+                                                {d.notes}
                                             </p>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-1 self-start">
-                                        <VaccinationsDialog
+                                        <DewormingDialog
                                             pets={pets}
-                                            item={v}
+                                            item={d}
                                             trigger={
-                                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" aria-label="Edit vaccination">
+                                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" aria-label="Edit deworming">
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
                                             }
@@ -199,16 +187,16 @@ function Group({ title, items, pets, onDelete }: {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => onDelete(v.id)}
+                                            onClick={() => onDelete(d.id)}
                                             className="text-muted-foreground hover:text-destructive"
-                                            aria-label="Delete vaccination"
+                                            aria-label="Delete deworming"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </div>
-                                <span className={`text-xs self-end -mt-4 ${getVaccinationToneClass(tone)}`}>
-                                    {getVaccinationToneLabel(tone)}
+                                <span className={`text-xs self-end -mt-4 ${getDewormingDueToneClass(tone)}`}>
+                                    {getDewormingDueToneLabel(tone)}
                                 </span>
                             </li>
                         );
@@ -219,18 +207,18 @@ function Group({ title, items, pets, onDelete }: {
     );
 }
 
-function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: string; name: string }[]; item?: Vaccination; trigger: React.ReactNode; initialOpen?: boolean }) {
+function DewormingDialog({ pets, item, trigger, initialOpen }: { pets: { id: string; name: string }[]; item?: Deworming; trigger: React.ReactNode; initialOpen?: boolean }) {
     const isEdit = !!item;
     const qc = useQueryClient();
     const navigate = Route.useNavigate();
     const [open, setOpen] = useState(false);
     const form = useZodForm(
-        vaccinationFormSchema,
-        item ? vaccinationToForm(item) : createEmptyVaccinationForm(pets[0]?.id)
+        dewormingFormSchema,
+        item ? dewormingToForm(item) : createEmptyDewormingForm(pets[0]?.id)
     );
 
     function resetForm() {
-        form.reset(item ? vaccinationToForm(item) : createEmptyVaccinationForm(pets[0]?.id));
+        form.reset(item ? dewormingToForm(item) : createEmptyDewormingForm(pets[0]?.id));
     }
 
     useEffect(() => {
@@ -246,29 +234,24 @@ function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: 
             if (!data) return;
             const payload = {
                 pet_id: data.pet_id,
-                vaccine_name: data.vaccine_name.trim(),
+                product_name: data.product_name.trim(),
                 administered_at: data.administered_at,
-                next_due_at: data.completed_at
-                    ? null
-                    : data.next_due_at
-                        ? data.next_due_at
-                        : null,
-                completed_at: data.completed_at ? data.completed_at : null,
+                next_due_at: data.next_due_at,
                 administered_by: data.administered_by || null,
                 notes: data.notes || null,
             };
 
             const query = item
-                ? supabase.from("vaccinations").update(payload).eq("id", item.id)
-                : supabase.from("vaccinations").insert(payload);
+                ? supabase.from("dewormings").update(payload).eq("id", item.id)
+                : supabase.from("dewormings").insert(payload);
 
             const { error } = await query;
 
             if (error) throw error;
         },
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ["vaccinations"] });
-            toast.success(isEdit ? "Updated" : "Vaccination saved");
+            qc.invalidateQueries({ queryKey: ["dewormings"] });
+            toast.success(isEdit ? "Updated" : "Deworming saved");
             setOpen(false);
             if (!isEdit) resetForm();
         },
@@ -288,8 +271,6 @@ function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: 
         }
     }
 
-    const today = new Date().toISOString().split("T")[0];
-
     return (
         <Dialog
             open={open}
@@ -303,7 +284,7 @@ function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: 
         >
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="rounded-3xl">
-                <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit vaccination" : "New vaccination"}</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit deworming" : "New deworming"}</DialogTitle></DialogHeader>
                 <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
                     <Field label="Pet">
                         <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
@@ -311,28 +292,14 @@ function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: 
                             <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
                         </Select>
                     </Field>
-                    <Field label="Vaccine" error={form.errors.vaccine_name}>
-                        <Input type="text" value={form.values.vaccine_name} onChange={(e) => form.setField("vaccine_name", e.target.value)} required />
+                    <Field label="Product" error={form.errors.product_name}>
+                        <Input type="text" value={form.values.product_name} onChange={(e) => form.setField("product_name", e.target.value)} required />
                     </Field>
                     <Field label="Administered on" error={form.errors.administered_at}>
                         <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
                     </Field>
-                    <Field label="Next due">
-                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} disabled={!!form.values.completed_at} />
-                    </Field>
-                    <Field label="Completed">
-                        <div className="flex items-center h-10 gap-2">
-                            <button
-                                type="button"
-                                role="switch"
-                                aria-checked={!!form.values.completed_at}
-                                onClick={() => form.setField("completed_at", form.values.completed_at ? "" : today)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.completed_at ? "bg-primary" : "bg-input"}`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.completed_at ? "translate-x-6" : "translate-x-1"}`} />
-                            </button>
-                            <span className="text-sm text-muted-foreground">{form.values.completed_at ? "Completed" : "Pending"}</span>
-                        </div>
+                    <Field label="Next due" error={form.errors.next_due_at}>
+                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} required />
                     </Field>
                     <Field label="Vet / Clinic">
                         <Input

@@ -83,6 +83,53 @@ export type Database = {
           },
         ]
       }
+      dewormings: {
+        Row: {
+          administered_at: string
+          administered_by: string | null
+          created_at: string
+          id: string
+          next_due_at: string
+          notes: string | null
+          pet_id: string
+          product_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          administered_at: string
+          administered_by?: string | null
+          created_at?: string
+          id?: string
+          next_due_at: string
+          notes?: string | null
+          pet_id: string
+          product_name: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          administered_at?: string
+          administered_by?: string | null
+          created_at?: string
+          id?: string
+          next_due_at?: string
+          notes?: string | null
+          pet_id?: string
+          product_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dewormings_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_log: {
         Row: {
           fire_date: string

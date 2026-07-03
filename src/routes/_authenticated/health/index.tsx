@@ -1,10 +1,10 @@
 import { createFileRoute, type ErrorComponentProps, Link } from "@tanstack/react-router";
-import { ShieldPlus, Syringe, ChevronRight, Stethoscope } from "lucide-react";
+import { ShieldPlus, Syringe, Stethoscope } from "lucide-react";
 
 import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
-import { petsQuery, vaccinationsQuery, vetQuery } from "@/lib/queries";
+import { dewormingsQuery, petsQuery, vaccinationsQuery, vetQuery } from "@/lib/queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getPreviewList } from "@/lib/utils";
 import { Section } from "@/components/layout/section";
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/health/")({
         context.queryClient.ensureQueryData(petsQuery);
         context.queryClient.ensureQueryData(vetQuery);
         context.queryClient.ensureQueryData(vaccinationsQuery);
+        context.queryClient.ensureQueryData(dewormingsQuery);
     },
     pendingComponent: () => <InlineLoader />,
     head: () => ({ meta: [{ title: "Health · Pawpal" }] }),
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/health/")({
 function HealthPage() {
     const { data: pets } = useSuspenseQuery(petsQuery);
     const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
+    const { data: dewormings } = useSuspenseQuery(dewormingsQuery);
     const { data: vet } = useSuspenseQuery(vetQuery);
 
     const upcomingVetSorted = vet
@@ -40,8 +42,20 @@ function HealthPage() {
                 new Date(a.next_due_at!).getTime() -
                 new Date(b.next_due_at!).getTime()
         );
-
     const upcomingVaccinationsData = getPreviewList(upcomingVaccinationsSorted, 3);
+
+    const upcomingDewormingsSorted = dewormings
+        .filter((d) => d.next_due_at)
+        .sort(
+            (a, b) =>
+                new Date(a.next_due_at!).getTime() -
+                new Date(b.next_due_at!).getTime()
+        );
+
+    const upcomingDewormingsData = getPreviewList(
+        upcomingDewormingsSorted,
+        3
+    );
 
     return (
         <div className="space-y-5">
@@ -100,8 +114,41 @@ function HealthPage() {
                             )
                         })}
                         {upcomingVaccinationsData.remaining > 0 && (
-                            <Link to="/health/vet" className="block py-2 text-xs text-primary hover:underline">
+                            <Link to="/health/vaccinations" className="block py-2 text-xs text-primary hover:underline">
                                 +{upcomingVaccinationsData.remaining} more vaccines  →
+                            </Link>
+                        )}
+                    </ul>
+                )}
+            </Section>
+
+            <Section title="Upcoming dewormings" icon={ShieldPlus} href="/health/deworming">
+                {upcomingDewormingsData.visible.length === 0 ? (
+                    <Empty text="No dewormings scheduled." cta="Add deworming" href="/health/deworming" search={{ new: true }} />
+                ) : (
+                    <ul className="divide-y divide-border/60">
+                        {upcomingDewormingsData.visible.map((d) => {
+                            const pet = pets.find((p) => p.id === d.pet_id);
+
+                            return (
+                                <li key={d.id} className="py-3">
+                                    <div className="font-medium text-sm capitalize">{d.product_name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {pet?.name ?? "—"} · Due{" "}
+                                        {new Date(d.next_due_at!).toLocaleDateString()}
+                                    </div>
+
+                                    {d.administered_by && (
+                                        <div className="text-xs text-muted-foreground capitalize">
+                                            {d.administered_by}
+                                        </div>
+                                    )}
+                                </li>
+                            )
+                        })}
+                        {upcomingDewormingsData.remaining > 0 && (
+                            <Link to="/health/deworming" className="block py-2 text-xs text-primary hover:underline">
+                                +{upcomingDewormingsData.remaining} more dewormings  →
                             </Link>
                         )}
                     </ul>
