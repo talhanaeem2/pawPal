@@ -288,8 +288,10 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
 
           {/* Basic info */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Name"><Input value={form.values.name} onChange={(e) => form.setField("name", e.target.value)} required /></Field>
-            <Field label="Species">
+            <Field label="Name" error={form.errors.name}>
+              <Input value={form.values.name} onChange={(e) => form.setField("name", e.target.value)} required />
+            </Field>
+            <Field label="Species" error={form.errors.species}>
               <Select value={form.values.species} onValueChange={(v) => form.setField("species", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

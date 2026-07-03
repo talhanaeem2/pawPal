@@ -18,7 +18,7 @@ export const petSchema = z.object({
 export type Pet = z.infer<typeof petSchema>;
 
 export const petFormSchema = z.object({
-    name: z.string().trim().min(1),
+    name: z.string().trim().min(1, "Name is required"),
     species: z.string().trim().min(1, "Species is required"),
     breed: z.string().default(""),
     birthdate: z.string().default(""),

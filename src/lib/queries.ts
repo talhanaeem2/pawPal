@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityLog, activityLogSchema } from "@/schemas/activity";
+import { Deworming, dewormingSchema } from "@/schemas/deworming";
 import { Pet, petSchema } from "@/schemas/pets";
 import { Profile, profileSchema } from "@/schemas/profile";
 import { ScheduleWithPets, scheduleWithPetsSchema } from "@/schemas/schedule";
@@ -78,9 +79,25 @@ export const vetQuery = queryOptions({
 export const vaccinationsQuery = queryOptions({
   queryKey: ["vaccinations"],
   queryFn: async (): Promise<Vaccination[]> => {
-    const { data, error } = await supabase.from("vaccinations").select("*").order("created_at", { ascending: true });
+    const { data, error } = await supabase.from("vaccinations").select("*").order("administered_at", { ascending: true });
     if (error) throw error;
     const parsed = z.array(vaccinationSchema).safeParse(data ?? []);
+
+    if (!parsed.success) {
+      console.error(parsed.error);
+      return [];
+    }
+
+    return parsed.data;
+  },
+});
+
+export const dewormingsQuery = queryOptions({
+  queryKey: ["dewormings"],
+  queryFn: async (): Promise<Deworming[]> => {
+    const { data, error } = await supabase.from("dewormings").select("*").order("administered_at", { ascending: true });
+    if (error) throw error;
+    const parsed = z.array(dewormingSchema).safeParse(data ?? []);
 
     if (!parsed.success) {
       console.error(parsed.error);

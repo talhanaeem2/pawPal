@@ -275,7 +275,7 @@ function ProfileDialog({ profile, trigger }: { profile: Profile; trigger: React.
                         </div>
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={onPickPhoto} className="hidden" />
                     </div>
-                    <Field label="Display Name">
+                    <Field label="Display Name" error={form.errors.display_name}>
                         <Input ref={inputRef} type="text" value={form.values.display_name} onChange={(e) => form.setField("display_name", e.target.value)} required />
                     </Field>
                     <Field label="Notifications">
