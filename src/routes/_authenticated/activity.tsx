@@ -2,7 +2,7 @@ import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-route
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, activityQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,8 +18,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActivityLog, activityLogFormSchema, activityLogToForm, createEmptyActivityLogForm } from "@/schemas/activity";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { Field } from "@/components/ui/field";
+import z from "zod";
 
 export const Route = createFileRoute("/_authenticated/activity")({
+  validateSearch: z.object({
+    new: z.boolean().optional(),
+  }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(petsQuery);
     context.queryClient.ensureQueryData(activityQuery);
@@ -37,6 +41,7 @@ function ActivityPage() {
   const { data: pets } = useSuspenseQuery(petsQuery);
   const { data: logs } = useSuspenseQuery(activityQuery);
   const qc = useQueryClient();
+  const { new: openCreate } = Route.useSearch();
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const del = useMutation({
@@ -58,7 +63,11 @@ function ActivityPage() {
           <h1 className="font-display text-3xl">Activity</h1>
           <p className="text-sm text-muted-foreground">Walks, play & weight.</p>
         </div>
-        <ActivityDialog pets={pets} trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Log</Button>} />
+        <ActivityDialog
+          pets={pets}
+          initialOpen={openCreate}
+          trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Log</Button>}
+        />
       </header>
 
       {logs.length === 0 ? (
@@ -87,6 +96,7 @@ function ActivityPage() {
                 <ActivityDialog
                   pets={pets}
                   item={a}
+                  initialOpen={openCreate}
                   trigger={
                     <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" aria-label="Edit log">
                       <Pencil className="h-4 w-4" />
@@ -122,14 +132,21 @@ function ActivityPage() {
   );
 }
 
-function ActivityDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: ActivityLog; trigger: React.ReactNode }) {
+function ActivityDialog({ pets, item, trigger, initialOpen }: { pets: { id: string; name: string }[]; item?: ActivityLog; trigger: React.ReactNode; initialOpen?: boolean }) {
   const isEdit = !!item;
   const qc = useQueryClient();
+  const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
   const form = useZodForm(
     activityLogFormSchema,
     item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id)
   );
+
+  useEffect(() => {
+    if (initialOpen) {
+      setOpen(true);
+    }
+  }, [initialOpen]);
 
   function resetForm() {
     form.reset(item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id));
@@ -171,8 +188,28 @@ function ActivityDialog({ pets, item, trigger }: { pets: { id: string; name: str
 
   if (pets.length === 0 && !isEdit) return <Button disabled variant="outline" className="rounded-full">Add a pet first</Button>;
 
+  function clearCreateSearch() {
+    if (!isEdit) {
+      navigate({
+        search: {
+          new: undefined,
+        },
+        replace: true,
+      });
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) {
+          resetForm();
+          clearCreateSearch();
+        }
+      }}
+    >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit log" : "Log activity"}</DialogTitle></DialogHeader>

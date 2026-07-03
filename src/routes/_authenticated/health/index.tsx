@@ -54,7 +54,7 @@ function HealthPage() {
 
             <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
                 {upcomingVetData.visible.length === 0 ? (
-                    <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" />
+                    <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" search={{ new: true }} />
                 ) : (
                     <ul className="divide-y divide-border/60">
                         {upcomingVetData.visible.map((v) => (
@@ -77,7 +77,7 @@ function HealthPage() {
 
             <Section title="Upcoming vaccinations" icon={Syringe} href="/health/vaccinations">
                 {upcomingVaccinationsData.visible.length === 0 ? (
-                    <Empty text="No vaccinations scheduled." cta="Add vaccine" href="/health/vaccinations" />
+                    <Empty text="No vaccinations scheduled." cta="Add vaccine" href="/health/vaccinations" search={{ new: true }} />
                 ) : (
                     <ul className="divide-y divide-border/60">
                         {upcomingVaccinationsData.visible.map((v) => {

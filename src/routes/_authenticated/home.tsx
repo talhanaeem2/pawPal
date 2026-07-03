@@ -96,7 +96,7 @@ function Home() {
 
       <Section title="Today's care" icon={Calendar} href="/schedule">
         {todayData.visible.length === 0 ? (
-          <Empty text="No reminders yet." cta="Add one" href="/schedule" />
+          <Empty text="No reminders yet." cta="Add reminder" href="/schedule" search={{ new: true }} />
         ) : (
           <ul className="divide-y divide-border/60">
             {todayData.visible.map((item) => {
@@ -164,7 +164,7 @@ function Home() {
 
       <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
         {upcomingVetData.visible.length === 0 ? (
-          <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" />
+          <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" search={{ new: true }} />
         ) : (
           <ul className="divide-y divide-border/60">
             {upcomingVetData.visible.map((v) => (
@@ -187,7 +187,7 @@ function Home() {
 
       <Section title="Recent activity" icon={Activity} href="/activity">
         {recentActivityData.visible.length === 0 ? (
-          <Empty text="No walks logged yet." cta="Log one" href="/activity" />
+          <Empty text="No activities logged yet." cta="Log activity" href="/activity" search={{ new: true }} />
         ) : (
           <ul className="divide-y divide-border/60">
             {recentActivityData.visible.map((a) => (

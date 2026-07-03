@@ -2,7 +2,7 @@ import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, vaccinationsQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,8 +20,12 @@ import { Field } from "@/components/ui/field";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import { createEmptyVaccinationForm, Vaccination, vaccinationFormSchema, vaccinationToForm } from "@/schemas/vacination";
 import { getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
+import z from "zod";
 
 export const Route = createFileRoute("/_authenticated/health/vaccinations")({
+    validateSearch: z.object({
+        new: z.boolean().optional(),
+    }),
     loader: ({ context }) => {
         context.queryClient.ensureQueryData(petsQuery);
         context.queryClient.ensureQueryData(vaccinationsQuery);
@@ -37,6 +41,7 @@ function VetPage() {
     const { data: pets } = useSuspenseQuery(petsQuery);
     const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
     const qc = useQueryClient();
+    const { new: openCreate } = Route.useSearch();
     const [confirmId, setConfirmId] = useState<string | null>(null);
     const now = Date.now();
 
@@ -96,7 +101,11 @@ function VetPage() {
                     <h1 className="font-display text-3xl">Vaccinations</h1>
                     <p className="text-sm text-muted-foreground">Vaccine records & due dates.</p>
                 </div>
-                <VaccinationsDialog pets={pets} trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>} />
+                <VaccinationsDialog
+                    pets={pets}
+                    initialOpen={openCreate}
+                    trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+                />
             </header>
 
             <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
@@ -210,9 +219,10 @@ function Group({ title, items, pets, onDelete }: {
     );
 }
 
-function VaccinationsDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: Vaccination; trigger: React.ReactNode }) {
+function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: string; name: string }[]; item?: Vaccination; trigger: React.ReactNode; initialOpen?: boolean }) {
     const isEdit = !!item;
     const qc = useQueryClient();
+    const navigate = Route.useNavigate();
     const [open, setOpen] = useState(false);
     const form = useZodForm(
         vaccinationFormSchema,
@@ -222,6 +232,12 @@ function VaccinationsDialog({ pets, item, trigger }: { pets: { id: string; name:
     function resetForm() {
         form.reset(item ? vaccinationToForm(item) : createEmptyVaccinationForm(pets[0]?.id));
     }
+
+    useEffect(() => {
+        if (initialOpen) {
+            setOpen(true);
+        }
+    }, [initialOpen]);
 
     const save = useMutation({
         mutationFn: async () => {
@@ -261,8 +277,28 @@ function VaccinationsDialog({ pets, item, trigger }: { pets: { id: string; name:
 
     if (pets.length === 0 && !isEdit) return <Button disabled variant="outline" className="rounded-full">Add a pet first</Button>;
 
+    function clearCreateSearch() {
+        if (!isEdit) {
+            navigate({
+                search: {
+                    new: undefined,
+                },
+                replace: true,
+            });
+        }
+    }
+
     return (
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+        <Dialog
+            open={open}
+            onOpenChange={(o) => {
+                setOpen(o);
+                if (!o) {
+                    resetForm();
+                    clearCreateSearch();
+                }
+            }}
+        >
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="rounded-3xl">
                 <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit vaccination" : "New vaccination"}</DialogTitle></DialogHeader>

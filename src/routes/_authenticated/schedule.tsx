@@ -2,7 +2,7 @@ import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-route
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery, scheduleQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -22,8 +22,12 @@ import { Field } from "@/components/ui/field";
 import { PetMultiSelect } from "@/components/ui/pet-multi-select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import React from "react";
+import z from "zod";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
+  validateSearch: z.object({
+    new: z.boolean().optional(),
+  }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(petsQuery);
     context.queryClient.ensureQueryData(scheduleQuery);
@@ -39,6 +43,7 @@ function SchedulePage() {
   const { data: pets } = useSuspenseQuery(petsQuery);
   const { data: items } = useSuspenseQuery(scheduleQuery);
   const qc = useQueryClient();
+  const { new: openCreate } = Route.useSearch();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const today = todayDateString();
 
@@ -170,6 +175,7 @@ function SchedulePage() {
         </div>
         <ScheduleDialog
           pets={pets}
+          initialOpen={openCreate}
           trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
         />
       </header>
@@ -458,9 +464,10 @@ function SchedulePage() {
   );
 }
 
-function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: string }[]; item?: ScheduleWithPets; trigger: React.ReactNode }) {
+function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: string; name: string }[]; item?: ScheduleWithPets; trigger: React.ReactNode; initialOpen?: boolean }) {
   const isEdit = !!item;
   const qc = useQueryClient();
+  const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
   const [expandedFields, setExpandedFields] = useState<
     Record<
@@ -481,6 +488,12 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
       ? scheduleToForm(item)
       : createEmptyScheduleForm(pets[0]?.id)
   );
+
+  useEffect(() => {
+    if (initialOpen) {
+      setOpen(true);
+    }
+  }, [initialOpen]);
 
   function resetForm() {
     form.reset(
@@ -621,8 +634,27 @@ function ScheduleDialog({ pets, item, trigger }: { pets: { id: string; name: str
 
   const doseField = getDoseField(form.values.kind);
 
+  function clearCreateSearch() {
+    if (!isEdit) {
+      navigate({
+        search: {
+          new: undefined,
+        },
+        replace: true,
+      });
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) {
+          resetForm();
+          clearCreateSearch();
+        }
+      }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl max-h-[95dvh] overflow-hidden flex flex-col">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit reminder" : "New reminder"}</DialogTitle></DialogHeader>
