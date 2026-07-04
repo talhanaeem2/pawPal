@@ -14,7 +14,7 @@ export function PetAvatar({
             <img
                 src={pet.photo_url}
                 alt=""
-                className={`${size} rounded-2xl object-cover bg-secondary/60`}
+                className={`${size} rounded-2xl object-cover bg-secondary/60 min-w-14`}
             />
         );
     }
