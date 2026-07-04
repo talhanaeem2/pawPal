@@ -219,12 +219,7 @@ async function findDueHealthNotifications(
 
   for (const item of data ?? []) {
 
-    const [year, month, day] = item.next_due_at!.split("-").map(Number);
-
-    const dueDate = new Date(Date.UTC(year, month - 1, day));
-    dueDate.setUTCMinutes(dueDate.getUTCMinutes() + LOCAL_OFFSET_MINUTES);
-
-    const dueMs = dueDate.getTime();
+    const dueMs = new Date(item.next_due_at!).getTime();
 
     const petName = (item as { pets?: { name?: string } }).pets?.name ??
       "your pet";
