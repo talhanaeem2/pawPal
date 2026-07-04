@@ -13,7 +13,7 @@ webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Cron runs every 5 minutes — this is the tolerance window for "is it time yet".
-const WINDOW_MINUTES = 5;
+const WINDOW_MINUTES = 10;
 const HEADS_UP_MINUTES = 10;
 
 // MVP: single fixed timezone offset (Pakistan Standard Time, UTC+5, no DST).
@@ -45,9 +45,11 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
     .from("schedule_items")
     .select(`id, user_id, title, kind, time_of_day, frequency, 
     schedule_item_pets (
+    id,
     pet_id,
     pets (name),
     schedule_completions (
+    schedule_item_pet_id,
       completed_on
     )
   )`)
@@ -68,7 +70,9 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
     const petStatuses = item.schedule_item_pets ?? [];
 
     const pendingPets = petStatuses.filter((pet) => {
-      const completions = pet.schedule_completions ?? [];
+      const completions = (pet.schedule_completions ?? []).filter(
+        (c) => c.schedule_item_pet_id === pet.id
+      );
 
       if (completions.length === 0) {
         return true;
@@ -83,7 +87,8 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
 
     const [h, m] = String(item.time_of_day).split(":").map(Number);
     const target = new Date(localNow);
-    target.setHours(h, m, 0, 0);
+    target.setUTCHours(h, m, 0, 0);
+
     const targetMs = target.getTime();
     const nowMs = localNow.getTime();
 
