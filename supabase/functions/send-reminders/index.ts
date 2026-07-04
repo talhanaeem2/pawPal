@@ -221,10 +221,8 @@ async function findDueHealthNotifications(
 
     const [year, month, day] = item.next_due_at!.split("-").map(Number);
 
-    const dueDate = new Date(Date.UTC(year, month - 1, day));
-    dueDate.setUTCMinutes(dueDate.getUTCMinutes() + LOCAL_OFFSET_MINUTES);
-
-    const dueMs = new Date(item.next_due_at!).getTime();
+    const dueDate = new Date(year, month - 1, day, 12, 0, 0); // Local noon
+    const dueMs = dueDate.getTime();
 
     const petName = (item as { pets?: { name?: string } }).pets?.name ??
       "your pet";
@@ -232,14 +230,6 @@ async function findDueHealthNotifications(
     const treatmentName = isVaccination
       ? (item as { vaccine_name: string }).vaccine_name
       : (item as { product_name: string }).product_name;
-
-    console.log({
-      next_due_at: item.next_due_at,
-      due: new Date(item.next_due_at!).toISOString(),
-      dueMs,
-      now: localNow.toISOString(),
-      diffHours: (dueMs - nowMs) / 3_600_000,
-    });
 
     if (withinWindow(dueMs - 24 * 60 * 60_000, nowMs, WINDOW_MINUTES)) {
       out.push({
