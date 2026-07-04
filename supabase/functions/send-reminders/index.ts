@@ -189,7 +189,7 @@ async function findDueVetNotifications(now: Date): Promise<DueNotification[]> {
 
 async function findDueHealthNotifications(
   now: Date,
-  table: "vaccinations" | "deworming",
+  table: "vaccinations" | "dewormings",
 ): Promise<DueNotification[]> {
   const isVaccination = table === "vaccinations";
 
@@ -199,9 +199,9 @@ async function findDueHealthNotifications(
       .select("id,user_id,next_due_at,completed_at,vaccine_name,pets(name)")
       .is("completed_at", null)
     : supabase
-      .from("deworming")
+      .from("dewormings")
       .select(
-        "id,user_id,next_due_at,medicine_name,pets(name)",
+        "id,user_id,next_due_at,product_name,pets(name)",
       );
 
   const { data, error } = await query.not("next_due_at", "is", null).order("next_due_at");
@@ -224,14 +224,22 @@ async function findDueHealthNotifications(
     const dueDate = new Date(Date.UTC(year, month - 1, day));
     dueDate.setUTCMinutes(dueDate.getUTCMinutes() + LOCAL_OFFSET_MINUTES);
 
-    const dueMs = dueDate.getTime();
+    const dueMs = new Date(item.next_due_at!).getTime();
 
     const petName = (item as { pets?: { name?: string } }).pets?.name ??
       "your pet";
 
     const treatmentName = isVaccination
       ? (item as { vaccine_name: string }).vaccine_name
-      : (item as { medicine_name: string }).medicine_name;
+      : (item as { product_name: string }).product_name;
+
+    console.log({
+      next_due_at: item.next_due_at,
+      due: new Date(item.next_due_at!).toISOString(),
+      dueMs,
+      now: localNow.toISOString(),
+      diffHours: (dueMs - nowMs) / 3_600_000,
+    });
 
     if (withinWindow(dueMs - 24 * 60 * 60_000, nowMs, WINDOW_MINUTES)) {
       out.push({
@@ -342,19 +350,19 @@ export default {
       schedules,
       vets,
       vaccinations,
-      deworming,
+      dewormings,
     ] = await Promise.all([
       findDueScheduleNotifications(now),
       findDueVetNotifications(now),
       findDueHealthNotifications(now, "vaccinations"),
-      findDueHealthNotifications(now, "deworming"),
+      findDueHealthNotifications(now, "dewormings"),
     ]);
 
     const due = [
       ...schedules,
       ...vets,
       ...vaccinations,
-      ...deworming,
+      ...dewormings,
     ];
 
     let sent = 0;
