@@ -40,7 +40,9 @@ function todayDateStr(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-async function findDueScheduleNotifications(now: Date): Promise<DueNotification[]> {
+async function findDueScheduleNotifications(
+  now: Date,
+): Promise<DueNotification[]> {
   const { data: items, error } = await supabase
     .from("schedule_items")
     .select(`id, user_id, title, kind, time_of_day, frequency, 
@@ -71,7 +73,7 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
 
     const pendingPets = petStatuses.filter((pet) => {
       const completions = (pet.schedule_completions ?? []).filter(
-        (c) => c.schedule_item_pet_id === pet.id
+        (c) => c.schedule_item_pet_id === pet.id,
       );
 
       if (completions.length === 0) {
@@ -115,7 +117,9 @@ async function findDueScheduleNotifications(now: Date): Promise<DueNotification[
           false,
         ),
       });
-    } else if (withinWindow(targetMs - HEADS_UP_MINUTES * 60_000, nowMs, WINDOW_MINUTES)) {
+    } else if (
+      withinWindow(targetMs - HEADS_UP_MINUTES * 60_000, nowMs, WINDOW_MINUTES)
+    ) {
       out.push({
         refType: "schedule_heads_up",
         refId: item.id,
@@ -146,12 +150,17 @@ async function findDueVetNotifications(now: Date): Promise<DueNotification[]> {
   }
 
   const out: DueNotification[] = [];
-  const nowMs = now.getTime();
+
+  const localNow =
+    new Date(now.getTime() + LOCAL_OFFSET_MINUTES * 60000);
+
+  const nowMs = localNow.getTime();
+  const fireDate = todayDateStr(localNow);
 
   for (const appt of appts ?? []) {
     const apptMs = new Date(appt.date).getTime();
-    const petName = (appt as { pets?: { name?: string } }).pets?.name ?? "your pet";
-    const fireDate = todayDateStr(now);
+    const petName = (appt as { pets?: { name?: string } }).pets?.name ??
+      "your pet";
 
     if (withinWindow(apptMs - 24 * 60 * 60_000, nowMs, WINDOW_MINUTES)) {
       out.push({
@@ -171,6 +180,78 @@ async function findDueVetNotifications(now: Date): Promise<DueNotification[]> {
         userId: appt.user_id,
         title: `Vet visit in 1 hour`,
         body: `${petName} · ${appt.reason}`,
+      });
+    }
+  }
+
+  return out;
+}
+
+async function findDueHealthNotifications(
+  now: Date,
+  table: "vaccinations" | "deworming",
+): Promise<DueNotification[]> {
+  const isVaccination = table === "vaccinations";
+
+  const query = isVaccination
+    ? supabase
+      .from("vaccinations")
+      .select("id,user_id,next_due_at,completed_at,vaccine_name,pets(name)")
+      .is("completed_at", null)
+    : supabase
+      .from("deworming")
+      .select(
+        "id,user_id,next_due_at,medicine_name,pets(name)",
+      );
+
+  const { data, error } = await query.not("next_due_at", "is", null).order("next_due_at");
+
+  if (error) {
+    console.error(`Failed to fetch ${table}`, error);
+    return [];
+  }
+
+  const out: DueNotification[] = [];
+
+  const localNow = new Date(now.getTime() + LOCAL_OFFSET_MINUTES * 60_000);
+  const nowMs = localNow.getTime();
+  const fireDate = todayDateStr(localNow);
+
+  for (const item of data ?? []) {
+
+    const [year, month, day] = item.next_due_at!.split("-").map(Number);
+
+    const dueDate = new Date(Date.UTC(year, month - 1, day));
+    dueDate.setUTCMinutes(dueDate.getUTCMinutes() + LOCAL_OFFSET_MINUTES);
+
+    const dueMs = dueDate.getTime();
+
+    const petName = (item as { pets?: { name?: string } }).pets?.name ??
+      "your pet";
+
+    const treatmentName = isVaccination
+      ? (item as { vaccine_name: string }).vaccine_name
+      : (item as { medicine_name: string }).medicine_name;
+
+    if (withinWindow(dueMs - 24 * 60 * 60_000, nowMs, WINDOW_MINUTES)) {
+      out.push({
+        refType: `${table}_1day`,
+        refId: item.id,
+        fireDate,
+        userId: item.user_id,
+        title: isVaccination ? "Vaccination due tomorrow" : "Deworming due tomorrow",
+        body: `${petName} is due for ${treatmentName}.`
+      });
+    }
+
+    if (withinWindow(dueMs - 60 * 60_000, nowMs, WINDOW_MINUTES)) {
+      out.push({
+        refType: `${table}_1hour`,
+        refId: item.id,
+        fireDate,
+        userId: item.user_id,
+        title: isVaccination ? "Vaccination due in 1 hour" : "Deworming due in 1 hour",
+        body: `${petName} is due for ${treatmentName}.`
       });
     }
   }
@@ -202,10 +283,7 @@ function buildScheduleBody(
 ) {
   const pets = formatPetNames(names);
 
-  const action =
-    kind
-      ? kind.charAt(0).toUpperCase() + kind.slice(1)
-      : "Task";
+  const action = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : "Task";
 
   if (names.length <= 3) {
     return isHeadsUp
@@ -218,7 +296,10 @@ function buildScheduleBody(
     : `${pets} need ${action}`;
 }
 
-async function sendToUser(userId: string, payload: { title: string; body: string }) {
+async function sendToUser(
+  userId: string,
+  payload: { title: string; body: string },
+) {
   const { data: subs, error } = await supabase
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth")
@@ -257,24 +338,41 @@ export default {
 
     const now = new Date();
 
+    const [
+      schedules,
+      vets,
+      vaccinations,
+      deworming,
+    ] = await Promise.all([
+      findDueScheduleNotifications(now),
+      findDueVetNotifications(now),
+      findDueHealthNotifications(now, "vaccinations"),
+      findDueHealthNotifications(now, "deworming"),
+    ]);
+
     const due = [
-      ...(await findDueScheduleNotifications(now)),
-      ...(await findDueVetNotifications(now)),
+      ...schedules,
+      ...vets,
+      ...vaccinations,
+      ...deworming,
     ];
 
     let sent = 0;
     for (const n of due) {
       // Dedupe: try to claim this notification by inserting into the log first.
       // If it already exists (unique violation), skip — it was already sent.
-      const { error: logError } = await supabase.from("notification_log").insert({
-        ref_type: n.refType,
-        ref_id: n.refId,
-        fire_date: n.fireDate,
-      });
+      const { error: logError } = await supabase.from("notification_log")
+        .insert({
+          ref_type: n.refType,
+          ref_id: n.refId,
+          fire_date: n.fireDate,
+        });
 
       if (logError) {
         // 23505 = unique_violation in Postgres — expected when already sent
-        if (logError.code !== "23505") console.error("Log insert failed", logError);
+        if (logError.code !== "23505") {
+          console.error("Log insert failed", logError);
+        }
         continue;
       }
 

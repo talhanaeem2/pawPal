@@ -41,7 +41,8 @@ export type VaccinationTone =
   | "overdue"
   | "due_soon"
   | "completed"
-  | "neutral";
+  | "scheduled"
+  | "no_due_date";
 
 export function getVaccinationTone(
   nextDueAt: string | null,
@@ -49,7 +50,7 @@ export function getVaccinationTone(
 ): VaccinationTone {
   if (completedAt) return "completed";
 
-  if (!nextDueAt) return "neutral";
+  if (!nextDueAt) return "no_due_date";
 
   const due = new Date(nextDueAt).getTime();
   const now = Date.now();
@@ -58,7 +59,7 @@ export function getVaccinationTone(
   if (due < now) return "overdue";
   if (due - now <= days30) return "due_soon";
 
-  return "neutral";
+  return "scheduled";
 }
 
 export function getVaccinationToneClass(tone: VaccinationTone) {
@@ -72,7 +73,10 @@ export function getVaccinationToneClass(tone: VaccinationTone) {
     case "completed":
       return "text-[#6F947F]";
 
-    default:
+    case "no_due_date":
+      return "text-muted-foreground";
+
+    case "scheduled":
       return "text-muted-foreground";
   }
 }
@@ -88,8 +92,11 @@ export function getVaccinationToneLabel(tone: VaccinationTone) {
     case "completed":
       return "Completed";
 
-    default:
+    case "scheduled":
       return "Scheduled";
+
+    case "no_due_date":
+      return "No due date";
   }
 }
 

@@ -32,12 +32,12 @@ export const Route = createFileRoute("/_authenticated/health/vaccinations")({
     },
     pendingComponent: () => <InlineLoader />,
     head: () => ({ meta: [{ title: "Vaccinations · Pawpal" }] }),
-    component: VetPage,
+    component: VaccinationsPage,
     errorComponent: ({ reset }: ErrorComponentProps) => <InlineErrorState onRetry={reset} />,
     notFoundComponent: () => <NotFoundState />,
 });
 
-function VetPage() {
+function VaccinationsPage() {
     const { data: pets } = useSuspenseQuery(petsQuery);
     const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
     const qc = useQueryClient();
@@ -47,6 +47,8 @@ function VetPage() {
 
     function getVaccinationStatus(v: Vaccination) {
         if (v.completed_at) return "completed";
+
+        if (!v.next_due_at) return "no_due_date";
 
         if (v.next_due_at && new Date(v.next_due_at).getTime() < now) {
             return "overdue";
@@ -62,6 +64,10 @@ function VetPage() {
     const overdue = vaccinations
         .filter((v) => getVaccinationStatus(v) === "overdue")
         .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
+
+    const noDueDate = vaccinations
+        .filter((v) => getVaccinationStatus(v) === "no_due_date")
+        .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
 
     const history = vaccinations
         .filter((v) => getVaccinationStatus(v) === "completed")
@@ -110,6 +116,9 @@ function VetPage() {
 
             <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
             <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
+            {noDueDate.length > 0 && (
+                <Group title="No due date" items={noDueDate} pets={pets} onDelete={setConfirmId} />
+            )}
             <Group title="Completed" items={history} pets={pets} onDelete={setConfirmId} />
 
             <ConfirmDialog
@@ -138,7 +147,9 @@ function Group({ title, items, pets, onDelete }: {
             ? "No upcoming vaccines."
             : title === "Overdue"
                 ? "No overdue vaccines."
-                : "No completed vaccines yet.";
+                : title === "No due date"
+                    ? "No vaccines without a due date."
+                    : "No completed vaccines yet.";
 
     return (
         <section>
@@ -248,11 +259,7 @@ function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: 
                 pet_id: data.pet_id,
                 vaccine_name: data.vaccine_name.trim(),
                 administered_at: data.administered_at,
-                next_due_at: data.completed_at
-                    ? null
-                    : data.next_due_at
-                        ? data.next_due_at
-                        : null,
+                next_due_at: data.next_due_at || null,
                 completed_at: data.completed_at ? data.completed_at : null,
                 administered_by: data.administered_by || null,
                 notes: data.notes || null,
@@ -305,7 +312,7 @@ function VaccinationsDialog({ pets, item, trigger, initialOpen }: { pets: { id: 
             <DialogContent className="rounded-3xl">
                 <DialogHeader><DialogTitle className="font-display">{isEdit ? "Edit vaccination" : "New vaccination"}</DialogTitle></DialogHeader>
                 <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
-                    <Field label="Pet">
+                    <Field label="Pet" error={form.errors.pet_id}>
                         <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
