@@ -151,11 +151,11 @@ async function findDueVetNotifications(now: Date): Promise<DueNotification[]> {
 
   const out: DueNotification[] = [];
 
-  const localNow =
-    new Date(now.getTime() + LOCAL_OFFSET_MINUTES * 60000);
+  // const localNow =
+  //   new Date(now.getTime() + LOCAL_OFFSET_MINUTES * 60000);
 
-  const nowMs = localNow.getTime();
-  const fireDate = todayDateStr(localNow);
+  const nowMs = now.getTime();
+  const fireDate = todayDateStr(now);
 
   for (const appt of appts ?? []) {
     const apptMs = new Date(appt.date).getTime();
