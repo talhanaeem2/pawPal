@@ -2,7 +2,7 @@ import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-route
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { petsQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,8 +21,12 @@ import { createEmptyPetForm, Pet, petFormSchema, petToForm } from "@/schemas/pet
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useAuth } from "@/contexts/auth-context";
 import { extractStoragePath } from "@/lib/utils";
+import z from "zod";
 
 export const Route = createFileRoute("/_authenticated/pets")({
+  validateSearch: z.object({
+    new: z.boolean().optional(),
+  }),
   loader: ({ context }) => context.queryClient.ensureQueryData(petsQuery),
   pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Pets · Pawpal" }] }),
@@ -33,6 +37,8 @@ export const Route = createFileRoute("/_authenticated/pets")({
 
 function PetsPage() {
   const { data: pets } = useSuspenseQuery(petsQuery);
+  const { new: openCreate } = Route.useSearch();
+
   return (
     <div className="space-y-5">
       <header className="flex items-end justify-between">
@@ -40,7 +46,10 @@ function PetsPage() {
           <h1 className="font-display text-3xl">Pets</h1>
           <p className="text-sm text-muted-foreground">Your little household.</p>
         </div>
-        <PetDialog trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>} />
+        <PetDialog
+          initialOpen={openCreate}
+          trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+        />
       </header>
 
       {pets.length === 0 ? (
@@ -159,10 +168,11 @@ function PetCard({ pet }: { pet: Pet }) {
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
+function PetDialog({ pet, trigger, initialOpen }: { pet?: Pet; trigger: React.ReactNode; initialOpen?: boolean }) {
   const { user } = useAuth();
   const isEdit = !!pet;
   const qc = useQueryClient();
+  const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
   const form = useZodForm(
     petFormSchema,
@@ -173,6 +183,12 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialOpen) {
+      setOpen(true);
+    }
+  }, [initialOpen]);
 
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -257,8 +273,28 @@ function PetDialog({ pet, trigger }: { pet?: Pet; trigger: React.ReactNode }) {
     onSettled: () => setUploading(false),
   });
 
+  function clearCreateSearch() {
+    if (!isEdit) {
+      navigate({
+        search: {
+          new: undefined,
+        },
+        replace: true,
+      });
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) {
+          resetForm();
+          clearCreateSearch();
+        }
+      }}
+    >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">{isEdit ? `Edit ${pet!.name}` : "New pet"}</DialogTitle></DialogHeader>

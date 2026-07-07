@@ -9,7 +9,7 @@ export function Section({ title, icon: Icon, href, children }: { title: string; 
                     <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
                     <h2 className="font-display text-lg">{title}</h2>
                 </div>
-                <Link to={href} className="text-xs text-muted-foreground hover:text-foreground">See all</Link>
+                <span className="text-xs text-muted-foreground hover:text-foreground">See all</span>
             </Link>
             {children}
         </section>

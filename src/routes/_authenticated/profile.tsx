@@ -29,6 +29,30 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
     const { profile, user, signOut, signingOut } = useAuth();
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteText, setDeleteText] = useState("");
+
+    const deleteAccount = useMutation({
+        mutationFn: async () => {
+            const { error } = await supabase.functions.invoke("delete-account");
+
+            if (error) throw error;
+
+            try {
+                await supabase.auth.signOut();
+            } catch { }
+        },
+
+        onSuccess: () => {
+            setDeleteOpen(false);
+            setDeleteText("");
+            toast.success("Account deleted");
+        },
+
+        onError: (e) => {
+            toast.error(e instanceof Error ? e.message : "Failed to delete account");
+        },
+    });
 
     return (
         <div className="space-y-6">
@@ -142,12 +166,56 @@ function ProfilePage() {
                     <Button
                         variant="destructive"
                         className="mt-5 w-full rounded-full"
-                        onClick={() => { }}
+                        onClick={() => setDeleteOpen(true)}
                     >
                         Delete account
                     </Button>
                 </div>
             </section>
+
+            <Dialog
+                open={deleteOpen}
+                onOpenChange={(open) => {
+                    setDeleteOpen(open);
+
+                    if (!open) {
+                        setDeleteText("");
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete account</DialogTitle>
+                    </DialogHeader>
+
+                    <p className="text-sm text-muted-foreground">
+                        This action cannot be undone.
+                    </p>
+
+                    <p className="text-sm">
+                        Type <strong>DELETE</strong> to continue.
+                    </p>
+
+                    <Input
+                        value={deleteText}
+                        onChange={(e) => setDeleteText(e.target.value)}
+                    />
+
+                    <Button
+                        variant="destructive"
+                        disabled={
+                            deleteText !== "DELETE" ||
+                            deleteAccount.isPending ||
+                            signingOut
+                        }
+                        onClick={() => deleteAccount.mutate()}
+                    >
+                        {deleteAccount.isPending
+                            ? "Deleting..."
+                            : "Delete account"}
+                    </Button>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
@@ -258,9 +326,13 @@ function ProfileDialog({ profile, trigger }: { profile: Profile; trigger: React.
                     <div className="flex justify-center">
                         <div className="relative h-20 w-20">
                             <button type="button" onClick={() => fileInputRef.current?.click()}
-                                className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center overflow-hidden group">
+                                className="h-24 w-24 flex items-center justify-center overflow-hidden group">
                                 {photoPreview
-                                    ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
+                                    ? <UserAvatar
+                                        name={profile.display_name}
+                                        avatarUrl={photoPreview}
+                                        className="h-full w-full object-cover"
+                                    />
                                     : <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />}
                                 <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition flex items-center justify-center">
                                     <Camera className="h-5 w-5 text-card opacity-0 group-hover:opacity-100 transition" strokeWidth={1.75} />
@@ -268,7 +340,7 @@ function ProfileDialog({ profile, trigger }: { profile: Profile; trigger: React.
                             </button>
                             {photoPreview && (
                                 <button type="button" onClick={onRemovePhoto} aria-label="Remove photo"
-                                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-(--shadow-soft)">
+                                    className="absolute -top-1.5 -right-3 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-(--shadow-soft)">
                                     <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                                 </button>
                             )}

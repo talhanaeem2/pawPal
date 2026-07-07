@@ -67,7 +67,11 @@ function Home() {
         <p className="text-sm text-muted-foreground mt-2">
           Add your first pet to start tracking meals, meds, vet visits and walks.
         </p>
-        <Link to="/pets" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground">
+        <Link
+          to="/pets"
+          search={{ new: true }}
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+        >
           <Plus className="h-4 w-4" /> Add a pet
         </Link>
       </div>
