@@ -335,7 +335,7 @@ function ProfileDialog({ profile, trigger }: { profile: Profile; trigger: React.
                                     />
                                     : <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />}
                                 <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition flex items-center justify-center">
-                                    <Camera className="h-5 w-5 text-card opacity-0 group-hover:opacity-100 transition" strokeWidth={1.75} />
+                                    <Camera className="h-5 w-5 text-card opacity-0 group-hover:opacity-100 transition mt-4 ml-4" strokeWidth={1.75} />
                                 </div>
                             </button>
                             {photoPreview && (

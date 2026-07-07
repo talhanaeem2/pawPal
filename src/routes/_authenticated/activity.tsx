@@ -19,6 +19,7 @@ import { ActivityLog, activityLogFormSchema, activityLogToForm, createEmptyActiv
 import { useZodForm } from "@/hooks/use-zod-form";
 import { Field } from "@/components/ui/field";
 import z from "zod";
+import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
 
 export const Route = createFileRoute("/_authenticated/activity")({
   validateSearch: z.object({
@@ -71,9 +72,14 @@ function ActivityPage() {
       </header>
 
       {logs.length === 0 ? (
-        <div className="rounded-3xl bg-card p-8 text-center shadow-(--shadow-soft)">
-          <p className="text-sm text-muted-foreground">No activity yet. Log a walk or play session.</p>
-        </div>
+        <FeatureEmptyState
+          icon={Footprints}
+          title="Track every adventure"
+          description="Log walks, exercise and weight to monitor your pet's health over time."
+          cta="Log activity"
+          to="/activity"
+          search={{ new: true }}
+        />
       ) : (
         <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
           {logs.map((a) => {

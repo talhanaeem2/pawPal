@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 
 import NotFoundState from "@/components/ui/not-found-state";
@@ -20,6 +20,7 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { Field } from "@/components/ui/field";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import z from "zod";
+import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
 
 export const Route = createFileRoute("/_authenticated/health/vet")({
   validateSearch: z.object({
@@ -97,8 +98,21 @@ function VetPage() {
         />
       </header>
 
-      <Group title="Upcoming" items={upcoming} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} />
-      <Group title="History" items={past} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} muted />
+      {appts.length === 0 ? (
+        <FeatureEmptyState
+          icon={Stethoscope}
+          title="Keep every vet visit organized"
+          description="Save upcoming appointments and review previous visits in one place."
+          cta="Schedule visit"
+          to="/health/vet"
+          search={{ new: true }}
+        />
+      ) : (
+        <>
+          <Group title="Upcoming" items={upcoming} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} />
+          <Group title="History" items={past} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} muted />
+        </>
+      )}
 
       <ConfirmDialog
         open={!!confirmId}

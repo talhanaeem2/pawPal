@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, ShieldPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import NotFoundState from "@/components/ui/not-found-state";
@@ -21,6 +21,7 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 import z from "zod";
 import { createEmptyDewormingForm, Deworming, dewormingFormSchema, dewormingToForm } from "@/schemas/deworming";
 import { getDewormingDueTone, getDewormingDueToneClass, getDewormingDueToneLabel } from "@/lib/utils";
+import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
 
 export const Route = createFileRoute("/_authenticated/health/deworming")({
     validateSearch: z.object({
@@ -100,8 +101,23 @@ function DewormingPage() {
                 />
             </header>
 
-            <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
-            <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
+            {dewormings.length === 0 ? (
+                <FeatureEmptyState
+                    icon={ShieldPlus}
+                    title="Stay on top of deworming"
+                    description="Track treatments and receive reminders when the next dose is due."
+                    cta="Add deworming"
+                    to="/health/deworming"
+                    search={{ new: true }}
+                />
+            ) : (
+
+                <>
+                    <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
+                    <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
+                </>
+            )}
+
 
             <ConfirmDialog
                 open={!!confirmId}

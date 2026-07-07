@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Plus, Trash2, Pencil, X } from "lucide-react";
+import { Camera, Plus, Trash2, Pencil, X, PawPrint } from "lucide-react";
 import { toast } from "sonner";
 
 import NotFoundState from "@/components/ui/not-found-state";
@@ -22,6 +22,7 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { useAuth } from "@/contexts/auth-context";
 import { extractStoragePath } from "@/lib/utils";
 import z from "zod";
+import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
 
 export const Route = createFileRoute("/_authenticated/pets")({
   validateSearch: z.object({
@@ -53,9 +54,14 @@ function PetsPage() {
       </header>
 
       {pets.length === 0 ? (
-        <div className="rounded-3xl bg-card p-8 text-center shadow-(--shadow-soft)">
-          <p className="text-sm text-muted-foreground">No pets yet. Add one to get started.</p>
-        </div>
+        <FeatureEmptyState
+          icon={PawPrint}
+          title="Meet your first companion"
+          description="Add your first pet to begin tracking health, activities, schedules and reminders."
+          cta="Add pet"
+          to="/pets"
+          search={{ new: true }}
+        />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {pets.map((p) => <PetCard key={p.id} pet={p} />)}

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Syringe } from "lucide-react";
 import { toast } from "sonner";
 
 import NotFoundState from "@/components/ui/not-found-state";
@@ -21,6 +21,7 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 import { createEmptyVaccinationForm, Vaccination, vaccinationFormSchema, vaccinationToForm } from "@/schemas/vacination";
 import { getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
 import z from "zod";
+import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
 
 export const Route = createFileRoute("/_authenticated/health/vaccinations")({
     validateSearch: z.object({
@@ -114,12 +115,25 @@ function VaccinationsPage() {
                 />
             </header>
 
-            <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
-            <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
-            {noDueDate.length > 0 && (
-                <Group title="No due date" items={noDueDate} pets={pets} onDelete={setConfirmId} />
+            {vaccinations.length === 0 ? (
+                <FeatureEmptyState
+                    icon={Syringe}
+                    title="Never miss an important vaccine"
+                    description="Record vaccinations and we'll remind you when the next dose is due."
+                    cta="Add vaccination"
+                    to="/health/vaccinations"
+                    search={{ new: true }}
+                />
+            ) : (
+                <>
+                    <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
+                    <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
+                    {noDueDate.length > 0 && (
+                        <Group title="No due date" items={noDueDate} pets={pets} onDelete={setConfirmId} />
+                    )}
+                    <Group title="Completed" items={history} pets={pets} onDelete={setConfirmId} />
+                </>
             )}
-            <Group title="Completed" items={history} pets={pets} onDelete={setConfirmId} />
 
             <ConfirmDialog
                 open={!!confirmId}

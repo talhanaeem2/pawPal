@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Check, Trash2, Pencil } from "lucide-react";
+import { Plus, Check, Trash2, Pencil, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 import NotFoundState from "@/components/ui/not-found-state";
@@ -23,6 +23,7 @@ import { PetMultiSelect } from "@/components/ui/pet-multi-select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import React from "react";
 import z from "zod";
+import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   validateSearch: z.object({
@@ -181,9 +182,14 @@ function SchedulePage() {
       </header>
 
       {items.length === 0 ? (
-        <div className="rounded-3xl bg-card p-8 text-center shadow-(--shadow-soft)">
-          <p className="text-sm text-muted-foreground">Nothing scheduled. Add a meal or medication.</p>
-        </div>
+        <FeatureEmptyState
+          icon={Calendar}
+          title="Build the perfect routine"
+          description="Create feeding, medication, walk and grooming schedules with reminders."
+          cta="Add schedule"
+          to="/schedule"
+          search={{ new: true }}
+        />
       ) : (
         <Accordion
           type="single"
