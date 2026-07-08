@@ -342,37 +342,37 @@ export type Database = {
       schedule_items: {
         Row: {
           created_at: string | null
-          custom_frequency: string | null
-          custom_kind: string | null
-          frequency: string | null
           id: string
-          kind: string | null
+          kind: string
+          repeat_every: number
+          repeat_unit: string
+          start_date: string
           time_of_day: string | null
-          title: string | null
+          title: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
-          custom_frequency?: string | null
-          custom_kind?: string | null
-          frequency?: string | null
           id?: string
-          kind?: string | null
+          kind: string
+          repeat_every?: number
+          repeat_unit?: string
+          start_date?: string
           time_of_day?: string | null
-          title?: string | null
+          title: string
           updated_at?: string | null
           user_id?: string
         }
         Update: {
           created_at?: string | null
-          custom_frequency?: string | null
-          custom_kind?: string | null
-          frequency?: string | null
           id?: string
-          kind?: string | null
+          kind?: string
+          repeat_every?: number
+          repeat_unit?: string
+          start_date?: string
           time_of_day?: string | null
-          title?: string | null
+          title?: string
           updated_at?: string | null
           user_id?: string
         }

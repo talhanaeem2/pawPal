@@ -14,7 +14,7 @@ import NotFoundState from "@/components/ui/not-found-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import InlineErrorState from "@/components/ui/inline-error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { cn, formatFrequency, formatKind, formatPetNames, formatTime, todayDateString } from "@/lib/utils";
+import { cn, formatFrequency, formatKind, formatPetNames, formatTime, generateScheduleTitle, getNotesPlaceholder, getScheduleDetailField, getStartDateDescription, getStartDateLabel, getTimeLabel, getTitlePlaceholder, repeatUnitOptions, requiresScheduleStartDate, requiresScheduleTime, todayDateString } from "@/lib/utils";
 import { createEmptyScheduleForm, ScheduleForm, scheduleFormSchema, scheduleToForm, ScheduleWithPets } from "@/schemas/schedule";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { Textarea } from "@/components/ui/textarea";
@@ -227,6 +227,15 @@ function SchedulePage() {
 
             const useAccordion = petCount > 1 || hasLongNotes;
 
+            const repeatText = formatFrequency({
+              repeat_every: s.repeat_every,
+              repeat_unit: s.repeat_unit,
+            });
+
+            const preview = s.time_of_day
+              ? `${repeatText} · ${formatTime(s.time_of_day)}`
+              : repeatText;
+
             return (
               <React.Fragment key={s.id}>
                 {useAccordion === true ? (
@@ -262,9 +271,7 @@ function SchedulePage() {
                             <div className="text-xs text-muted-foreground capitalize">
                               {petLabel && `${petLabel} · `}
                               {formatKind(s)} ·{" "}
-                              {s.time_of_day
-                                ? formatTime(s.time_of_day)
-                                : formatFrequency(s)}
+                              {preview}
                             </div>
                           </div>
                         </AccordionTrigger>
@@ -400,9 +407,7 @@ function SchedulePage() {
                       <div className="text-xs text-muted-foreground capitalize">
                         {petLabel && `${petLabel} · `}
                         {formatKind(s)} ·{" "}
-                        {s.time_of_day
-                          ? formatTime(s.time_of_day)
-                          : formatFrequency(s)}
+                        {preview}
                       </div>
                       {petCount === 1 && hasDetails && detailRows[0].dosage && (
                         <div className="text-xs text-muted-foreground capitalize">
@@ -475,15 +480,8 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
   const qc = useQueryClient();
   const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
-  const [expandedFields, setExpandedFields] = useState<
-    Record<
-      string,
-      {
-        dosage: boolean;
-        notes: boolean;
-      }
-    >
-  >({});
+  const [expandedFields, setExpandedFields] = useState<Record<string, { dosage: boolean; notes: boolean; }>>({});
+  const [isTitleCustomized, setIsTitleCustomized] = useState(isEdit);
 
   const dosageRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const notesRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -501,6 +499,22 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
     }
   }, [initialOpen]);
 
+  useEffect(() => {
+    if (isTitleCustomized || isEdit) return;
+
+    form.setField(
+      "title",
+      generateScheduleTitle(
+        form.values.kind,
+        form.values.time_of_day
+      )
+    );
+  }, [
+    form.values.kind,
+    form.values.time_of_day,
+    isTitleCustomized,
+  ]);
+
   function resetForm() {
     form.reset(
       item
@@ -508,6 +522,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
         : createEmptyScheduleForm(pets[0]?.id)
     );
     setExpandedFields({});
+    setIsTitleCustomized(isEdit);
   };
 
   function updatePetDetail(
@@ -544,11 +559,11 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
 
       const payload = {
         kind: data.kind,
-        custom_kind: data.kind === "other" ? data.custom_kind.trim() || null : null,
         title: data.title.trim(),
         time_of_day: data.time_of_day || null,
-        frequency: data.frequency,
-        custom_frequency: data.frequency === "as_needed" ? data.custom_frequency.trim() || null : null,
+        repeat_every: data.repeat_every,
+        repeat_unit: data.repeat_unit,
+        start_date: data.start_date,
       };
 
       const petLinks = (scheduleId: string) =>
@@ -610,35 +625,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
 
   const multiplePets = form.values.pet_details.length > 1;
 
-  function getDoseField(kind: string) {
-    switch (kind) {
-      case "feeding":
-        return {
-          label: "Amount",
-          placeholder: "e.g. 1 cup, 100 g",
-        };
-
-      case "medication":
-        return {
-          label: "Dose",
-          placeholder: "e.g. 1 tablet, 5 ml",
-        };
-
-      case "grooming":
-        return {
-          label: "Details",
-          placeholder: "e.g. 10 min, Oatmeal shampoo",
-        };
-
-      default:
-        return {
-          label: "Details",
-          placeholder: "Optional",
-        };
-    }
-  }
-
-  const doseField = getDoseField(form.values.kind);
+  const doseField = getScheduleDetailField(form.values.kind);
 
   function clearCreateSearch() {
     if (!isEdit) {
@@ -650,6 +637,9 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
       });
     }
   }
+
+  const needsTime = requiresScheduleTime(form.values.kind);
+  const needsStartDate = requiresScheduleStartDate(form.values.kind);
 
   return (
     <Dialog
@@ -704,57 +694,109 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
+              <Field label="Title" error={form.errors.title}>
+                <Input
+                  value={form.values.title}
+                  onChange={(e) => {
+                    setIsTitleCustomized(true);
+                    form.setField("title", e.target.value)
+                  }}
+                  placeholder={getTitlePlaceholder(form.values.kind)}
+                  required
+                />
+              </Field>
               <Field label="Type">
-                <Select value={form.values.kind} onValueChange={(v) => form.setField("kind", v)}>
+                <Select value={form.values.kind} onValueChange={(v) => form.setField("kind", v as ScheduleForm["kind"])}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="feeding">Feeding</SelectItem>
                     <SelectItem value="medication">Medication</SelectItem>
                     <SelectItem value="grooming">Grooming</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Frequency" error={form.errors.frequency}>
-                <Select value={form.values.frequency} onValueChange={(v) => form.setField("frequency", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="as_needed">As needed</SelectItem>
+                    <SelectItem value="supplements">Supplements</SelectItem>
+                    <SelectItem value="flea_tick">Flea & Tick</SelectItem>
+                    <SelectItem value="exercise">Exercise</SelectItem>
+                    <SelectItem value="training">Training</SelectItem>
+                    <SelectItem value="bath">Bath</SelectItem>
+                    <SelectItem value="nail_trim">Nail trimming</SelectItem>
+                    <SelectItem value="ear_cleaning">Ear cleaning</SelectItem>
+                    <SelectItem value="teeth_brushing">Teeth brushing</SelectItem>
+                    <SelectItem value="weight_check">Weight Check</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
             </div>
-            {form.values.kind === "other" && (
-              <Field label="Custom type" className="col-span-2">
-                <Input
-                  value={form.values.custom_kind}
-                  onChange={(e) => form.setField("custom_kind", e.target.value)}
-                  placeholder="e.g. Vet check, Training, Supplements"
-                  required
-                />
-              </Field>
-            )}
-            {form.values.frequency === "as_needed" && (
-              <Field label="Custom frequency" className="col-span-2">
-                <Input
-                  value={form.values.custom_frequency}
-                  onChange={(e) => form.setField("custom_frequency", e.target.value)}
-                  placeholder="e.g. Every 3 months, 3 times a week, etc."
-                  required
-                />
-              </Field>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Title" error={form.errors.title}>
-                <Input value={form.values.title} onChange={(e) => form.setField("title", e.target.value)} placeholder="Morning kibble" required />
-              </Field>
-              <Field label="Time">
+            {needsTime && (
+              <Field label={getTimeLabel(form.values.kind)}>
                 <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} />
               </Field>
-            </div>
+            )}
+            <Field label="Repeat">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  Every
+                </span>
+
+                <Input
+                  type="number"
+                  min={1}
+                  className="w-24"
+                  value={form.values.repeat_every}
+                  onChange={(e) =>
+                    form.setField(
+                      "repeat_every",
+                      Number(e.target.value) || 1
+                    )
+                  }
+                />
+
+                <Select
+                  value={form.values.repeat_unit}
+                  onValueChange={(v) =>
+                    form.setField(
+                      "repeat_unit",
+                      v as ScheduleForm["repeat_unit"]
+                    )
+                  }
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {repeatUnitOptions.map((option) => (
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {form.values.repeat_every === 1
+                          ? option.singular
+                          : option.plural}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <span className="text-xs text-muted-foreground text-center">
+                {formatFrequency({
+                  repeat_every: form.values.repeat_every,
+                  repeat_unit: form.values.repeat_unit,
+                })}
+              </span>
+            </Field>
+            {needsStartDate && (
+              <Field
+                label={getStartDateLabel(form.values.kind)}
+                description={getStartDateDescription(form.values.kind)}
+              >
+                <Input
+                  type="date"
+                  value={form.values.start_date}
+                  onChange={(e) =>
+                    form.setField("start_date", e.target.value)
+                  }
+                />
+              </Field>
+            )}
             <div className="space-y-2 mb-3">
               {form.values.pet_details.map((detail, index) => {
                 const pet = pets.find((p) => p.id === detail.pet_id);
@@ -793,6 +835,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                           <Textarea
                             rows={2}
                             value={detail.notes}
+                            placeholder={getNotesPlaceholder(form.values.kind)}
                             onChange={(e) =>
                               updatePetDetail(index, {
                                 notes: e.target.value,
@@ -898,7 +941,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
           <div className="border-t">
             {save.isError && <p className="text-sm text-destructive">{save.error instanceof Error ? save.error.message : "Failed to save"}</p>}
             <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
-              {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
+              {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Create reminder"}
             </Button>
           </div>
         </form>

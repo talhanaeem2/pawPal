@@ -45,7 +45,7 @@ async function findDueScheduleNotifications(
 ): Promise<DueNotification[]> {
   const { data: items, error } = await supabase
     .from("schedule_items")
-    .select(`id, user_id, title, kind, time_of_day, frequency, 
+    .select(`id, user_id, title, kind, time_of_day, start_date, repeat_every, repeat_unit, 
     schedule_item_pets (
     id,
     pet_id,
@@ -67,7 +67,64 @@ async function findDueScheduleNotifications(
   const today = todayDateStr(localNow);
 
   for (const item of items ?? []) {
-    if (item.frequency !== "daily") continue; // MVP: only daily-frequency items are time-triggered for now
+    const [year, month, day] = item.start_date.split("-").map(Number);
+
+    const start = new Date(year, month - 1, day);
+    start.setHours(0, 0, 0, 0);
+
+    const todayDate = new Date(localNow);
+    todayDate.setHours(0, 0, 0, 0);
+
+    if (todayDate < start) {
+      continue;
+    }
+
+    const daysSinceStart = Math.floor(
+      (todayDate.getTime() - start.getTime()) / 86400000,
+    );
+
+    let shouldRunToday = false;
+
+    switch (item.repeat_unit) {
+      case "day":
+        shouldRunToday = daysSinceStart % item.repeat_every === 0;
+        break;
+
+      case "week":
+        shouldRunToday =
+          daysSinceStart % (item.repeat_every * 7) === 0;
+        break;
+
+      case "month": {
+        const monthsSinceStart =
+          (todayDate.getFullYear() - start.getFullYear()) * 12 +
+          (todayDate.getMonth() - start.getMonth());
+
+        shouldRunToday =
+          todayDate.getDate() === start.getDate() &&
+          monthsSinceStart >= 0 &&
+          monthsSinceStart % item.repeat_every === 0;
+
+        break;
+      }
+
+      case "year": {
+        const yearsSinceStart =
+          todayDate.getFullYear() - start.getFullYear();
+
+        shouldRunToday =
+          todayDate.getMonth() === start.getMonth() &&
+          todayDate.getDate() === start.getDate() &&
+          yearsSinceStart >= 0 &&
+          yearsSinceStart % item.repeat_every === 0;
+
+        break;
+      }
+    }
+
+    if (!shouldRunToday) {
+      continue;
+    }
 
     const petStatuses = item.schedule_item_pets ?? [];
 
@@ -80,11 +137,11 @@ async function findDueScheduleNotifications(
         return true;
       }
 
-      const latest = completions.reduce((a, b) =>
-        a.completed_on > b.completed_on ? a : b
+      const completedToday = completions.some(
+        c => c.completed_on === today,
       );
 
-      return latest.completed_on !== today;
+      return !completedToday;
     });
 
     const [h, m] = String(item.time_of_day).split(":").map(Number);
