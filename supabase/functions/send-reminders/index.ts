@@ -100,8 +100,16 @@ async function findDueScheduleNotifications(
           (todayDate.getFullYear() - start.getFullYear()) * 12 +
           (todayDate.getMonth() - start.getMonth());
 
+        const lastDayOfMonth = new Date(
+          todayDate.getFullYear(),
+          todayDate.getMonth() + 1,
+          0,
+        ).getDate();
+
+        const scheduledDay = Math.min(start.getDate(), lastDayOfMonth);
+
         shouldRunToday =
-          todayDate.getDate() === start.getDate() &&
+          todayDate.getDate() === scheduledDay &&
           monthsSinceStart >= 0 &&
           monthsSinceStart % item.repeat_every === 0;
 
@@ -112,9 +120,17 @@ async function findDueScheduleNotifications(
         const yearsSinceStart =
           todayDate.getFullYear() - start.getFullYear();
 
+        const lastDayOfMonth = new Date(
+          todayDate.getFullYear(),
+          start.getMonth() + 1,
+          0,
+        ).getDate();
+
+        const scheduledDay = Math.min(start.getDate(), lastDayOfMonth);
+
         shouldRunToday =
           todayDate.getMonth() === start.getMonth() &&
-          todayDate.getDate() === start.getDate() &&
+          todayDate.getDate() === scheduledDay &&
           yearsSinceStart >= 0 &&
           yearsSinceStart % item.repeat_every === 0;
 
@@ -129,9 +145,7 @@ async function findDueScheduleNotifications(
     const petStatuses = item.schedule_item_pets ?? [];
 
     const pendingPets = petStatuses.filter((pet) => {
-      const completions = (pet.schedule_completions ?? []).filter(
-        (c) => c.schedule_item_pet_id === pet.id,
-      );
+      const completions = pet.schedule_completions ?? [];
 
       if (completions.length === 0) {
         return true;
@@ -350,7 +364,7 @@ function buildScheduleBody(
 
 async function sendToUser(
   userId: string,
-  payload: { title: string; body: string },
+  payload: { title: string; body: string, tag?: string; },
 ) {
   const { data: subs, error } = await supabase
     .from("push_subscriptions")
@@ -428,7 +442,7 @@ export default {
         continue;
       }
 
-      await sendToUser(n.userId, { title: n.title, body: n.body });
+      await sendToUser(n.userId, { title: n.title, body: n.body, tag: `${n.refType}-${n.refId}` });
       sent++;
     }
 
