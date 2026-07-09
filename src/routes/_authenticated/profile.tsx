@@ -1,3 +1,4 @@
+import { Page } from "@/components/layout/page";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -55,168 +56,156 @@ function ProfilePage() {
     });
 
     return (
-        <div className="space-y-6">
-            <header>
-                <h1 className="font-display text-3xl">Profile</h1>
-                <p className="text-sm text-muted-foreground">
-                    Manage your account preferences.
-                </p>
-            </header>
-
-            <section className="rounded-3xl bg-card p-8 shadow-(--shadow-soft)">
-                <div className="flex flex-col items-center text-center mb-4">
-                    <div className="relative">
-                        <UserAvatar
-                            name={profile.display_name}
-                            avatarUrl={profile.avatar_url}
-                            className="h-24 w-24"
-                        />
-                    </div>
-
-                    <h2 className="mt-4 text-2xl font-semibold">
-                        {profile.display_name}
-                    </h2>
-
-                    <p className="mt-1 text-sm text-muted-foreground break-all">
-                        {user.email}
-                    </p>
-                </div>
-                <ProfileDialog
-                    profile={profile}
-                    trigger={<Button
-                        variant="outline"
-                        className="w-full rounded-full"
-                    >
-                        Edit profile
-                    </Button>}
-                />
-            </section>
-
-            <section className="space-y-3">
-                <h3 className="px-1 text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    Profile
-                </h3>
-
-                <div className="rounded-3xl bg-card shadow-(--shadow-soft) py-2">
-                    <div className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium border-b last:border-b-0">
-                        <span>
-                            Name
-                        </span>
-                        <span className="truncate text-sm text-muted-foreground">
-                            {profile.display_name}
-                        </span>
-                    </div>
-                    {/* <div className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium border-b last:border-b-0">
-                        <span>
-                            Language
-                        </span>
-                        <span className="truncate text-sm text-muted-foreground">
-                            {profile.locale}
-                        </span>
-                    </div>
-                    <div className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium border-b last:border-b-0">
-                        <span>
-                            Timezone
-                        </span>
-                        <span className="truncate text-sm text-muted-foreground">
-                            {profile.timezone}
-                        </span>
-                    </div> */}
-                    <div className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium border-b last:border-b-0">
-                        <span>
-                            Notifications
-                        </span>
-                        <span className="truncate text-sm text-muted-foreground">
-                            {profile.notifications_enabled ? "Enabled" : "Disabled"}
-                        </span>
-                    </div>
-                </div>
-            </section>
-
-            <Button
-                variant="outline"
-                className="w-full rounded-full"
-                onClick={() => setConfirmOpen(true)}
-            >
-                {signingOut ? "Signing out..." : "Sign out"}
-            </Button>
-
-            <ConfirmDialog
-                open={confirmOpen}
-                onOpenChange={setConfirmOpen}
-                title="Sign out?"
-                description="You will need to log in again."
-                confirmText="Sign out"
-                confirmVariant="destructive"
-                loading={signingOut}
-                onConfirm={signOut}
-            />
-
-            <section className="space-y-3">
-                <div className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
-                    <h4 className="font-medium text-destructive">
-                        Delete account
-                    </h4>
-
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Permanently delete your account, pets, reminders, activities,
-                        health records, and all associated data.
-                    </p>
-
-                    <Button
-                        variant="destructive"
-                        className="mt-5 w-full rounded-full"
-                        onClick={() => setDeleteOpen(true)}
-                    >
-                        Delete account
-                    </Button>
-                </div>
-            </section>
-
-            <Dialog
-                open={deleteOpen}
-                onOpenChange={(open) => {
-                    setDeleteOpen(open);
-
-                    if (!open) {
-                        setDeleteText("");
-                    }
-                }}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete account</DialogTitle>
-                    </DialogHeader>
-
+        <Page>
+            <Page.Header>
+                <header>
+                    <h1 className="font-display text-3xl">Profile</h1>
                     <p className="text-sm text-muted-foreground">
-                        This action cannot be undone.
+                        Manage your account preferences.
                     </p>
+                </header>
 
-                    <p className="text-sm">
-                        Type <strong>DELETE</strong> to continue.
-                    </p>
+                <section className="rounded-3xl bg-card p-8 shadow-(--shadow-soft)">
+                    <div className="flex flex-col items-center text-center mb-4">
+                        <div className="relative">
+                            <UserAvatar
+                                name={profile.display_name}
+                                avatarUrl={profile.avatar_url}
+                                className="h-24 w-24"
+                            />
+                        </div>
 
-                    <Input
-                        value={deleteText}
-                        onChange={(e) => setDeleteText(e.target.value)}
+                        <h2 className="mt-4 text-2xl font-semibold">
+                            {profile.display_name}
+                        </h2>
+
+                        <p className="mt-1 text-sm text-muted-foreground break-all">
+                            {user.email}
+                        </p>
+                    </div>
+                    <ProfileDialog
+                        profile={profile}
+                        trigger={<Button
+                            variant="outline"
+                            className="w-full rounded-full"
+                        >
+                            Edit profile
+                        </Button>}
                     />
+                </section>
+            </Page.Header>
 
-                    <Button
-                        variant="destructive"
-                        disabled={
-                            deleteText !== "DELETE" ||
-                            deleteAccount.isPending ||
-                            signingOut
+            <Page.Content>
+                <section className="space-y-3">
+                    <h3 className="px-1 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                        Profile
+                    </h3>
+
+                    <div className="rounded-3xl bg-card shadow-(--shadow-soft) py-2">
+                        <div className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium border-b last:border-b-0">
+                            <span>
+                                Name
+                            </span>
+                            <span className="truncate text-sm text-muted-foreground">
+                                {profile.display_name}
+                            </span>
+                        </div>
+                        <div className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium border-b last:border-b-0">
+                            <span>
+                                Notifications
+                            </span>
+                            <span className="truncate text-sm text-muted-foreground">
+                                {profile.notifications_enabled ? "Enabled" : "Disabled"}
+                            </span>
+                        </div>
+                    </div>
+                </section>
+
+                <Button
+                    variant="outline"
+                    className="w-full rounded-full"
+                    onClick={() => setConfirmOpen(true)}
+                >
+                    {signingOut ? "Signing out..." : "Sign out"}
+                </Button>
+
+                <ConfirmDialog
+                    open={confirmOpen}
+                    onOpenChange={setConfirmOpen}
+                    title="Sign out?"
+                    description="You will need to log in again."
+                    confirmText="Sign out"
+                    confirmVariant="destructive"
+                    loading={signingOut}
+                    onConfirm={signOut}
+                />
+
+                <section className="space-y-3">
+                    <div className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
+                        <h4 className="font-medium text-destructive">
+                            Delete account
+                        </h4>
+
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Permanently delete your account, pets, reminders, activities,
+                            health records, and all associated data.
+                        </p>
+
+                        <Button
+                            variant="destructive"
+                            className="mt-5 w-full rounded-full"
+                            onClick={() => setDeleteOpen(true)}
+                        >
+                            Delete account
+                        </Button>
+                    </div>
+                </section>
+
+                <Dialog
+                    open={deleteOpen}
+                    onOpenChange={(open) => {
+                        setDeleteOpen(open);
+
+                        if (!open) {
+                            setDeleteText("");
                         }
-                        onClick={() => deleteAccount.mutate()}
-                    >
-                        {deleteAccount.isPending
-                            ? "Deleting..."
-                            : "Delete account"}
-                    </Button>
-                </DialogContent>
-            </Dialog>
-        </div>
+                    }}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete account</DialogTitle>
+                        </DialogHeader>
+
+                        <p className="text-sm text-muted-foreground">
+                            This action cannot be undone.
+                        </p>
+
+                        <p className="text-sm">
+                            Type <strong>DELETE</strong> to continue.
+                        </p>
+
+                        <Input
+                            value={deleteText}
+                            onChange={(e) => setDeleteText(e.target.value)}
+                        />
+
+                        <Button
+                            variant="destructive"
+                            disabled={
+                                deleteText !== "DELETE" ||
+                                deleteAccount.isPending ||
+                                signingOut
+                            }
+                            onClick={() => deleteAccount.mutate()}
+                        >
+                            {deleteAccount.isPending
+                                ? "Deleting..."
+                                : "Delete account"}
+                        </Button>
+                    </DialogContent>
+                </Dialog>
+            </Page.Content>
+        </Page>
     );
 }
 

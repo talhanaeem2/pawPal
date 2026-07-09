@@ -43,7 +43,7 @@
 
 :root {
   --radius: 1rem;
-
+  --bottom-nav-height: 5rem;
   /* Calm pastel palette */
   --cream:       oklch(0.972 0.012 85);    /* #F6F4EE base */
   --sage:        oklch(0.795 0.052 155);   /* #A8C5B5 */

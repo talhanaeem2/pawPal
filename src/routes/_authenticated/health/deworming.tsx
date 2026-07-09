@@ -22,6 +22,7 @@ import z from "zod";
 import { createEmptyDewormingForm, Deworming, dewormingFormSchema, dewormingToForm } from "@/schemas/deworming";
 import { getDewormingDueTone, getDewormingDueToneClass, getDewormingDueToneLabel } from "@/lib/utils";
 import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
+import { Page } from "@/components/layout/page";
 
 export const Route = createFileRoute("/_authenticated/health/deworming")({
     validateSearch: z.object({
@@ -73,51 +74,54 @@ function DewormingPage() {
     const confirmItem = dewormings.find((a) => a.id === confirmId);
 
     return (
-        <div className="space-y-5">
-            <Breadcrumb>
-                <BreadcrumbList>
-                    <BreadcrumbItem>
-                        <BreadcrumbLink asChild>
-                            <Link to="/health">Health</Link>
-                        </BreadcrumbLink>
-                    </BreadcrumbItem>
+        <Page>
+            <Page.Header>
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink asChild>
+                                <Link to="/health">Health</Link>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
 
-                    <BreadcrumbSeparator />
+                        <BreadcrumbSeparator />
 
-                    <BreadcrumbItem>
-                        <BreadcrumbPage>Deworming</BreadcrumbPage>
-                    </BreadcrumbItem>
-                </BreadcrumbList>
-            </Breadcrumb>
-            <header className="flex items-end justify-between">
-                <div>
-                    <h1 className="font-display text-3xl">Dewormings</h1>
-                    <p className="text-sm text-muted-foreground">Deworming records & due dates.</p>
-                </div>
-                <DewormingDialog
-                    pets={pets}
-                    initialOpen={openCreate}
-                    trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
-                />
-            </header>
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Deworming</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+                <header className="flex items-end justify-between">
+                    <div>
+                        <h1 className="font-display text-3xl">Dewormings</h1>
+                        <p className="text-sm text-muted-foreground">Deworming records & due dates.</p>
+                    </div>
+                    <DewormingDialog
+                        pets={pets}
+                        initialOpen={openCreate}
+                        trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+                    />
+                </header>
+            </Page.Header>
 
-            {dewormings.length === 0 ? (
-                <FeatureEmptyState
-                    icon={ShieldPlus}
-                    title="Stay on top of deworming"
-                    description="Track treatments and receive reminders when the next dose is due."
-                    cta="Add deworming"
-                    to="/health/deworming"
-                    search={{ new: true }}
-                />
-            ) : (
+            <Page.Content>
+                {dewormings.length === 0 ? (
+                    <FeatureEmptyState
+                        icon={ShieldPlus}
+                        title="Stay on top of deworming"
+                        description="Track treatments and receive reminders when the next dose is due."
+                        cta="Add deworming"
+                        to="/health/deworming"
+                        search={{ new: true }}
+                    />
+                ) : (
 
-                <>
-                    <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
-                    <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
-                </>
-            )}
-
+                    <>
+                        <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
+                        <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
+                    </>
+                )}
+            </Page.Content>
 
             <ConfirmDialog
                 open={!!confirmId}
@@ -129,7 +133,7 @@ function DewormingPage() {
                 confirmVariant="destructive"
                 onConfirm={() => confirmId && del.mutate(confirmId)}
             />
-        </div>
+        </Page>
     );
 }
 

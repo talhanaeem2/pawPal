@@ -20,6 +20,7 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { Field } from "@/components/ui/field";
 import z from "zod";
 import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
+import { Page } from "@/components/layout/page";
 
 export const Route = createFileRoute("/_authenticated/activity")({
   validateSearch: z.object({
@@ -58,71 +59,75 @@ function ActivityPage() {
   const confirmItem = logs.find((l) => l.id === confirmId);
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-3xl">Activity</h1>
-          <p className="text-sm text-muted-foreground">Walks, play & weight.</p>
-        </div>
-        <ActivityDialog
-          pets={pets}
-          initialOpen={openCreate}
-          trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Log</Button>}
-        />
-      </header>
+    <Page>
+      <Page.Header>
+        <header className="flex items-end justify-between">
+          <div>
+            <h1 className="font-display text-3xl">Activity</h1>
+            <p className="text-sm text-muted-foreground">Walks, play & weight.</p>
+          </div>
+          <ActivityDialog
+            pets={pets}
+            initialOpen={openCreate}
+            trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Log</Button>}
+          />
+        </header>
+      </Page.Header>
 
-      {logs.length === 0 ? (
-        <FeatureEmptyState
-          icon={Footprints}
-          title="Track every adventure"
-          description="Log walks, exercise and weight to monitor your pet's health over time."
-          cta="Log activity"
-          to="/activity"
-          search={{ new: true }}
-        />
-      ) : (
-        <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
-          {logs.map((a) => {
-            const pet = pets.find((p) => p.id === a.pet_id);
-            const Icon = icons[a.activity_type] ?? Footprints;
-            return (
-              <li key={a.id} className="p-4 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-secondary/60 flex items-center justify-center">
-                  <Icon className="h-4 w-4 text-foreground" strokeWidth={1.75} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm capitalize">{a.activity_type}{pet ? ` · ${pet.name}` : ""}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                    {a.duration_min ? ` · ${a.duration_min} min` : ""}
-                    {a.weight ? ` · ${a.weight}${a.activity_type === "weight" ? " kg" : ""}` : ""}
+      <Page.Content>
+        {logs.length === 0 ? (
+          <FeatureEmptyState
+            icon={Footprints}
+            title="Track every adventure"
+            description="Log walks, exercise and weight to monitor your pet's health over time."
+            cta="Log activity"
+            to="/activity"
+            search={{ new: true }}
+          />
+        ) : (
+          <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
+            {logs.map((a) => {
+              const pet = pets.find((p) => p.id === a.pet_id);
+              const Icon = icons[a.activity_type] ?? Footprints;
+              return (
+                <li key={a.id} className="p-4 flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-secondary/60 flex items-center justify-center">
+                    <Icon className="h-4 w-4 text-foreground" strokeWidth={1.75} />
                   </div>
-                  {a.notes && <p className="text-xs text-muted-foreground mt-1 truncate">{a.notes}</p>}
-                </div>
-                <ActivityDialog
-                  pets={pets}
-                  item={a}
-                  initialOpen={openCreate}
-                  trigger={
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" aria-label="Edit log">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setConfirmId(a.id)}
-                  className="text-muted-foreground hover:text-destructive"
-                  aria-label="Delete log"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm capitalize">{a.activity_type}{pet ? ` · ${pet.name}` : ""}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                      {a.duration_min ? ` · ${a.duration_min} min` : ""}
+                      {a.weight ? ` · ${a.weight}${a.activity_type === "weight" ? " kg" : ""}` : ""}
+                    </div>
+                    {a.notes && <p className="text-xs text-muted-foreground mt-1 truncate">{a.notes}</p>}
+                  </div>
+                  <ActivityDialog
+                    pets={pets}
+                    item={a}
+                    initialOpen={openCreate}
+                    trigger={
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" aria-label="Edit log">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setConfirmId(a.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="Delete log"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Page.Content>
 
       <ConfirmDialog
         open={!!confirmId}
@@ -134,7 +139,7 @@ function ActivityPage() {
         confirmVariant="destructive"
         onConfirm={() => confirmId && del.mutate(confirmId)}
       />
-    </div>
+    </Page>
   );
 }
 

@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { extractStoragePath } from "@/lib/utils";
 import z from "zod";
 import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
+import { Page } from "@/components/layout/page";
 
 export const Route = createFileRoute("/_authenticated/pets")({
   validateSearch: z.object({
@@ -41,33 +42,37 @@ function PetsPage() {
   const { new: openCreate } = Route.useSearch();
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-3xl">Pets</h1>
-          <p className="text-sm text-muted-foreground">Your little household.</p>
-        </div>
-        <PetDialog
-          initialOpen={openCreate}
-          trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
-        />
-      </header>
+    <Page>
+      <Page.Header>
+        <header className="flex items-end justify-between">
+          <div>
+            <h1 className="font-display text-3xl">Pets</h1>
+            <p className="text-sm text-muted-foreground">Your little household.</p>
+          </div>
+          <PetDialog
+            initialOpen={openCreate}
+            trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+          />
+        </header>
+      </Page.Header>
 
-      {pets.length === 0 ? (
-        <FeatureEmptyState
-          icon={PawPrint}
-          title="Meet your first companion"
-          description="Add your first pet to begin tracking health, activities, schedules and reminders."
-          cta="Add pet"
-          to="/pets"
-          search={{ new: true }}
-        />
-      ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {pets.map((p) => <PetCard key={p.id} pet={p} />)}
-        </ul>
-      )}
-    </div>
+      <Page.Content>
+        {pets.length === 0 ? (
+          <FeatureEmptyState
+            icon={PawPrint}
+            title="Meet your first companion"
+            description="Add your first pet to begin tracking health, activities, schedules and reminders."
+            cta="Add pet"
+            to="/pets"
+            search={{ new: true }}
+          />
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {pets.map((p) => <PetCard key={p.id} pet={p} />)}
+          </ul>
+        )}
+      </Page.Content>
+    </Page>
   );
 }
 

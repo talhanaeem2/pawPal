@@ -26,6 +26,7 @@ import z from "zod";
 import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Page } from "@/components/layout/page";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   validateSearch: z.object({
@@ -181,103 +182,239 @@ function SchedulePage() {
     total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-3xl">Schedule</h1>
-          <p className="text-sm text-muted-foreground">Meals, meds & routines.</p>
-        </div>
-        <ScheduleDialog
-          pets={pets}
-          initialOpen={openCreate}
-          trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
-        />
-      </header>
-      {items.length > 0 && (
-        <Card>
-          <CardContent className="space-y-3 p-5">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-medium text-base">Today's progress</p>
-                <p className="text-sm text-muted-foreground">
-                  {completed} of {total} reminders completed
-                </p>
+    <Page>
+      <Page.Header>
+        <header className="flex items-end justify-between">
+          <div>
+            <h1 className="font-display text-3xl">Schedule</h1>
+            <p className="text-sm text-muted-foreground">Meals, meds & routines.</p>
+          </div>
+          <ScheduleDialog
+            pets={pets}
+            initialOpen={openCreate}
+            trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+          />
+        </header>
+        {items.length > 0 && (
+          <Card>
+            <CardContent className="space-y-2 p-4">
+              <div className="flex justify-between">
+                <div>
+                  <p className="font-medium">Today's progress</p>
+                  <p className="text-xs text-muted-foreground">
+                    {completed} of {total} reminders completed
+                  </p>
+                </div>
+
+                <span className="font-medium">
+                  {progress}%
+                </span>
               </div>
 
-              <span className="font-medium">
-                {progress}%
-              </span>
-            </div>
+              <Progress value={progress} />
+            </CardContent>
+          </Card>
+        )}
+      </Page.Header>
+      <Page.Content>
+        {items.length === 0 ? (
+          <FeatureEmptyState
+            icon={Calendar}
+            title="Build the perfect routine"
+            description="Create feeding, medication, walk and grooming schedules with reminders."
+            cta="Add schedule"
+            to="/schedule"
+            search={{ new: true }}
+          />
+        ) : (
+          <Accordion
+            type="single"
+            collapsible
+            className="rounded-3xl bg-card shadow-(--shadow-soft)"
+          >
+            {items.map((s) => {
+              const petStatuses = s.schedule_item_pets.map((schedulePet) => ({
+                ...schedulePet,
+                pet: pets.find((p) => p.id === schedulePet.pet_id),
+                done: schedulePet.schedule_completions.some(
+                  (c) => c.completed_on === today
+                ),
+              }))
+                .sort((a, b) =>
+                  (a.pet?.name ?? "").localeCompare(b.pet?.name ?? "")
+                );
 
-            <Progress value={progress} />
-          </CardContent>
-        </Card>
-      )}
-      {items.length === 0 ? (
-        <FeatureEmptyState
-          icon={Calendar}
-          title="Build the perfect routine"
-          description="Create feeding, medication, walk and grooming schedules with reminders."
-          cta="Add schedule"
-          to="/schedule"
-          search={{ new: true }}
-        />
-      ) : (
-        <Accordion
-          type="single"
-          collapsible
-          className="rounded-3xl bg-card shadow-(--shadow-soft)"
-        >
-          {items.map((s) => {
-            const petStatuses = s.schedule_item_pets.map((schedulePet) => ({
-              ...schedulePet,
-              pet: pets.find((p) => p.id === schedulePet.pet_id),
-              done: schedulePet.schedule_completions.some(
-                (c) => c.completed_on === today
-              ),
-            }))
-              .sort((a, b) =>
-                (a.pet?.name ?? "").localeCompare(b.pet?.name ?? "")
+              const petCount = petStatuses.length;
+              const doneToday = petStatuses.length > 0 && petStatuses.every((p) => p.done);
+              const petLabel = formatPetNames(
+                petStatuses
+                  .map((p) => p.pet?.name)
+                  .filter((name): name is string => !!name)
+              );
+              const detailRows = petStatuses.filter(
+                (p) => p.dosage || p.notes
               );
 
-            const petCount = petStatuses.length;
-            const doneToday = petStatuses.length > 0 && petStatuses.every((p) => p.done);
-            const petLabel = formatPetNames(
-              petStatuses
-                .map((p) => p.pet?.name)
-                .filter((name): name is string => !!name)
-            );
-            const detailRows = petStatuses.filter(
-              (p) => p.dosage || p.notes
-            );
+              const hasDetails = detailRows.length > 0;
 
-            const hasDetails = detailRows.length > 0;
+              const hasLongNotes = detailRows.some(
+                (p) => (p.notes?.length ?? 120) > 120
+              );
 
-            const hasLongNotes = detailRows.some(
-              (p) => (p.notes?.length ?? 120) > 120
-            );
+              const useAccordion = petCount > 1 || hasLongNotes;
 
-            const useAccordion = petCount > 1 || hasLongNotes;
+              const repeatText = formatFrequency({
+                repeat_every: s.repeat_every,
+                repeat_unit: s.repeat_unit,
+              });
 
-            const repeatText = formatFrequency({
-              repeat_every: s.repeat_every,
-              repeat_unit: s.repeat_unit,
-            });
+              const preview = s.time_of_day
+                ? `${repeatText} · ${formatTime(s.time_of_day)}`
+                : repeatText;
 
-            const preview = s.time_of_day
-              ? `${repeatText} · ${formatTime(s.time_of_day)}`
-              : repeatText;
+              const detailField = getScheduleDetailField(s.kind);
 
-            const detailField = getScheduleDetailField(s.kind);
+              return (
+                <React.Fragment key={s.id}>
+                  {useAccordion === true ? (
+                    <AccordionItem
+                      key={s.id}
+                      value={s.id}
+                    >
+                      <div className={cn("flex items-center gap-3 px-4 transition-all duration-200", doneToday && "opacity-70")}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggle.mutate({
+                              scheduleItemId: s.id,
+                              markDone: !doneToday,
+                            });
+                          }}
+                          disabled={toggle.isPending}
+                          className={`h-9 w-9 rounded-full border flex items-center justify-center transition-all duration-200 ${doneToday
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-border hover:bg-accent/40"
+                            }`}
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
 
-            return (
-              <React.Fragment key={s.id}>
-                {useAccordion === true ? (
-                  <AccordionItem
-                    key={s.id}
-                    value={s.id}
-                  >
-                    <div className={cn("flex items-center gap-3 px-4 transition-all duration-200", doneToday && "opacity-70")}>
+                        <div className="flex-1 min-w-0">
+                          <AccordionTrigger className="flex-1 hover:no-underline">
+                            <div className="text-left">
+                              <div className={cn("font-medium text-sm capitalize", doneToday && "line-through")}>
+                                {s.title}
+                              </div>
+
+                              <div className="text-xs text-muted-foreground capitalize">
+                                {petLabel && `${petLabel} · `}
+                                {formatKind(s)} ·{" "}
+                                {preview}
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                        </div>
+
+                        <div className="flex">
+                          <ScheduleDialog
+                            pets={pets}
+                            item={s}
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmId(s.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <AccordionContent className="px-4 pb-2">
+
+                        {petCount > 1 && (
+                          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                            {petStatuses.map((pet) => (
+                              <Button
+                                key={pet.pet_id}
+                                size="sm"
+                                variant={pet.done ? "default" : "outline"}
+                                className={cn(pet.done && "opacity-70")}
+                                onClick={() =>
+                                  toggle.mutate({
+                                    scheduleItemId: s.id,
+                                    scheduleItemPetId: pet.id,
+                                    markDone: !pet.done,
+                                  })
+                                }
+                              >
+                                {pet.pet?.name}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+
+                        {petStatuses.some((p) => p.dosage || p.notes) && (
+                          <div className={cn(petCount > 1 && "space-y-2 mt-4")}>
+                            {petStatuses.map((pet) => {
+                              if (!pet.dosage && !pet.notes) return null;
+
+                              return (
+                                <div
+                                  key={pet.pet_id}
+                                  className={cn(pet.done && "opacity-70", "transition-all duration-200 not-last:border-b first:border-t p-2 space-y-1")}
+                                >
+                                  {petCount > 1 && (
+                                    <div className="text-sm font-medium capitalize">
+                                      {pet.pet?.name}
+                                    </div>
+                                  )}
+
+                                  <div className="space-y-0.5">
+                                    {pet.dosage && (
+                                      <div className="flex gap-1 text-sm">
+                                        <span className="font-medium text-muted-foreground">
+                                          {detailField.label}
+                                        </span>
+                                        <span>{pet.dosage}</span>
+                                      </div>
+                                    )}
+
+                                    {pet.notes && (
+                                      <div className="flex gap-1 text-sm">
+                                        <span className="font-medium text-muted-foreground">
+                                          Notes:
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                          {pet.notes}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ) : (
+                    <li
+                      key={s.id}
+                      className={cn("flex items-center gap-3 p-4 border-b last:border-b-0 px-4 transition-all duration-200", doneToday && "opacity-70")}
+                    >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -296,19 +433,25 @@ function SchedulePage() {
                       </button>
 
                       <div className="flex-1 min-w-0">
-                        <AccordionTrigger className="flex-1 hover:no-underline">
-                          <div className="text-left">
-                            <div className={cn("font-medium text-sm capitalize", doneToday && "line-through")}>
-                              {s.title}
-                            </div>
+                        <div className={cn("font-medium text-sm capitalize", doneToday && "line-through")}>
+                          {s.title}
+                        </div>
 
-                            <div className="text-xs text-muted-foreground capitalize">
-                              {petLabel && `${petLabel} · `}
-                              {formatKind(s)} ·{" "}
-                              {preview}
-                            </div>
+                        <div className="text-xs text-muted-foreground capitalize">
+                          {petLabel && `${petLabel} · `}
+                          {formatKind(s)} ·{" "}
+                          {preview}
+                        </div>
+                        {petCount === 1 && hasDetails && detailRows[0].dosage && (
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {detailField.label}: {detailRows[0].dosage}
                           </div>
-                        </AccordionTrigger>
+                        )}
+                        {petCount === 1 && hasDetails && detailRows[0].notes && (
+                          <div className="text-xs text-muted-foreground capitalize">
+                            Notes: {detailRows[0].notes}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex">
@@ -336,152 +479,14 @@ function SchedulePage() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </div>
-
-                    <AccordionContent className="px-4 pb-2">
-
-                      {petCount > 1 && (
-                        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                          {petStatuses.map((pet) => (
-                            <Button
-                              key={pet.pet_id}
-                              size="sm"
-                              variant={pet.done ? "default" : "outline"}
-                              className={cn(pet.done && "opacity-70")}
-                              onClick={() =>
-                                toggle.mutate({
-                                  scheduleItemId: s.id,
-                                  scheduleItemPetId: pet.id,
-                                  markDone: !pet.done,
-                                })
-                              }
-                            >
-                              {pet.pet?.name}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-
-                      {petStatuses.some((p) => p.dosage || p.notes) && (
-                        <div className={cn(petCount > 1 && "space-y-2 mt-4")}>
-                          {petStatuses.map((pet) => {
-                            if (!pet.dosage && !pet.notes) return null;
-
-                            return (
-                              <div
-                                key={pet.pet_id}
-                                className={cn(pet.done && "opacity-70", "transition-all duration-200 not-last:border-b first:border-t p-2 space-y-1")}
-                              >
-                                {petCount > 1 && (
-                                  <div className="text-sm font-medium capitalize">
-                                    {pet.pet?.name}
-                                  </div>
-                                )}
-
-                                <div className="space-y-0.5">
-                                  {pet.dosage && (
-                                    <div className="flex gap-1 text-sm">
-                                      <span className="font-medium text-muted-foreground">
-                                        {detailField.label}
-                                      </span>
-                                      <span>{pet.dosage}</span>
-                                    </div>
-                                  )}
-
-                                  {pet.notes && (
-                                    <div className="flex gap-1 text-sm">
-                                      <span className="font-medium text-muted-foreground">
-                                        Notes:
-                                      </span>
-                                      <span className="text-muted-foreground">
-                                        {pet.notes}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </AccordionContent>
-                  </AccordionItem>
-                ) : (
-                  <li
-                    key={s.id}
-                    className={cn("flex items-center gap-3 p-4 border-b last:border-b-0 px-4 transition-all duration-200", doneToday && "opacity-70")}
-                  >
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggle.mutate({
-                          scheduleItemId: s.id,
-                          markDone: !doneToday,
-                        });
-                      }}
-                      disabled={toggle.isPending}
-                      className={`h-9 w-9 rounded-full border flex items-center justify-center transition-all duration-200 ${doneToday
-                        ? "bg-primary border-primary text-primary-foreground"
-                        : "border-border hover:bg-accent/40"
-                        }`}
-                    >
-                      <Check className="h-4 w-4" />
-                    </button>
-
-                    <div className="flex-1 min-w-0">
-                      <div className={cn("font-medium text-sm capitalize", doneToday && "line-through")}>
-                        {s.title}
-                      </div>
-
-                      <div className="text-xs text-muted-foreground capitalize">
-                        {petLabel && `${petLabel} · `}
-                        {formatKind(s)} ·{" "}
-                        {preview}
-                      </div>
-                      {petCount === 1 && hasDetails && detailRows[0].dosage && (
-                        <div className="text-xs text-muted-foreground capitalize">
-                          {detailField.label}: {detailRows[0].dosage}
-                        </div>
-                      )}
-                      {petCount === 1 && hasDetails && detailRows[0].notes && (
-                        <div className="text-xs text-muted-foreground capitalize">
-                          Notes: {detailRows[0].notes}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex">
-                      <ScheduleDialog
-                        pets={pets}
-                        item={s}
-                        trigger={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        }
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmId(s.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </li >
-                )}
-              </React.Fragment>
-            );
-          })}
-        </Accordion>
-      )}
+                    </li >
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </Accordion>
+        )}
+      </Page.Content>
 
       <ConfirmDialog
         open={!!confirmId}
@@ -493,7 +498,7 @@ function SchedulePage() {
         confirmVariant="destructive"
         onConfirm={() => confirmId && del.mutate(confirmId)}
       />
-    </div >
+    </Page>
   );
 }
 

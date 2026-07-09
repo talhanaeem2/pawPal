@@ -21,6 +21,7 @@ import { Field } from "@/components/ui/field";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import z from "zod";
 import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
+import { Page } from "@/components/layout/page";
 
 export const Route = createFileRoute("/_authenticated/health/vet")({
   validateSearch: z.object({
@@ -70,49 +71,53 @@ function VetPage() {
   const confirmItem = appts.find((a) => a.id === confirmId);
 
   return (
-    <div className="space-y-5">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/health">Health</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
+    <Page>
+      <Page.Header>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/health">Health</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
 
-          <BreadcrumbSeparator />
+            <BreadcrumbSeparator />
 
-          <BreadcrumbItem>
-            <BreadcrumbPage>Vet</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-3xl">Vet</h1>
-          <p className="text-sm text-muted-foreground">Appointments & history.</p>
-        </div>
-        <VetDialog
-          pets={pets}
-          initialOpen={openCreate}
-          trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
-        />
-      </header>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Vet</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <header className="flex items-end justify-between">
+          <div>
+            <h1 className="font-display text-3xl">Vet</h1>
+            <p className="text-sm text-muted-foreground">Appointments & history.</p>
+          </div>
+          <VetDialog
+            pets={pets}
+            initialOpen={openCreate}
+            trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+          />
+        </header>
+      </Page.Header>
 
-      {appts.length === 0 ? (
-        <FeatureEmptyState
-          icon={Stethoscope}
-          title="Keep every vet visit organized"
-          description="Save upcoming appointments and review previous visits in one place."
-          cta="Schedule visit"
-          to="/health/vet"
-          search={{ new: true }}
-        />
-      ) : (
-        <>
-          <Group title="Upcoming" items={upcoming} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} />
-          <Group title="History" items={past} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} muted />
-        </>
-      )}
+      <Page.Content>
+        {appts.length === 0 ? (
+          <FeatureEmptyState
+            icon={Stethoscope}
+            title="Keep every vet visit organized"
+            description="Save upcoming appointments and review previous visits in one place."
+            cta="Schedule visit"
+            to="/health/vet"
+            search={{ new: true }}
+          />
+        ) : (
+          <>
+            <Group title="Upcoming" items={upcoming} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} />
+            <Group title="History" items={past} pets={pets} onToggle={(a) => toggle.mutate(a)} onDelete={setConfirmId} muted />
+          </>
+        )}
+      </Page.Content>
 
       <ConfirmDialog
         open={!!confirmId}
@@ -124,7 +129,7 @@ function VetPage() {
         confirmVariant="destructive"
         onConfirm={() => confirmId && del.mutate(confirmId)}
       />
-    </div>
+    </Page>
   );
 }
 

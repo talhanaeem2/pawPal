@@ -11,6 +11,7 @@ import { PetAvatar } from "@/components/ui/pet-avatar";
 import { cn, formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel, todayDateString } from "@/lib/utils";
 import { Section } from "@/components/layout/section";
 import { Empty } from "@/components/ui/empty";
+import { Page } from "@/components/layout/page";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: ({ context }) => {
@@ -79,178 +80,180 @@ function Home() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-muted-foreground">{greeting()}</p>
-        <h1 className="font-display text-3xl mt-1">Today with {pets.map((p) => p.name).slice(0, 2).join(" & ")}</h1>
-      </div>
+    <Page>
+      <Page.Header>
+        <div>
+          <p className="text-sm text-muted-foreground">{greeting()}</p>
+          <h1 className="font-display text-3xl mt-1">Today with {pets.map((p) => p.name).slice(0, 2).join(" & ")}</h1>
+        </div>
+        <PushPrompt />
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
+          {pets.map((p) => (
+            <Link key={p.id} to="/pets"
+              className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-(--shadow-soft) hover:scale-[1.02] transition">
+              <PetAvatar pet={p} size="h-14 w-14" textSize="text-3xl" />
+              <div className="font-medium mt-2 truncate text-sm">{p.name}</div>
+              <div className="text-xs text-muted-foreground truncate">{p.breed ?? p.species}</div>
+            </Link>
+          ))}
+        </div>
+      </Page.Header>
 
-      <PushPrompt />
+      <Page.Content>
+        <Section title="Today's care" icon={Calendar} href="/schedule">
+          {todayData.visible.length === 0 ? (
+            <Empty text="No reminders yet." cta="Add reminder" href="/schedule" search={{ new: true }} />
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {todayData.visible.map((item) => {
+                const petStatuses = item.schedule_item_pets
+                  .map((schedulePet) => ({
+                    ...schedulePet,
+                    pet: pets.find((p) => p.id === schedulePet.pet_id),
+                    done: schedulePet.schedule_completions.some(
+                      (c) => c.completed_on === today
+                    ),
+                  }))
+                  .sort((a, b) =>
+                    (a.pet?.name ?? "").localeCompare(b.pet?.name ?? "")
+                  );
 
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
-        {pets.map((p) => (
-          <Link key={p.id} to="/pets"
-            className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-(--shadow-soft) hover:scale-[1.02] transition">
-            <PetAvatar pet={p} size="h-14 w-14" textSize="text-3xl" />
-            <div className="font-medium mt-2 truncate text-sm">{p.name}</div>
-            <div className="text-xs text-muted-foreground truncate">{p.breed ?? p.species}</div>
-          </Link>
-        ))}
-      </div>
+                const doneToday =
+                  petStatuses.length > 0 &&
+                  petStatuses.every((p) => p.done);
 
-      <Section title="Today's care" icon={Calendar} href="/schedule">
-        {todayData.visible.length === 0 ? (
-          <Empty text="No reminders yet." cta="Add reminder" href="/schedule" search={{ new: true }} />
-        ) : (
-          <ul className="divide-y divide-border/60">
-            {todayData.visible.map((item) => {
-              const petStatuses = item.schedule_item_pets
-                .map((schedulePet) => ({
-                  ...schedulePet,
-                  pet: pets.find((p) => p.id === schedulePet.pet_id),
-                  done: schedulePet.schedule_completions.some(
-                    (c) => c.completed_on === today
-                  ),
-                }))
-                .sort((a, b) =>
-                  (a.pet?.name ?? "").localeCompare(b.pet?.name ?? "")
+                const petLabel = formatPetNames(
+                  petStatuses
+                    .map((p) => p.pet?.name)
+                    .filter((name): name is string => !!name)
                 );
 
-              const doneToday =
-                petStatuses.length > 0 &&
-                petStatuses.every((p) => p.done);
-
-              const petLabel = formatPetNames(
-                petStatuses
-                  .map((p) => p.pet?.name)
-                  .filter((name): name is string => !!name)
-              );
-
-              return (
-                <li
-                  key={item.id}
-                  className="py-3 flex items-center justify-between"
-                >
-                  <div className={cn(doneToday && "opacity-70", "transition-all duration-200")}>
-                    <div className={cn(doneToday && "line-through", "font-medium text-sm capitalize")}>
-                      {item.title}
-                    </div>
-
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {petLabel && `${petLabel} · `}
-                      {formatKind(item)} ·{" "}
-                      {item.time_of_day
-                        ? formatTime(item.time_of_day)
-                        : formatFrequency(item)}
-                    </div>
-                  </div>
-
-                  {doneToday ? (
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary">
-                      Done
-                    </span>
-                  ) : (
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">
-                      {formatFrequency(item)}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-            {todayData.remaining > 0 && (
-              <Link to="/schedule" className="block py-2 text-xs text-primary hover:underline">
-                +{todayData.remaining} more reminders →
-              </Link>
-            )}
-          </ul>
-        )}
-      </Section>
-
-      <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
-        {upcomingVetData.visible.length === 0 ? (
-          <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" search={{ new: true }} />
-        ) : (
-          <ul className="divide-y divide-border/60">
-            {upcomingVetData.visible.map((v) => (
-              <li key={v.id} className="py-3">
-                <div className="font-medium text-sm capitalize">{v.reason}</div>
-                <div className="text-xs text-muted-foreground capitalize">
-                  {new Date(v.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                  {v.vet_name ? ` · ${v.vet_name}` : ""}
-                </div>
-              </li>
-            ))}
-            {upcomingVetData.remaining > 0 && (
-              <Link to="/health/vet" className="block py-2 text-xs text-primary hover:underline">
-                +{upcomingVetData.remaining} more visits →
-              </Link>
-            )}
-          </ul>
-        )}
-      </Section>
-
-      <Section title="Recent activity" icon={Activity} href="/activity">
-        {recentActivityData.visible.length === 0 ? (
-          <Empty text="No activities logged yet." cta="Log activity" href="/activity" search={{ new: true }} />
-        ) : (
-          <ul className="divide-y divide-border/60">
-            {recentActivityData.visible.map((a) => (
-              <li key={a.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-sm capitalize">{a.activity_type}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
-                </div>
-              </li>
-            ))}
-            {recentActivityData.remaining > 0 && (
-              <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
-                +{recentActivityData.remaining} more activities →
-              </Link>
-            )}
-          </ul>
-        )}
-      </Section>
-
-      {vaccinationData.visible.length > 0 && (
-        <Section title="Vaccinations" icon={Syringe} href="/health/vaccinations">
-          <ul className="divide-y divide-border/60">
-            {vaccinationData.visible.map((v) => {
-              const tone = getVaccinationTone(
-                v.next_due_at,
-                v.completed_at,
-              );
-
-              return (
-                <li key={v.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-sm capitalize">{v.vaccine_name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Due{" "}
-                      {new Date(v.next_due_at!).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <span
-                    className={`text-xs font-medium ${getVaccinationToneClass(tone)}`}
+                return (
+                  <li
+                    key={item.id}
+                    className="py-3 flex items-center justify-between"
                   >
-                    {getVaccinationToneLabel(tone)}
-                  </span>
-                </li>
-              )
-            })}
-            {vaccinationData.remaining > 0 && (
-              <Link to="/health/vaccinations" className="block py-2 text-xs text-primary hover:underline">
-                +{vaccinationData.remaining} more vaccinations →
-              </Link>
-            )}
-          </ul>
+                    <div className={cn(doneToday && "opacity-70", "transition-all duration-200")}>
+                      <div className={cn(doneToday && "line-through", "font-medium text-sm capitalize")}>
+                        {item.title}
+                      </div>
+
+                      <div className="text-xs text-muted-foreground capitalize">
+                        {petLabel && `${petLabel} · `}
+                        {formatKind(item)} ·{" "}
+                        {item.time_of_day
+                          ? formatTime(item.time_of_day)
+                          : formatFrequency(item)}
+                      </div>
+                    </div>
+
+                    {doneToday ? (
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary">
+                        Done
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">
+                        {formatFrequency(item)}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+              {todayData.remaining > 0 && (
+                <Link to="/schedule" className="block py-2 text-xs text-primary hover:underline">
+                  +{todayData.remaining} more reminders →
+                </Link>
+              )}
+            </ul>
+          )}
         </Section>
-      )}
-    </div>
+
+        <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
+          {upcomingVetData.visible.length === 0 ? (
+            <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" search={{ new: true }} />
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {upcomingVetData.visible.map((v) => (
+                <li key={v.id} className="py-3">
+                  <div className="font-medium text-sm capitalize">{v.reason}</div>
+                  <div className="text-xs text-muted-foreground capitalize">
+                    {new Date(v.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                    {v.vet_name ? ` · ${v.vet_name}` : ""}
+                  </div>
+                </li>
+              ))}
+              {upcomingVetData.remaining > 0 && (
+                <Link to="/health/vet" className="block py-2 text-xs text-primary hover:underline">
+                  +{upcomingVetData.remaining} more visits →
+                </Link>
+              )}
+            </ul>
+          )}
+        </Section>
+
+        <Section title="Recent activity" icon={Activity} href="/activity">
+          {recentActivityData.visible.length === 0 ? (
+            <Empty text="No activities logged yet." cta="Log activity" href="/activity" search={{ new: true }} />
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {recentActivityData.visible.map((a) => (
+                <li key={a.id} className="py-3 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm capitalize">{a.activity_type}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
+                  </div>
+                </li>
+              ))}
+              {recentActivityData.remaining > 0 && (
+                <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
+                  +{recentActivityData.remaining} more activities →
+                </Link>
+              )}
+            </ul>
+          )}
+        </Section>
+
+        {vaccinationData.visible.length > 0 && (
+          <Section title="Vaccinations" icon={Syringe} href="/health/vaccinations">
+            <ul className="divide-y divide-border/60">
+              {vaccinationData.visible.map((v) => {
+                const tone = getVaccinationTone(
+                  v.next_due_at,
+                  v.completed_at,
+                );
+
+                return (
+                  <li key={v.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm capitalize">{v.vaccine_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Due{" "}
+                        {new Date(v.next_due_at!).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <span
+                      className={`text-xs font-medium ${getVaccinationToneClass(tone)}`}
+                    >
+                      {getVaccinationToneLabel(tone)}
+                    </span>
+                  </li>
+                )
+              })}
+              {vaccinationData.remaining > 0 && (
+                <Link to="/health/vaccinations" className="block py-2 text-xs text-primary hover:underline">
+                  +{vaccinationData.remaining} more vaccinations →
+                </Link>
+              )}
+            </ul>
+          </Section>
+        )}
+      </Page.Content>
+    </Page>
   );
 }
 

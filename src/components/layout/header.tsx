@@ -15,7 +15,7 @@ function Header() {
     const name = profile?.display_name;
 
     return (
-        <header className="sticky top-0 z-20 backdrop-blur bg-background/80 border-b border-border/60">
+        <header className="z-20 backdrop-blur bg-background/80 border-b border-border/60">
             <div className="mx-auto max-w-2xl flex items-center justify-between px-5 h-14">
                 <Link to="/home" className="flex items-center gap-2">
                     <div className="h-7 w-7 rounded-lg bg-primary/30 flex items-center justify-center">

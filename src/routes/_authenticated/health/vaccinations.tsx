@@ -22,6 +22,7 @@ import { createEmptyVaccinationForm, Vaccination, vaccinationFormSchema, vaccina
 import { getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel } from "@/lib/utils";
 import z from "zod";
 import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
+import { Page } from "@/components/layout/page";
 
 export const Route = createFileRoute("/_authenticated/health/vaccinations")({
     validateSearch: z.object({
@@ -87,53 +88,57 @@ function VaccinationsPage() {
     const confirmItem = vaccinations.find((a) => a.id === confirmId);
 
     return (
-        <div className="space-y-5">
-            <Breadcrumb>
-                <BreadcrumbList>
-                    <BreadcrumbItem>
-                        <BreadcrumbLink asChild>
-                            <Link to="/health">Health</Link>
-                        </BreadcrumbLink>
-                    </BreadcrumbItem>
+        <Page>
+            <Page.Header>
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink asChild>
+                                <Link to="/health">Health</Link>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
 
-                    <BreadcrumbSeparator />
+                        <BreadcrumbSeparator />
 
-                    <BreadcrumbItem>
-                        <BreadcrumbPage>Vaccinations</BreadcrumbPage>
-                    </BreadcrumbItem>
-                </BreadcrumbList>
-            </Breadcrumb>
-            <header className="flex items-end justify-between">
-                <div>
-                    <h1 className="font-display text-3xl">Vaccinations</h1>
-                    <p className="text-sm text-muted-foreground">Vaccine records & due dates.</p>
-                </div>
-                <VaccinationsDialog
-                    pets={pets}
-                    initialOpen={openCreate}
-                    trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
-                />
-            </header>
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Vaccinations</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+                <header className="flex items-end justify-between">
+                    <div>
+                        <h1 className="font-display text-3xl">Vaccinations</h1>
+                        <p className="text-sm text-muted-foreground">Vaccine records & due dates.</p>
+                    </div>
+                    <VaccinationsDialog
+                        pets={pets}
+                        initialOpen={openCreate}
+                        trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
+                    />
+                </header>
+            </Page.Header>
 
-            {vaccinations.length === 0 ? (
-                <FeatureEmptyState
-                    icon={Syringe}
-                    title="Never miss an important vaccine"
-                    description="Record vaccinations and we'll remind you when the next dose is due."
-                    cta="Add vaccination"
-                    to="/health/vaccinations"
-                    search={{ new: true }}
-                />
-            ) : (
-                <>
-                    <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
-                    <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
-                    {noDueDate.length > 0 && (
-                        <Group title="No due date" items={noDueDate} pets={pets} onDelete={setConfirmId} />
-                    )}
-                    <Group title="Completed" items={history} pets={pets} onDelete={setConfirmId} />
-                </>
-            )}
+            <Page.Content>
+                {vaccinations.length === 0 ? (
+                    <FeatureEmptyState
+                        icon={Syringe}
+                        title="Never miss an important vaccine"
+                        description="Record vaccinations and we'll remind you when the next dose is due."
+                        cta="Add vaccination"
+                        to="/health/vaccinations"
+                        search={{ new: true }}
+                    />
+                ) : (
+                    <>
+                        <Group title="Upcoming" items={upcoming} pets={pets} onDelete={setConfirmId} />
+                        <Group title="Overdue" items={overdue} pets={pets} onDelete={setConfirmId} />
+                        {noDueDate.length > 0 && (
+                            <Group title="No due date" items={noDueDate} pets={pets} onDelete={setConfirmId} />
+                        )}
+                        <Group title="Completed" items={history} pets={pets} onDelete={setConfirmId} />
+                    </>
+                )}
+            </Page.Content>
 
             <ConfirmDialog
                 open={!!confirmId}
@@ -145,7 +150,7 @@ function VaccinationsPage() {
                 confirmVariant="destructive"
                 onConfirm={() => confirmId && del.mutate(confirmId)}
             />
-        </div>
+        </Page>
     );
 }
 
