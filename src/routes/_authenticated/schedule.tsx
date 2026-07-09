@@ -24,6 +24,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import React from "react";
 import z from "zod";
 import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   validateSearch: z.object({
@@ -138,7 +140,7 @@ function SchedulePage() {
         if (allPets && multiplePets) {
           message = "Marked all pets done";
         } else {
-          message = "Marked done";
+          message = "Reminder completed";
         }
       } else {
         if (allPets && multiplePets) {
@@ -167,6 +169,17 @@ function SchedulePage() {
 
   const confirmItem = items.find((i) => i.id === confirmId);
 
+  const total = items.length;
+
+  const completed = items.filter((item) =>
+    item.schedule_item_pets.every((pet) =>
+      pet.schedule_completions.some((c) => c.completed_on === today)
+    )
+  ).length;
+
+  const progress =
+    total === 0 ? 0 : Math.round((completed / total) * 100);
+
   return (
     <div className="space-y-5">
       <header className="flex items-end justify-between">
@@ -180,7 +193,26 @@ function SchedulePage() {
           trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
         />
       </header>
+      {items.length > 0 && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex justify-between">
+              <div>
+                <p className="font-medium text-base">Today's progress</p>
+                <p className="text-sm text-muted-foreground">
+                  {completed} of {total} reminders completed
+                </p>
+              </div>
 
+              <span className="font-medium">
+                {progress}%
+              </span>
+            </div>
+
+            <Progress value={progress} />
+          </CardContent>
+        </Card>
+      )}
       {items.length === 0 ? (
         <FeatureEmptyState
           icon={Calendar}
@@ -245,7 +277,7 @@ function SchedulePage() {
                     key={s.id}
                     value={s.id}
                   >
-                    <div className={cn("flex items-center gap-3 px-4 transition-opacity", doneToday && "opacity-70")}>
+                    <div className={cn("flex items-center gap-3 px-4 transition-all duration-200", doneToday && "opacity-70")}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -255,7 +287,7 @@ function SchedulePage() {
                           });
                         }}
                         disabled={toggle.isPending}
-                        className={`h-9 w-9 rounded-full border flex items-center justify-center transition ${doneToday
+                        className={`h-9 w-9 rounded-full border flex items-center justify-center transition-all duration-200 ${doneToday
                           ? "bg-primary border-primary text-primary-foreground"
                           : "border-border hover:bg-accent/40"
                           }`}
@@ -266,7 +298,7 @@ function SchedulePage() {
                       <div className="flex-1 min-w-0">
                         <AccordionTrigger className="flex-1 hover:no-underline">
                           <div className="text-left">
-                            <div className="font-medium text-sm capitalize">
+                            <div className={cn("font-medium text-sm capitalize", doneToday && "line-through")}>
                               {s.title}
                             </div>
 
@@ -338,7 +370,7 @@ function SchedulePage() {
                             return (
                               <div
                                 key={pet.pet_id}
-                                className={cn(pet.done && "opacity-70", "transition-opacity not-last:border-b first:border-t p-2 space-y-1")}
+                                className={cn(pet.done && "opacity-70", "transition-all duration-200 not-last:border-b first:border-t p-2 space-y-1")}
                               >
                                 {petCount > 1 && (
                                   <div className="text-sm font-medium capitalize">
@@ -377,7 +409,7 @@ function SchedulePage() {
                 ) : (
                   <li
                     key={s.id}
-                    className={cn("flex items-center gap-3 p-4 border-b last:border-b-0 px-4 transition-opacity", doneToday && "opacity-70")}
+                    className={cn("flex items-center gap-3 p-4 border-b last:border-b-0 px-4 transition-all duration-200", doneToday && "opacity-70")}
                   >
                     <button
                       onClick={(e) => {
@@ -388,7 +420,7 @@ function SchedulePage() {
                         });
                       }}
                       disabled={toggle.isPending}
-                      className={`h-9 w-9 rounded-full border flex items-center justify-center transition ${doneToday
+                      className={`h-9 w-9 rounded-full border flex items-center justify-center transition-all duration-200 ${doneToday
                         ? "bg-primary border-primary text-primary-foreground"
                         : "border-border hover:bg-accent/40"
                         }`}
@@ -397,7 +429,7 @@ function SchedulePage() {
                     </button>
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm capitalize">
+                      <div className={cn("font-medium text-sm capitalize", doneToday && "line-through")}>
                         {s.title}
                       </div>
 

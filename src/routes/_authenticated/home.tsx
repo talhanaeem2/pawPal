@@ -8,7 +8,7 @@ import InlineErrorState from "@/components/ui/inline-error-state";
 import InlineLoader from "@/components/ui/inline-loader";
 import PushPrompt from "@/components/ui/push-prompt";
 import { PetAvatar } from "@/components/ui/pet-avatar";
-import { formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel, todayDateString } from "@/lib/utils";
+import { cn, formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel, todayDateString } from "@/lib/utils";
 import { Section } from "@/components/layout/section";
 import { Empty } from "@/components/ui/empty";
 
@@ -131,8 +131,8 @@ function Home() {
                   key={item.id}
                   className="py-3 flex items-center justify-between"
                 >
-                  <div className={doneToday ? "opacity-50" : ""}>
-                    <div className="font-medium text-sm capitalize">
+                  <div className={cn(doneToday && "opacity-70", "transition-all duration-200")}>
+                    <div className={cn(doneToday && "line-through", "font-medium text-sm capitalize")}>
                       {item.title}
                     </div>
 
