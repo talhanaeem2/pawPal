@@ -236,6 +236,8 @@ function SchedulePage() {
               ? `${repeatText} · ${formatTime(s.time_of_day)}`
               : repeatText;
 
+            const detailField = getScheduleDetailField(s.kind);
+
             return (
               <React.Fragment key={s.id}>
                 {useAccordion === true ? (
@@ -243,7 +245,7 @@ function SchedulePage() {
                     key={s.id}
                     value={s.id}
                   >
-                    <div className="flex items-center gap-3 px-4">
+                    <div className={cn("flex items-center gap-3 px-4 transition-opacity", doneToday && "opacity-70")}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -305,12 +307,6 @@ function SchedulePage() {
                     </div>
 
                     <AccordionContent className="px-4 pb-2">
-                      {/* {doneToday && (
-                        <div className="mb-3 flex items-center text-xs text-muted-foreground">
-                          <Check className="mr-1 h-3 w-3" />
-                          Completed
-                        </div>
-                      )} */}
 
                       {petCount > 1 && (
                         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
@@ -319,6 +315,7 @@ function SchedulePage() {
                               key={pet.pet_id}
                               size="sm"
                               variant={pet.done ? "default" : "outline"}
+                              className={cn(pet.done && "opacity-70")}
                               onClick={() =>
                                 toggle.mutate({
                                   scheduleItemId: s.id,
@@ -341,7 +338,7 @@ function SchedulePage() {
                             return (
                               <div
                                 key={pet.pet_id}
-                                className="not-last:border-b first:border-t p-2 space-y-1"
+                                className={cn(pet.done && "opacity-70", "transition-opacity not-last:border-b first:border-t p-2 space-y-1")}
                               >
                                 {petCount > 1 && (
                                   <div className="text-sm font-medium capitalize">
@@ -353,7 +350,7 @@ function SchedulePage() {
                                   {pet.dosage && (
                                     <div className="flex gap-1 text-sm">
                                       <span className="font-medium text-muted-foreground">
-                                        Dose:
+                                        {detailField.label}
                                       </span>
                                       <span>{pet.dosage}</span>
                                     </div>
@@ -380,7 +377,7 @@ function SchedulePage() {
                 ) : (
                   <li
                     key={s.id}
-                    className="flex items-center gap-3 p-4 border-b last:border-b-0"
+                    className={cn("flex items-center gap-3 p-4 border-b last:border-b-0 px-4 transition-opacity", doneToday && "opacity-70")}
                   >
                     <button
                       onClick={(e) => {
@@ -411,7 +408,7 @@ function SchedulePage() {
                       </div>
                       {petCount === 1 && hasDetails && detailRows[0].dosage && (
                         <div className="text-xs text-muted-foreground capitalize">
-                          Dose: {detailRows[0].dosage}
+                          {detailField.label}: {detailRows[0].dosage}
                         </div>
                       )}
                       {petCount === 1 && hasDetails && detailRows[0].notes && (
@@ -419,13 +416,6 @@ function SchedulePage() {
                           Notes: {detailRows[0].notes}
                         </div>
                       )}
-
-                      {/* {doneToday && (
-                        <div className="mt-1 flex items-center text-xs text-muted-foreground">
-                          <Check className="mr-1 h-3 w-3" />
-                          Completed
-                        </div>
-                      )} */}
                     </div>
 
                     <div className="flex">
