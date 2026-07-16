@@ -9,12 +9,13 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
-import appCss from "../styles.css?url";
 import { supabase } from "@/integrations/supabase/client";
-import { Toaster } from "@/components/ui/sonner";
 
-import ErrorState from "@/components/ui/error-state";
-import NotFoundState from "@/components/ui/not-found-state";
+import ErrorState from "@/components/ui/common/error-state";
+import NotFoundState from "@/components/ui/common/not-found-state";
+import { Toaster } from "@/components/ui/common/sonner";
+
+import appCss from "../styles.css?url";
 
 function RootErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();

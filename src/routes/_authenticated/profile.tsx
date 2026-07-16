@@ -1,23 +1,26 @@
-import { Page } from "@/components/layout/page";
-import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Field } from "@/components/ui/field";
-import InlineErrorState from "@/components/ui/inline-error-state";
-import InlineLoader from "@/components/ui/inline-loader";
-import { Input } from "@/components/ui/input";
-import NotFoundState from "@/components/ui/not-found-state";
-import { UserAvatar } from "@/components/ui/user-avatar";
-import { useAuth } from "@/contexts/auth-context";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { supabase } from "@/integrations/supabase/client";
-import { extractStoragePath } from "@/lib/utils";
-import { Profile, profileFormSchema, profileToForm } from "@/schemas/profile";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
 import { Camera, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { useAuth } from "@/contexts/auth-context";
+import { supabase } from "@/integrations/supabase/client";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { extractStoragePath } from "@/lib/utils";
+
+import InlineErrorState from "@/components/ui/common/inline-error-state";
+import InlineLoader from "@/components/ui/common/inline-loader";
+import NotFoundState from "@/components/ui/common/not-found-state";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/common/dialog";
+import { Page } from "@/components/layout/page";
+import { ConfirmDialog } from "@/components/ui/common/confirm-dialog";
+import { Button } from "@/components/ui/common/button";
+import { Field } from "@/components/ui/common/field";
+import { Input } from "@/components/ui/common/input";
+import { UserAvatar } from "@/components/ui/common/user-avatar";
+
+import { Profile, profileFormSchema, profileToForm } from "@/schemas/profile";
 
 export const Route = createFileRoute("/_authenticated/profile")({
     pendingComponent: () => <InlineLoader />,

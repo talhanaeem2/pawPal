@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+import { Button } from "@/components/ui/common/button";
+import { Badge } from "@/components/ui/common/badge";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/common/popover";
 import {
     Command,
     CommandEmpty,
@@ -15,8 +17,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/common/command";
 
 type Pet = {
     id: string;

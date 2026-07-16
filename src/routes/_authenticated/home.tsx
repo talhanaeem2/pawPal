@@ -1,26 +1,32 @@
 import { createFileRoute, type ErrorComponentProps, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery } from "@/lib/queries";
 import { Calendar, Stethoscope, Activity, Plus, PawPrint, Syringe } from "lucide-react";
 
-import NotFoundState from "@/components/ui/not-found-state";
-import InlineErrorState from "@/components/ui/inline-error-state";
-import InlineLoader from "@/components/ui/inline-loader";
-import PushPrompt from "@/components/ui/push-prompt";
-import { PetAvatar } from "@/components/ui/pet-avatar";
-import { cn, formatFrequency, formatKind, formatPetNames, formatTime, getPreviewList, getVaccinationTone, getVaccinationToneClass, getVaccinationToneLabel, todayDateString } from "@/lib/utils";
+import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery } from "@/lib/queries";
+import { formatPetNames } from "@/lib/pet-utils";
+import { formatFrequency, formatKind } from "@/lib/schedule.utils";
+import { getActiveVaccinations } from "@/lib/vaccinations-utils";
+import { cn, formatTime, getPreviewList, todayDateString } from "@/lib/utils";
+
+import NotFoundState from "@/components/ui/common/not-found-state";
+import InlineErrorState from "@/components/ui/common/inline-error-state";
+import InlineLoader from "@/components/ui/common/inline-loader";
+import PushPrompt from "@/components/ui/common/push-prompt";
 import { Section } from "@/components/layout/section";
-import { Empty } from "@/components/ui/empty";
+import { Empty } from "@/components/ui/common/empty";
 import { Page } from "@/components/layout/page";
+import { VaccinationRow } from "@/components/ui/vaccinations/vaccination-row";
+import { PetAvatar } from "@/components/ui/common/pet-avatar";
+import { VetRow } from "@/components/ui/vet/vet-row";
 
 export const Route = createFileRoute("/_authenticated/home")({
-  loader: ({ context }) => {
-    context.queryClient.ensureQueryData(petsQuery);
-    context.queryClient.ensureQueryData(scheduleQuery);
-    context.queryClient.ensureQueryData(vetQuery);
-    context.queryClient.ensureQueryData(activityQuery);
-    context.queryClient.ensureQueryData(vaccinationsQuery);
-  },
+  loader: async ({ context }) => await Promise.all([
+    context.queryClient.ensureQueryData(petsQuery),
+    context.queryClient.ensureQueryData(scheduleQuery),
+    context.queryClient.ensureQueryData(vetQuery),
+    context.queryClient.ensureQueryData(activityQuery),
+    context.queryClient.ensureQueryData(vaccinationsQuery),
+  ]),
   pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Home · Pawpal" }] }),
   component: Home,
@@ -46,17 +52,7 @@ function Home() {
   const upcomingVetData = getPreviewList(upcomingVetSorted, 3);
   const recentActivityData = getPreviewList(activity, 3);
 
-  const vaccinationPreview = vaccinations
-    .filter((v) => {
-      if (v.completed_at || !v.next_due_at) return false;
-
-      const due = new Date(v.next_due_at).getTime();
-
-      return due < now || due - now <= thirtyDays;
-    })
-    .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
-
-  const vaccinationData = getPreviewList(vaccinationPreview, 3);
+  const vaccinationData = getPreviewList(getActiveVaccinations(vaccinations), 3);
 
   if (pets.length === 0) {
     return (
@@ -89,9 +85,13 @@ function Home() {
         <PushPrompt />
         <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
           {pets.map((p) => (
-            <Link key={p.id} to="/pets"
-              className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-(--shadow-soft) hover:scale-[1.02] transition">
-              <PetAvatar pet={p} size="h-14 w-14" textSize="text-3xl" />
+            <Link
+              key={p.id}
+              to="/pets/$petId"
+              params={{ petId: p.id }}
+              className="shrink-0 rounded-2xl bg-card p-4 w-32 shadow-(--shadow-soft) hover:scale-[1.02] transition"
+            >
+              <PetAvatar pet={p} />
               <div className="font-medium mt-2 truncate text-sm">{p.name}</div>
               <div className="text-xs text-muted-foreground truncate">{p.breed ?? p.species}</div>
             </Link>
@@ -174,13 +174,11 @@ function Home() {
           ) : (
             <ul className="divide-y divide-border/60">
               {upcomingVetData.visible.map((v) => (
-                <li key={v.id} className="py-3">
-                  <div className="font-medium text-sm capitalize">{v.reason}</div>
-                  <div className="text-xs text-muted-foreground capitalize">
-                    {new Date(v.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                    {v.vet_name ? ` · ${v.vet_name}` : ""}
-                  </div>
-                </li>
+                <VetRow
+                  item={v}
+                  pets={pets}
+                  key={v.id}
+                />
               ))}
               {upcomingVetData.remaining > 0 && (
                 <Link to="/health/vet" className="block py-2 text-xs text-primary hover:underline">
@@ -221,29 +219,13 @@ function Home() {
         {vaccinationData.visible.length > 0 && (
           <Section title="Vaccinations" icon={Syringe} href="/health/vaccinations">
             <ul className="divide-y divide-border/60">
-              {vaccinationData.visible.map((v) => {
-                const tone = getVaccinationTone(
-                  v.next_due_at,
-                  v.completed_at,
-                );
-
-                return (
-                  <li key={v.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm capitalize">{v.vaccine_name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Due{" "}
-                        {new Date(v.next_due_at!).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <span
-                      className={`text-xs font-medium ${getVaccinationToneClass(tone)}`}
-                    >
-                      {getVaccinationToneLabel(tone)}
-                    </span>
-                  </li>
-                )
-              })}
+              {vaccinationData.visible.map((v) => (
+                <VaccinationRow
+                  item={v}
+                  pets={pets}
+                  key={v.id}
+                />
+              ))}
               {vaccinationData.remaining > 0 && (
                 <Link to="/health/vaccinations" className="block py-2 text-xs text-primary hover:underline">
                   +{vaccinationData.remaining} more vaccinations →

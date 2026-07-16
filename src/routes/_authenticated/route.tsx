@@ -1,16 +1,17 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import Loader from "@/components/ui/loader";
-import InstallPrompt from "@/components/ui/install-prompt";
-import Header from "@/components/layout/header";
-import BottomNav from "@/components/layout/bottomNav";
+import { supabase } from "@/integrations/supabase/client";
+import { profileQuery } from "@/lib/queries";
 import { User } from "@supabase/supabase-js";
 import { AuthContext } from "@/contexts/auth-context";
-import ErrorState from "@/components/ui/error-state";
-import { profileQuery } from "@/lib/queries";
+
+import Loader from "@/components/ui/common/loader";
+import InstallPrompt from "@/components/ui/common/install-prompt";
+import Header from "@/components/layout/header";
+import BottomNav from "@/components/layout/bottomNav";
+import ErrorState from "@/components/ui/common/error-state";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,

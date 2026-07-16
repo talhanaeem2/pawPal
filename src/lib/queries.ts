@@ -1,4 +1,8 @@
+import z from "zod";
+import { queryOptions } from "@tanstack/react-query";
+
 import { supabase } from "@/integrations/supabase/client";
+
 import { ActivityLog, activityLogSchema } from "@/schemas/activity";
 import { Deworming, dewormingSchema } from "@/schemas/deworming";
 import { Pet, petSchema } from "@/schemas/pets";
@@ -6,8 +10,6 @@ import { Profile, profileSchema } from "@/schemas/profile";
 import { ScheduleWithPets, scheduleWithPetsSchema } from "@/schemas/schedule";
 import { Vaccination, vaccinationSchema } from "@/schemas/vacination";
 import { VetAppointment, vetAppointmentSchema } from "@/schemas/vet";
-import { queryOptions } from "@tanstack/react-query";
-import z from "zod";
 
 export const petsQuery = queryOptions({
   queryKey: ["pets"],
@@ -24,6 +26,25 @@ export const petsQuery = queryOptions({
     return parsed.data;
   },
 });
+
+export const petQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["pets", id],
+    queryFn: async (): Promise<Pet> => {
+      const { data, error } = await supabase.from("pets").select("*").eq("id", id).single();
+
+      if (error) throw error;
+
+      const parsed = petSchema.safeParse(data);
+
+      if (!parsed.success) {
+        console.error(parsed.error);
+        throw new Error("Invalid pet data");
+      }
+
+      return parsed.data;
+    },
+  });
 
 export const scheduleQuery = queryOptions({
   queryKey: ["schedule_items"],
@@ -92,6 +113,29 @@ export const vaccinationsQuery = queryOptions({
   },
 });
 
+export const petVaccinationsQuery = (petId: string) =>
+  queryOptions({
+    queryKey: ["pets", petId, "vaccinations"],
+    queryFn: async (): Promise<Vaccination[]> => {
+      const { data, error } = await supabase
+        .from("vaccinations")
+        .select("*")
+        .eq("pet_id", petId)
+        .order("administered_at", { ascending: false });
+
+      if (error) throw error;
+
+      const parsed = z.array(vaccinationSchema).safeParse(data ?? []);
+
+      if (!parsed.success) {
+        console.error(parsed.error);
+        return [];
+      }
+
+      return parsed.data;
+    },
+  });
+
 export const dewormingsQuery = queryOptions({
   queryKey: ["dewormings"],
   queryFn: async (): Promise<Deworming[]> => {
@@ -107,6 +151,29 @@ export const dewormingsQuery = queryOptions({
     return parsed.data;
   },
 });
+
+export const petDewormingsQuery = (petId: string) =>
+  queryOptions({
+    queryKey: ["pets", petId, "dewormings"],
+    queryFn: async (): Promise<Deworming[]> => {
+      const { data, error } = await supabase
+        .from("dewormings")
+        .select("*")
+        .eq("pet_id", petId)
+        .order("administered_at", { ascending: false });
+
+      if (error) throw error;
+
+      const parsed = z.array(dewormingSchema).safeParse(data ?? []);
+
+      if (!parsed.success) {
+        console.error(parsed.error);
+        return [];
+      }
+
+      return parsed.data;
+    },
+  });
 
 export const activityQuery = queryOptions({
   queryKey: ["activity_logs"],

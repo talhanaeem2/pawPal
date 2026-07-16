@@ -1,41 +1,48 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Check, Trash2, Pencil, Calendar } from "lucide-react";
+import React from "react";
+import { toast } from "sonner";
+import z from "zod";
+
 import { petsQuery, scheduleQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Check, Trash2, Pencil, Calendar } from "lucide-react";
-import { toast } from "sonner";
-
-import NotFoundState from "@/components/ui/not-found-state";
-import InlineLoader from "@/components/ui/inline-loader";
-import InlineErrorState from "@/components/ui/inline-error-state";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { cn, formatFrequency, formatKind, formatPetNames, formatTime, generateScheduleTitle, getNotesPlaceholder, getScheduleDetailField, getStartDateDescription, getStartDateLabel, getTimeLabel, getTitlePlaceholder, repeatUnitOptions, requiresScheduleStartDate, requiresScheduleTime, todayDateString } from "@/lib/utils";
-import { createEmptyScheduleForm, ScheduleForm, scheduleFormSchema, scheduleToForm, ScheduleWithPets } from "@/schemas/schedule";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { Textarea } from "@/components/ui/textarea";
-import { Field } from "@/components/ui/field";
-import { PetMultiSelect } from "@/components/ui/pet-multi-select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import React from "react";
-import z from "zod";
-import { FeatureEmptyState } from "@/components/ui/feature-empty-state";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { formatPetNames } from "@/lib/pet-utils";
+import { cn, formatTime, todayDateString } from "@/lib/utils";
+import {
+  formatFrequency, formatKind, generateScheduleTitle, getNotesPlaceholder, getScheduleDetailField, getStartDateDescription,
+  getStartDateLabel, getTimeLabel, getTitlePlaceholder, repeatUnitOptions, requiresScheduleStartDate, requiresScheduleTime
+} from "@/lib/schedule.utils";
+
+import NotFoundState from "@/components/ui/common/not-found-state";
+import InlineLoader from "@/components/ui/common/inline-loader";
+import InlineErrorState from "@/components/ui/common/inline-error-state";
+import { Button } from "@/components/ui/common/button";
+import { Input } from "@/components/ui/common/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/common/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/common/select";
+import { ConfirmDialog } from "@/components/ui/common/confirm-dialog";
+import { Textarea } from "@/components/ui/common/textarea";
+import { PetMultiSelect } from "@/components/ui/common/pet-multi-select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/common/accordion";
+import { FeatureEmptyState } from "@/components/ui/common/feature-empty-state";
+import { Card, CardContent } from "@/components/ui/common/card";
+import { Progress } from "@/components/ui/common/progress";
 import { Page } from "@/components/layout/page";
+import { Field } from "@/components/ui/common/field";
+
+import { createEmptyScheduleForm, ScheduleForm, scheduleFormSchema, scheduleToForm, ScheduleWithPets } from "@/schemas/schedule";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   validateSearch: z.object({
     new: z.boolean().optional(),
   }),
-  loader: ({ context }) => {
-    context.queryClient.ensureQueryData(petsQuery);
-    context.queryClient.ensureQueryData(scheduleQuery);
-  },
+  loader: async ({ context }) => await Promise.all([
+    context.queryClient.ensureQueryData(petsQuery),
+    context.queryClient.ensureQueryData(scheduleQuery),
+  ]),
   pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Schedule · Pawpal" }] }),
   component: SchedulePage,
@@ -61,7 +68,6 @@ function SchedulePage() {
       scheduleItemPetId?: string;
       markDone: boolean;
     }) => {
-      const today = todayDateString();
       const schedule = items.find((i) => i.id === scheduleItemId);
 
       if (!schedule) {
@@ -133,7 +139,7 @@ function SchedulePage() {
     },
 
     onSuccess: ({ markDone, multiplePets, allPets }) => {
-      qc.invalidateQueries({ queryKey: ["schedule_items"] });
+      qc.invalidateQueries({ queryKey: scheduleQuery.queryKey });
 
       let message: string;
 
@@ -163,7 +169,7 @@ function SchedulePage() {
       const { error } = await supabase.from("schedule_items").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["schedule_items"] }); toast.success("Removed"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: scheduleQuery.queryKey }); toast.success("Removed"); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
     onSettled: () => setConfirmId(null),
   });
@@ -638,7 +644,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedule_items"] });
+      qc.invalidateQueries({ queryKey: scheduleQuery.queryKey });
       toast.success(isEdit ? "Updated" : "Added");
       setOpen(false);
       if (!isEdit) resetForm();
