@@ -1,6 +1,7 @@
-import { cn } from "@/lib/utils";
 import { User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 type UserAvatarProps = {
     name?: string | null;

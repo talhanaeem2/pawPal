@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Bell, X, Share } from "lucide-react";
 import { toast } from "sonner";
+
 import {
     pushSupported,
     getPushPermissionState,
     isSubscribed,
     subscribeToPush,
 } from "@/lib/push-notifications";
-import { isIos, isStandalone } from "@/components/ui/install-prompt";
+
+import { isIos, isStandalone } from "@/components/ui/common/install-prompt";
 
 const DISMISS_KEY = "pawpal_push_dismissed_at";
 const DISMISS_DAYS = 7;

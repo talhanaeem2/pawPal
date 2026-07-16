@@ -15,14 +15,19 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedPetsRouteImport } from './routes/_authenticated/pets'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
+import { Route as AuthenticatedPetsRouteRouteImport } from './routes/_authenticated/pets/route'
 import { Route as AuthenticatedHealthRouteRouteImport } from './routes/_authenticated/health/route'
+import { Route as AuthenticatedPetsIndexRouteImport } from './routes/_authenticated/pets/index'
 import { Route as AuthenticatedHealthIndexRouteImport } from './routes/_authenticated/health/index'
 import { Route as AuthenticatedHealthVetRouteImport } from './routes/_authenticated/health/vet'
 import { Route as AuthenticatedHealthVaccinationsRouteImport } from './routes/_authenticated/health/vaccinations'
-import { Route as AuthenticatedHealthDewormingRouteImport } from './routes/_authenticated/health/deworming'
+import { Route as AuthenticatedHealthDewormingsRouteImport } from './routes/_authenticated/health/dewormings'
+import { Route as AuthenticatedPetsPetIdRouteRouteImport } from './routes/_authenticated/pets/$petId/route'
+import { Route as AuthenticatedPetsPetIdIndexRouteImport } from './routes/_authenticated/pets/$petId/index'
+import { Route as AuthenticatedPetsPetIdVaccinationsRouteImport } from './routes/_authenticated/pets/$petId/vaccinations'
+import { Route as AuthenticatedPetsPetIdDewormingsRouteImport } from './routes/_authenticated/pets/$petId/dewormings'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -53,11 +58,6 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPetsRoute = AuthenticatedPetsRouteImport.update({
-  id: '/pets',
-  path: '/pets',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -68,12 +68,22 @@ const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPetsRouteRoute = AuthenticatedPetsRouteRouteImport.update({
+  id: '/pets',
+  path: '/pets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHealthRouteRoute =
   AuthenticatedHealthRouteRouteImport.update({
     id: '/health',
     path: '/health',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPetsIndexRoute = AuthenticatedPetsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedPetsRouteRoute,
+} as any)
 const AuthenticatedHealthIndexRoute =
   AuthenticatedHealthIndexRouteImport.update({
     id: '/',
@@ -91,11 +101,35 @@ const AuthenticatedHealthVaccinationsRoute =
     path: '/vaccinations',
     getParentRoute: () => AuthenticatedHealthRouteRoute,
   } as any)
-const AuthenticatedHealthDewormingRoute =
-  AuthenticatedHealthDewormingRouteImport.update({
-    id: '/deworming',
-    path: '/deworming',
+const AuthenticatedHealthDewormingsRoute =
+  AuthenticatedHealthDewormingsRouteImport.update({
+    id: '/dewormings',
+    path: '/dewormings',
     getParentRoute: () => AuthenticatedHealthRouteRoute,
+  } as any)
+const AuthenticatedPetsPetIdRouteRoute =
+  AuthenticatedPetsPetIdRouteRouteImport.update({
+    id: '/$petId',
+    path: '/$petId',
+    getParentRoute: () => AuthenticatedPetsRouteRoute,
+  } as any)
+const AuthenticatedPetsPetIdIndexRoute =
+  AuthenticatedPetsPetIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPetsPetIdRouteRoute,
+  } as any)
+const AuthenticatedPetsPetIdVaccinationsRoute =
+  AuthenticatedPetsPetIdVaccinationsRouteImport.update({
+    id: '/vaccinations',
+    path: '/vaccinations',
+    getParentRoute: () => AuthenticatedPetsPetIdRouteRoute,
+  } as any)
+const AuthenticatedPetsPetIdDewormingsRoute =
+  AuthenticatedPetsPetIdDewormingsRouteImport.update({
+    id: '/dewormings',
+    path: '/dewormings',
+    getParentRoute: () => AuthenticatedPetsPetIdRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -103,15 +137,20 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/health': typeof AuthenticatedHealthRouteRouteWithChildren
+  '/pets': typeof AuthenticatedPetsRouteRouteWithChildren
   '/activity': typeof AuthenticatedActivityRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/pets': typeof AuthenticatedPetsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
-  '/health/deworming': typeof AuthenticatedHealthDewormingRoute
+  '/pets/$petId': typeof AuthenticatedPetsPetIdRouteRouteWithChildren
+  '/health/dewormings': typeof AuthenticatedHealthDewormingsRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
   '/health/': typeof AuthenticatedHealthIndexRoute
+  '/pets/': typeof AuthenticatedPetsIndexRoute
+  '/pets/$petId/dewormings': typeof AuthenticatedPetsPetIdDewormingsRoute
+  '/pets/$petId/vaccinations': typeof AuthenticatedPetsPetIdVaccinationsRoute
+  '/pets/$petId/': typeof AuthenticatedPetsPetIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -119,13 +158,16 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/pets': typeof AuthenticatedPetsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schedule': typeof AuthenticatedScheduleRoute
-  '/health/deworming': typeof AuthenticatedHealthDewormingRoute
+  '/health/dewormings': typeof AuthenticatedHealthDewormingsRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
   '/health': typeof AuthenticatedHealthIndexRoute
+  '/pets': typeof AuthenticatedPetsIndexRoute
+  '/pets/$petId/dewormings': typeof AuthenticatedPetsPetIdDewormingsRoute
+  '/pets/$petId/vaccinations': typeof AuthenticatedPetsPetIdVaccinationsRoute
+  '/pets/$petId': typeof AuthenticatedPetsPetIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,15 +176,20 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/health': typeof AuthenticatedHealthRouteRouteWithChildren
+  '/_authenticated/pets': typeof AuthenticatedPetsRouteRouteWithChildren
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
-  '/_authenticated/pets': typeof AuthenticatedPetsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
-  '/_authenticated/health/deworming': typeof AuthenticatedHealthDewormingRoute
+  '/_authenticated/pets/$petId': typeof AuthenticatedPetsPetIdRouteRouteWithChildren
+  '/_authenticated/health/dewormings': typeof AuthenticatedHealthDewormingsRoute
   '/_authenticated/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/_authenticated/health/vet': typeof AuthenticatedHealthVetRoute
   '/_authenticated/health/': typeof AuthenticatedHealthIndexRoute
+  '/_authenticated/pets/': typeof AuthenticatedPetsIndexRoute
+  '/_authenticated/pets/$petId/dewormings': typeof AuthenticatedPetsPetIdDewormingsRoute
+  '/_authenticated/pets/$petId/vaccinations': typeof AuthenticatedPetsPetIdVaccinationsRoute
+  '/_authenticated/pets/$petId/': typeof AuthenticatedPetsPetIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,15 +198,20 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/health'
+    | '/pets'
     | '/activity'
     | '/home'
-    | '/pets'
     | '/profile'
     | '/schedule'
-    | '/health/deworming'
+    | '/pets/$petId'
+    | '/health/dewormings'
     | '/health/vaccinations'
     | '/health/vet'
     | '/health/'
+    | '/pets/'
+    | '/pets/$petId/dewormings'
+    | '/pets/$petId/vaccinations'
+    | '/pets/$petId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -167,13 +219,16 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/activity'
     | '/home'
-    | '/pets'
     | '/profile'
     | '/schedule'
-    | '/health/deworming'
+    | '/health/dewormings'
     | '/health/vaccinations'
     | '/health/vet'
     | '/health'
+    | '/pets'
+    | '/pets/$petId/dewormings'
+    | '/pets/$petId/vaccinations'
+    | '/pets/$petId'
   id:
     | '__root__'
     | '/'
@@ -181,15 +236,20 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/_authenticated/health'
+    | '/_authenticated/pets'
     | '/_authenticated/activity'
     | '/_authenticated/home'
-    | '/_authenticated/pets'
     | '/_authenticated/profile'
     | '/_authenticated/schedule'
-    | '/_authenticated/health/deworming'
+    | '/_authenticated/pets/$petId'
+    | '/_authenticated/health/dewormings'
     | '/_authenticated/health/vaccinations'
     | '/_authenticated/health/vet'
     | '/_authenticated/health/'
+    | '/_authenticated/pets/'
+    | '/_authenticated/pets/$petId/dewormings'
+    | '/_authenticated/pets/$petId/vaccinations'
+    | '/_authenticated/pets/$petId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -243,13 +303,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/pets': {
-      id: '/_authenticated/pets'
-      path: '/pets'
-      fullPath: '/pets'
-      preLoaderRoute: typeof AuthenticatedPetsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/home': {
       id: '/_authenticated/home'
       path: '/home'
@@ -264,12 +317,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActivityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pets': {
+      id: '/_authenticated/pets'
+      path: '/pets'
+      fullPath: '/pets'
+      preLoaderRoute: typeof AuthenticatedPetsRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/health': {
       id: '/_authenticated/health'
       path: '/health'
       fullPath: '/health'
       preLoaderRoute: typeof AuthenticatedHealthRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pets/': {
+      id: '/_authenticated/pets/'
+      path: '/'
+      fullPath: '/pets/'
+      preLoaderRoute: typeof AuthenticatedPetsIndexRouteImport
+      parentRoute: typeof AuthenticatedPetsRouteRoute
     }
     '/_authenticated/health/': {
       id: '/_authenticated/health/'
@@ -292,18 +359,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthVaccinationsRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
     }
-    '/_authenticated/health/deworming': {
-      id: '/_authenticated/health/deworming'
-      path: '/deworming'
-      fullPath: '/health/deworming'
-      preLoaderRoute: typeof AuthenticatedHealthDewormingRouteImport
+    '/_authenticated/health/dewormings': {
+      id: '/_authenticated/health/dewormings'
+      path: '/dewormings'
+      fullPath: '/health/dewormings'
+      preLoaderRoute: typeof AuthenticatedHealthDewormingsRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
+    }
+    '/_authenticated/pets/$petId': {
+      id: '/_authenticated/pets/$petId'
+      path: '/$petId'
+      fullPath: '/pets/$petId'
+      preLoaderRoute: typeof AuthenticatedPetsPetIdRouteRouteImport
+      parentRoute: typeof AuthenticatedPetsRouteRoute
+    }
+    '/_authenticated/pets/$petId/': {
+      id: '/_authenticated/pets/$petId/'
+      path: '/'
+      fullPath: '/pets/$petId/'
+      preLoaderRoute: typeof AuthenticatedPetsPetIdIndexRouteImport
+      parentRoute: typeof AuthenticatedPetsPetIdRouteRoute
+    }
+    '/_authenticated/pets/$petId/vaccinations': {
+      id: '/_authenticated/pets/$petId/vaccinations'
+      path: '/vaccinations'
+      fullPath: '/pets/$petId/vaccinations'
+      preLoaderRoute: typeof AuthenticatedPetsPetIdVaccinationsRouteImport
+      parentRoute: typeof AuthenticatedPetsPetIdRouteRoute
+    }
+    '/_authenticated/pets/$petId/dewormings': {
+      id: '/_authenticated/pets/$petId/dewormings'
+      path: '/dewormings'
+      fullPath: '/pets/$petId/dewormings'
+      preLoaderRoute: typeof AuthenticatedPetsPetIdDewormingsRouteImport
+      parentRoute: typeof AuthenticatedPetsPetIdRouteRoute
     }
   }
 }
 
 interface AuthenticatedHealthRouteRouteChildren {
-  AuthenticatedHealthDewormingRoute: typeof AuthenticatedHealthDewormingRoute
+  AuthenticatedHealthDewormingsRoute: typeof AuthenticatedHealthDewormingsRoute
   AuthenticatedHealthVaccinationsRoute: typeof AuthenticatedHealthVaccinationsRoute
   AuthenticatedHealthVetRoute: typeof AuthenticatedHealthVetRoute
   AuthenticatedHealthIndexRoute: typeof AuthenticatedHealthIndexRoute
@@ -311,7 +406,7 @@ interface AuthenticatedHealthRouteRouteChildren {
 
 const AuthenticatedHealthRouteRouteChildren: AuthenticatedHealthRouteRouteChildren =
   {
-    AuthenticatedHealthDewormingRoute: AuthenticatedHealthDewormingRoute,
+    AuthenticatedHealthDewormingsRoute: AuthenticatedHealthDewormingsRoute,
     AuthenticatedHealthVaccinationsRoute: AuthenticatedHealthVaccinationsRoute,
     AuthenticatedHealthVetRoute: AuthenticatedHealthVetRoute,
     AuthenticatedHealthIndexRoute: AuthenticatedHealthIndexRoute,
@@ -322,20 +417,57 @@ const AuthenticatedHealthRouteRouteWithChildren =
     AuthenticatedHealthRouteRouteChildren,
   )
 
+interface AuthenticatedPetsPetIdRouteRouteChildren {
+  AuthenticatedPetsPetIdDewormingsRoute: typeof AuthenticatedPetsPetIdDewormingsRoute
+  AuthenticatedPetsPetIdVaccinationsRoute: typeof AuthenticatedPetsPetIdVaccinationsRoute
+  AuthenticatedPetsPetIdIndexRoute: typeof AuthenticatedPetsPetIdIndexRoute
+}
+
+const AuthenticatedPetsPetIdRouteRouteChildren: AuthenticatedPetsPetIdRouteRouteChildren =
+  {
+    AuthenticatedPetsPetIdDewormingsRoute:
+      AuthenticatedPetsPetIdDewormingsRoute,
+    AuthenticatedPetsPetIdVaccinationsRoute:
+      AuthenticatedPetsPetIdVaccinationsRoute,
+    AuthenticatedPetsPetIdIndexRoute: AuthenticatedPetsPetIdIndexRoute,
+  }
+
+const AuthenticatedPetsPetIdRouteRouteWithChildren =
+  AuthenticatedPetsPetIdRouteRoute._addFileChildren(
+    AuthenticatedPetsPetIdRouteRouteChildren,
+  )
+
+interface AuthenticatedPetsRouteRouteChildren {
+  AuthenticatedPetsPetIdRouteRoute: typeof AuthenticatedPetsPetIdRouteRouteWithChildren
+  AuthenticatedPetsIndexRoute: typeof AuthenticatedPetsIndexRoute
+}
+
+const AuthenticatedPetsRouteRouteChildren: AuthenticatedPetsRouteRouteChildren =
+  {
+    AuthenticatedPetsPetIdRouteRoute:
+      AuthenticatedPetsPetIdRouteRouteWithChildren,
+    AuthenticatedPetsIndexRoute: AuthenticatedPetsIndexRoute,
+  }
+
+const AuthenticatedPetsRouteRouteWithChildren =
+  AuthenticatedPetsRouteRoute._addFileChildren(
+    AuthenticatedPetsRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedHealthRouteRoute: typeof AuthenticatedHealthRouteRouteWithChildren
+  AuthenticatedPetsRouteRoute: typeof AuthenticatedPetsRouteRouteWithChildren
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
-  AuthenticatedPetsRoute: typeof AuthenticatedPetsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHealthRouteRoute: AuthenticatedHealthRouteRouteWithChildren,
+  AuthenticatedPetsRouteRoute: AuthenticatedPetsRouteRouteWithChildren,
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
-  AuthenticatedPetsRoute: AuthenticatedPetsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
 }

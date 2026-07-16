@@ -1,91 +1,77 @@
 import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Plus, Pencil, Syringe } from "lucide-react";
 import { useState } from "react";
+import { Plus, Pencil, ShieldPlus } from "lucide-react";
 import { toast } from "sonner";
 import z from "zod";
 
-import { petsQuery, petVaccinationsQuery, vaccinationsQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { dewormingsQuery, petDewormingsQuery, petsQuery } from "@/lib/queries";
 
-import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineLoader from "@/components/ui/common/inline-loader";
+import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/common/breadcrumb";
 import { Button } from "@/components/ui/common/button";
 import { ConfirmDialog } from "@/components/ui/common/confirm-dialog";
-import { FeatureEmptyState } from "@/components/ui/common/feature-empty-state";
 import { Page } from "@/components/layout/page";
-import { VaccinationsFormDialog } from "@/components/ui/vaccinations/vaccination-form-dialog";
+import { FeatureEmptyState } from "@/components/ui/common/feature-empty-state";
 import { HealthGroup } from "@/components/ui/common/health-group";
-import { VaccinationRow } from "@/components/ui/vaccinations/vaccination-row";
+import { DewormingFormDialog } from "@/components/ui/dewormings/deworming-form-dialog";
+import { DewormingRow } from "@/components/ui/dewormings/deworming-row";
 
-import { Vaccination } from "@/schemas/vacination";
+import { Deworming } from "@/schemas/deworming";
 
-export const Route = createFileRoute("/_authenticated/health/vaccinations")({
+export const Route = createFileRoute("/_authenticated/health/dewormings")({
     validateSearch: z.object({
         new: z.boolean().optional(),
     }),
     loader: async ({ context }) => await Promise.all([
         context.queryClient.ensureQueryData(petsQuery),
-        context.queryClient.ensureQueryData(vaccinationsQuery),
+        context.queryClient.ensureQueryData(dewormingsQuery),
     ]),
     pendingComponent: () => <InlineLoader />,
-    head: () => ({ meta: [{ title: "Vaccinations · Pawpal" }] }),
-    component: VaccinationsPage,
+    head: () => ({ meta: [{ title: "Deworming · Pawpal" }] }),
+    component: DewormingPage,
     errorComponent: ({ reset }: ErrorComponentProps) => <InlineErrorState onRetry={reset} />,
     notFoundComponent: () => <NotFoundState />,
 });
 
-function VaccinationsPage() {
+function DewormingPage() {
     const { data: pets } = useSuspenseQuery(petsQuery);
-    const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
+    const { data: dewormings } = useSuspenseQuery(dewormingsQuery);
     const qc = useQueryClient();
     const navigate = Route.useNavigate();
     const { new: openCreate } = Route.useSearch();
-    const [confirmDelete, setConfirmDelete] = useState<{ vaccinationId: string; petId: string } | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<{ dewormingId: string; petId: string } | null>(null);
     const now = Date.now();
 
-    function getVaccinationStatus(v: Vaccination) {
-        if (v.completed_at) return "completed";
-
-        if (!v.next_due_at) return "no_due_date";
-
-        if (v.next_due_at && new Date(v.next_due_at).getTime() < now) {
-            return "overdue";
-        }
-
-        return "upcoming";
+    function getDewormingStatus(d: Deworming) {
+        return new Date(d.next_due_at).getTime() < now
+            ? "overdue"
+            : "upcoming";
     }
 
-    const upcoming = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "upcoming")
+    const upcoming = dewormings
+        .filter((v) => getDewormingStatus(v) === "upcoming")
         .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
 
-    const overdue = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "overdue")
-        .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
-
-    const noDueDate = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "no_due_date")
-        .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
-
-    const history = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "completed")
-        .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
+    const overdue = dewormings
+        .filter((v) => getDewormingStatus(v) === "overdue")
+        .sort((a, b) => new Date(b.next_due_at!).getTime() - new Date(a.next_due_at!).getTime());
 
     const del = useMutation({
-        mutationFn: async ({ vaccinationId }: {
-            vaccinationId: string;
+        mutationFn: async ({ dewormingId }: {
+            dewormingId: string;
             petId: string;
         }) => {
-            const { error } = await supabase.from("vaccinations").delete().eq("id", vaccinationId);
+            const { error } = await supabase.from("dewormings").delete().eq("id", dewormingId);
             if (error) throw error;
         },
         onSuccess: async (_, variables) => {
             await Promise.all([
-                qc.invalidateQueries({ queryKey: vaccinationsQuery.queryKey }),
-                qc.invalidateQueries({ queryKey: petVaccinationsQuery(variables.petId).queryKey }),
+                qc.invalidateQueries({ queryKey: dewormingsQuery.queryKey }),
+                qc.invalidateQueries({ queryKey: petDewormingsQuery(variables.petId).queryKey }),
             ]);
             toast.success("Removed");
         },
@@ -93,12 +79,12 @@ function VaccinationsPage() {
         onSettled: () => setConfirmDelete(null),
     });
 
-    const confirmItem = vaccinations.find(
-        (v) => v.id === confirmDelete?.vaccinationId
+    const confirmItem = dewormings.find(
+        (d) => d.id === confirmDelete?.dewormingId
     );
 
-    const renderVaccinationEdit = (item: Vaccination) => (
-        <VaccinationsFormDialog
+    const renderDewormingEdit = (item: Deworming) => (
+        <DewormingFormDialog
             pets={pets}
             item={item}
             trigger={
@@ -109,41 +95,31 @@ function VaccinationsPage() {
         />
     );
 
-    const renderVaccinationRow = (item: Vaccination) => (
-        <VaccinationRow
+    const renderDewormingRow = (item: Deworming) => (
+        <DewormingRow
             key={item.id}
             item={item}
             pets={pets}
             onDelete={(item) =>
                 setConfirmDelete({
-                    vaccinationId: item.id,
+                    dewormingId: item.id,
                     petId: item.pet_id,
                 })
             }
-            renderEdit={renderVaccinationEdit}
+            renderEdit={renderDewormingEdit}
         />
     );
 
     const sections = [
         {
             title: "Upcoming",
-            emptyMessage: "No upcoming vaccines.",
+            emptyMessage: "No upcoming dewormings.",
             items: upcoming,
         },
         {
             title: "Overdue",
-            emptyMessage: "No overdue vaccines.",
+            emptyMessage: "No overdue dewormings.",
             items: overdue,
-        },
-        {
-            title: "No due date",
-            emptyMessage: "No vaccines without a due date.",
-            items: noDueDate,
-        },
-        {
-            title: "Completed",
-            emptyMessage: "No completed vaccines yet.",
-            items: history,
         },
     ];
 
@@ -161,16 +137,16 @@ function VaccinationsPage() {
                         <BreadcrumbSeparator />
 
                         <BreadcrumbItem>
-                            <BreadcrumbPage>Vaccinations</BreadcrumbPage>
+                            <BreadcrumbPage>Deworming</BreadcrumbPage>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
                 <header className="flex items-end justify-between">
                     <div>
-                        <h1 className="font-display text-3xl">Vaccinations</h1>
-                        <p className="text-sm text-muted-foreground">Vaccine records & due dates.</p>
+                        <h1 className="font-display text-3xl">Dewormings</h1>
+                        <p className="text-sm text-muted-foreground">Deworming records & due dates.</p>
                     </div>
-                    <VaccinationsFormDialog
+                    <DewormingFormDialog
                         pets={pets}
                         initialOpen={openCreate}
                         trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" />Add</Button>}
@@ -183,23 +159,23 @@ function VaccinationsPage() {
             </Page.Header>
 
             <Page.Content>
-                {vaccinations.length === 0 ? (
+                {dewormings.length === 0 ? (
                     <FeatureEmptyState
-                        icon={Syringe}
-                        title="Never miss an important vaccine"
-                        description="Record vaccinations and we'll remind you when the next dose is due."
-                        cta="Add vaccination"
-                        to="/health/vaccinations"
+                        icon={ShieldPlus}
+                        title="Stay on top of deworming"
+                        description="Track treatments and receive reminders when the next dose is due."
+                        cta="Add deworming"
+                        to="/health/dewormings"
                         search={{ new: true }}
                     />
-                ) : sections.filter(section => section.items.length > 0 || section.title !== "No due date").map(section => (
+                ) : sections.filter(section => section.items.length > 0).map(section => (
                     <HealthGroup
                         key={section.title}
                         title={section.title}
                         emptyMessage={section.emptyMessage}
                         hasItems={section.items.length > 0}
                     >
-                        {section.items.map(renderVaccinationRow)}
+                        {section.items.map(renderDewormingRow)}
                     </HealthGroup>
                 ))}
             </Page.Content>
@@ -207,14 +183,14 @@ function VaccinationsPage() {
             <ConfirmDialog
                 open={!!confirmDelete}
                 onOpenChange={(o) => !o && setConfirmDelete(null)}
-                title={`Remove ${confirmItem?.vaccine_name ?? "this vaccine"}?`}
-                description="This vaccine record will be permanently deleted. This can't be undone."
+                title={`Remove ${confirmItem?.product_name ?? "this deworming"}?`}
+                description="This deworming record will be permanently deleted. This can't be undone."
                 confirmText="Remove"
                 loading={del.isPending}
                 confirmVariant="destructive"
                 onConfirm={() => confirmDelete &&
                     del.mutate({
-                        vaccinationId: confirmDelete.vaccinationId,
+                        dewormingId: confirmDelete.dewormingId,
                         petId: confirmDelete.petId,
                     })}
             />

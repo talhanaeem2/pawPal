@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { PawPrint, LogOut, User, Bell, Settings } from "lucide-react";
-import { Button } from "../ui/button";
-import { ConfirmDialog } from "../ui/confirm-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { UserAvatar } from "../ui/user-avatar";
+import { PawPrint, LogOut, User } from "lucide-react";
+
 import { useAuth } from "@/contexts/auth-context";
+
+import { Button } from "../ui/common/button";
+import { ConfirmDialog } from "../ui/common/confirm-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/common/dropdown-menu";
+import { UserAvatar } from "../ui/common/user-avatar";
 
 function Header() {
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -40,20 +42,6 @@ function Header() {
                                 Profile
                             </Link>
                         </DropdownMenuItem>
-
-                        {/* <DropdownMenuItem asChild>
-                            <Link to="/">
-                                <Bell className="mr-2 h-4 w-4" />
-                                Notifications
-                            </Link>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem asChild>
-                            <Link to="/">
-                                <Settings className="mr-2 h-4 w-4" />
-                                Settings
-                            </Link>
-                        </DropdownMenuItem> */}
 
                         <DropdownMenuSeparator />
 
