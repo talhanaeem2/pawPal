@@ -56,11 +56,38 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
                 notes: data.notes || null,
             };
 
-            const query = item
-                ? supabase.from("dewormings").update(payload).eq("id", item.id)
-                : supabase.from("dewormings").insert(payload);
+            if (item) {
+                const { error } = await supabase.from("dewormings").update(payload).eq("id", item.id);
 
-            const { error } = await query;
+                if (error) throw error;
+                return;
+            }
+
+            // Close previous active deworming
+            const { data: previous } = await supabase
+                .from("dewormings")
+                .select("id")
+                .eq("pet_id", data.pet_id)
+                .is("completed_at", null)
+                .order("administered_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (previous) {
+                const { error } = await supabase
+                    .from("dewormings")
+                    .update({
+                        completed_at: data.administered_at,
+                    })
+                    .eq("id", previous.id);
+
+                if (error) throw error;
+            }
+
+            // Insert new active deworming
+            const { error } = await supabase
+                .from("dewormings")
+                .insert(payload);
 
             if (error) throw error;
         },

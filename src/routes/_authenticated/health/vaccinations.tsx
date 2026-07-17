@@ -129,21 +129,25 @@ function VaccinationsPage() {
             title: "Upcoming",
             emptyMessage: "No upcoming vaccines.",
             items: upcoming,
+            showWhenEmpty: true,
         },
         {
             title: "Overdue",
             emptyMessage: "No overdue vaccines.",
             items: overdue,
+            showWhenEmpty: false,
         },
         {
             title: "No due date",
             emptyMessage: "No vaccines without a due date.",
             items: noDueDate,
+            showWhenEmpty: false,
         },
         {
             title: "Completed",
             emptyMessage: "No completed vaccines yet.",
             items: history,
+            showWhenEmpty: true,
         },
     ];
 
@@ -192,16 +196,17 @@ function VaccinationsPage() {
                         to="/health/vaccinations"
                         search={{ new: true }}
                     />
-                ) : sections.filter(section => section.items.length > 0 || section.title !== "No due date").map(section => (
-                    <HealthGroup
-                        key={section.title}
-                        title={section.title}
-                        emptyMessage={section.emptyMessage}
-                        hasItems={section.items.length > 0}
-                    >
-                        {section.items.map(renderVaccinationRow)}
-                    </HealthGroup>
-                ))}
+                ) : sections.filter(section => section.items.length > 0 || section.showWhenEmpty)
+                    .map(section => (
+                        <HealthGroup
+                            key={section.title}
+                            title={section.title}
+                            emptyMessage={section.emptyMessage}
+                            hasItems={section.items.length > 0}
+                        >
+                            {section.items.map(renderVaccinationRow)}
+                        </HealthGroup>
+                    ))}
             </Page.Content>
 
             <ConfirmDialog

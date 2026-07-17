@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ShieldPlus } from "lucide-react";
 
-import { PetSection } from "./pet-section";
 import { DewormingRow } from "@/components/ui/dewormings/deworming-row";
+import { Section } from "@/components/layout/section";
 
 import { Deworming } from "@/schemas/deworming";
 import { Pet } from "@/schemas/pets";
@@ -22,7 +22,7 @@ export function PetDewormingsCard({
     const petId = pet.id;
 
     return (
-        <PetSection
+        <Section
             title="Dewormings"
             icon={ShieldPlus}
             href="/pets/$petId/dewormings"
@@ -33,7 +33,7 @@ export function PetDewormingsCard({
                     No active dewormings.
                 </p>
             ) : (
-                <ul className="space-y-2">
+                <ul className="divide-y divide-border/60">
                     {dewormings.visible.slice(0, 3).map((d) => (
                         <DewormingRow
                             item={d}
@@ -53,6 +53,6 @@ export function PetDewormingsCard({
                     )}
                 </ul>
             )}
-        </PetSection>
+        </Section>
     );
 }

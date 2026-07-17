@@ -49,9 +49,13 @@ function DewormingPetPage() {
     const now = Date.now();
 
     function getDewormingStatus(d: Deworming) {
-        return new Date(d.next_due_at).getTime() < now
-            ? "overdue"
-            : "upcoming";
+        if (d.completed_at) return "completed";
+
+        if (new Date(d.next_due_at).getTime() < now) {
+            return "overdue";
+        }
+
+        return "upcoming";
     }
 
     const upcoming = dewormings
@@ -61,6 +65,10 @@ function DewormingPetPage() {
     const overdue = dewormings
         .filter((v) => getDewormingStatus(v) === "overdue")
         .sort((a, b) => new Date(b.next_due_at!).getTime() - new Date(a.next_due_at!).getTime());
+
+    const history = dewormings
+        .filter((d) => getDewormingStatus(d) === "completed")
+        .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime());
 
     const del = useMutation({
         mutationFn: async ({ dewormingId }: {
@@ -124,6 +132,11 @@ function DewormingPetPage() {
             title: "Overdue",
             emptyMessage: "No overdue dewormings.",
             items: overdue,
+        },
+        {
+            title: "History",
+            emptyMessage: "No completed dewormings.",
+            items: history,
         },
     ];
 

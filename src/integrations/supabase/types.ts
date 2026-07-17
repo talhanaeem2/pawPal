@@ -87,6 +87,7 @@ export type Database = {
         Row: {
           administered_at: string
           administered_by: string | null
+          completed_at: string | null
           created_at: string
           id: string
           next_due_at: string
@@ -99,6 +100,7 @@ export type Database = {
         Insert: {
           administered_at: string
           administered_by?: string | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           next_due_at: string
@@ -111,6 +113,7 @@ export type Database = {
         Update: {
           administered_at?: string
           administered_by?: string | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           next_due_at?: string

@@ -59,10 +59,18 @@ export function DewormingRow({
                 </div>
             );
             break;
+
+        case "completed":
+            status = (
+                <div className="text-xs text-muted-foreground">
+                    Completed · {formatDate(item.completed_at!)}
+                </div>
+            );
+            break;
     }
 
     return (
-        <li className="p-4 flex flex-col">
+        <li className="pl-4 py-2 flex flex-col">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                     <div className={"font-medium text-sm capitalize"}>

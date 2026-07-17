@@ -7,6 +7,7 @@ export const dewormingSchema = z.object({
     administered_at: z.string(),
     next_due_at: z.string(),
     administered_by: z.string().nullable(),
+    completed_at: z.string().nullable(),
     notes: z.string().nullable(),
 });
 
@@ -18,6 +19,7 @@ export const dewormingFormSchema = z.object({
     administered_at: z.string().min(1, "Administration date is required"),
     next_due_at: z.string().min(1, "Next due date is required"),
     administered_by: z.string().default(""),
+    completed_at: z.string().default(""),
     notes: z.string().default(""),
 });
 
@@ -29,6 +31,7 @@ export const dewormingFormDefaults: DewormingForm = {
     administered_at: "",
     next_due_at: "",
     administered_by: "",
+    completed_at: "",
     notes: "",
 };
 
@@ -39,6 +42,7 @@ export function dewormingToForm(deworming: Deworming,): DewormingForm {
         administered_at: deworming.administered_at,
         next_due_at: deworming.next_due_at,
         administered_by: deworming.administered_by ?? "",
+        completed_at: deworming.completed_at ?? "",
         notes: deworming.notes ?? "",
     };
 }

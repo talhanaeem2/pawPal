@@ -1,3 +1,5 @@
+import { Section } from "@/components/layout/section";
+
 type HealthGroupProps = {
     title: string;
     emptyMessage: string;
@@ -7,17 +9,16 @@ type HealthGroupProps = {
 
 export function HealthGroup({ title, emptyMessage, children, hasItems }: HealthGroupProps) {
     return (
-        <section>
-            <h2 className="font-display text-lg mb-2">{title}</h2>
+        <Section title={title}>
             {!hasItems ? (
-                <div className="rounded-3xl bg-card p-5 text-sm text-muted-foreground shadow-(--shadow-soft)">
+                <div className="text-sm text-muted-foreground">
                     {emptyMessage}
                 </div>
             ) : (
-                <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
+                <ul className="divide-y divide-border/60 -mx-4">
                     {children}
                 </ul>
             )}
-        </section>
+        </Section>
     );
 }

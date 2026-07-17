@@ -2,7 +2,7 @@ import { CalendarDays, Dog, Scale, ScanLine, Mars, Venus, Cat, Info } from "luci
 
 import { formatDate } from "@/lib/utils";
 
-import { PetSection } from "./pet-section";
+import { Section } from "@/components/layout/section";
 
 import { Pet } from "@/schemas/pets";
 
@@ -32,7 +32,7 @@ function InfoRow({
 
 export function PetInfoCard({ pet }: { pet: Pet }) {
     return (
-        <PetSection
+        <Section
             title="Information"
             icon={Info}
         >
@@ -77,6 +77,6 @@ export function PetInfoCard({ pet }: { pet: Pet }) {
                     value={pet.microchip ?? "Not registered"}
                 />
             </div>
-        </PetSection>
+        </Section>
     );
 }

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Syringe } from "lucide-react";
 
-import { PetSection } from "./pet-section";
+import { Section } from "@/components/layout/section";
 import { VaccinationRow } from "@/components/ui/vaccinations/vaccination-row";
 
 import { Pet } from "@/schemas/pets";
@@ -22,7 +22,7 @@ export function PetVaccinationsCard({
     const petId = pet.id;
 
     return (
-        <PetSection
+        <Section
             title="Vaccinations"
             icon={Syringe}
             href="/pets/$petId/vaccinations"
@@ -33,7 +33,7 @@ export function PetVaccinationsCard({
                     No active vaccinations.
                 </p>
             ) : (
-                <ul className="space-y-2">
+                <ul className="divide-y divide-border/60">
                     {vaccinations.visible.slice(0, 3).map((v) => (
                         <VaccinationRow
                             item={v}
@@ -53,6 +53,6 @@ export function PetVaccinationsCard({
                     )}
                 </ul>
             )}
-        </PetSection>
+        </Section>
     );
 }

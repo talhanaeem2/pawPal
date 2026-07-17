@@ -34,7 +34,7 @@ export function VetRow({
         .join(" · ");
 
     return (
-        <li key={item.id} className="p-4 flex items-start gap-3">
+        <li className="pl-4 py-2 flex items-start gap-3">
             <div className="flex-1 min-w-0">
                 <div className={`font-medium text-sm capitalize ${item.completed ? "line-through text-muted-foreground" : ""}`}>{item.reason}</div>
                 {subtitle && (

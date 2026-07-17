@@ -1,17 +1,62 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
-export function Section({ title, icon: Icon, href, children }: { title: string; icon: typeof Calendar; href: string; children: React.ReactNode }) {
+type SectionProps = {
+    title: string;
+    icon?: LucideIcon;
+    children: React.ReactNode;
+    href?: string;
+    params?: Record<string, string>;
+};
+
+export function Section({
+    title,
+    icon: Icon,
+    children,
+    href,
+    params,
+}: SectionProps) {
+    const Header = (
+        <>
+            <div className="flex items-center gap-2">
+                {Icon && (
+                    <Icon
+                        className="h-4 w-4 text-primary"
+                        strokeWidth={1.75}
+                    />
+                )}
+                <h2 className="font-display text-lg">
+                    {title}
+                </h2>
+            </div>
+
+            {href && (
+                <span className="shrink-0 text-xs text-muted-foreground">
+                    See all
+                </span>
+            )}
+        </>
+    );
+
     return (
         <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
-            <Link to={href} className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                    <h2 className="font-display text-lg">{title}</h2>
+            {href ? (
+                <Link
+                    to={href}
+                    params={params}
+                    className="flex items-center justify-between"
+                >
+                    {Header}
+                </Link>
+            ) : (
+                <div className="flex items-center justify-between">
+                    {Header}
                 </div>
-                <span className="text-xs text-muted-foreground">See all</span>
-            </Link>
-            {children}
+            )}
+
+            <div className="mt-2">
+                {children}
+            </div>
         </section>
     );
 }

@@ -3,14 +3,15 @@ import { Deworming } from "@/schemas/deworming";
 export type DewormingDueTone =
     | "overdue"
     | "due_soon"
-    | "scheduled";
+    | "scheduled"
+    | "completed";
 
-export function getDewormingDueTone(
-    nextDueAt: string | null,
-): DewormingDueTone {
-    if (!nextDueAt) return "scheduled";
+export function getDewormingDueTone(d: Deworming): DewormingDueTone {
+    if (d.completed_at) return "completed";
 
-    const due = new Date(nextDueAt).getTime();
+    if (!d.next_due_at) return "scheduled";
+
+    const due = new Date(d.next_due_at).getTime();
     const now = Date.now();
     const days30 = 30 * 24 * 60 * 60 * 1000;
 
@@ -30,6 +31,9 @@ export function getDewormingDueToneClass(tone: DewormingDueTone) {
 
         case "scheduled":
             return "text-muted-foreground";
+
+        case "completed":
+            return "text-[#6F947F]";
     }
 }
 
@@ -43,13 +47,14 @@ export function getDewormingDueToneLabel(tone: DewormingDueTone) {
 
         case "scheduled":
             return "Scheduled";
+
+        case "completed":
+            return "Completed";
     }
 }
 
 export function getDewormingDisplay(d: Deworming) {
-    const tone = getDewormingDueTone(
-        d.next_due_at,
-    );
+    const tone = getDewormingDueTone(d);
 
     return {
         className: getDewormingDueToneClass(tone),
@@ -60,9 +65,6 @@ export function getDewormingDisplay(d: Deworming) {
 
 export function getActiveDewormings(dewormings: Deworming[]) {
     return dewormings
-        .sort(
-            (a, b) =>
-                new Date(a.next_due_at).getTime() -
-                new Date(b.next_due_at).getTime()
-        );
+        .filter((d) => !d.completed_at)
+        .sort((a, b) => new Date(a.next_due_at).getTime() - new Date(b.next_due_at).getTime());
 }
