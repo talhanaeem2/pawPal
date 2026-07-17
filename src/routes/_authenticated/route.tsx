@@ -43,13 +43,14 @@ function AuthedLayout() {
   useEffect(() => {
     async function loadUser() {
       const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+        data: { user }, error } = await supabase.auth.getUser();
 
-      if (error || !user) {
-        await supabase.auth.signOut();
+      if (!user) {
+        navigate({ to: "/auth", replace: true });
+        return;
+      }
 
+      if (error) {
         navigate({ to: "/auth", replace: true });
         return;
       }

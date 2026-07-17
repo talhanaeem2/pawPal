@@ -28,27 +28,29 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const { data } = await supabase.auth.getSession();
+    let mounted = true;
 
-      if (data.session) {
-        navigate({ to: "/", replace: true });
-      }
-    };
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
 
-    initAuth();
+      if (!mounted) return;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         navigate({ to: "/", replace: true });
+        return;
       }
-    });
 
-    return () => subscription.unsubscribe();
+      setCheckingSession(false);
+    }
+
+    checkSession();
+
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
   async function submit(e: React.SyntheticEvent<HTMLFormElement, SubmitEvent>) {
@@ -67,13 +69,17 @@ function AuthPage() {
         if (error) throw error;
 
         if (data.session) {
-          toast.success("Welcome! You're signed in.");
+          navigate({ to: "/", replace: true });
         } else {
           toast.success("Check your email to verify your account.");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        if (data.session) {
+          navigate({ to: "/", replace: true });
+        }
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -100,6 +106,10 @@ function AuthPage() {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);
     }
+  }
+
+  if (checkingSession) {
+    return <Loader />;
   }
 
   return (
