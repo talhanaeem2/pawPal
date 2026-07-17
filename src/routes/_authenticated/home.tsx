@@ -189,32 +189,34 @@ function Home() {
           )}
         </Section>
 
-        <Section title="Recent activity" icon={Activity} href="/activity">
-          {recentActivityData.visible.length === 0 ? (
-            <Empty text="No activities logged yet." cta="Log activity" href="/activity" search={{ new: true }} />
-          ) : (
-            <ul className="divide-y divide-border/60">
-              {recentActivityData.visible.map((a) => (
-                <li key={a.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-sm capitalize">{a.activity_type}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+        {recentActivityData.visible.length > 0 && (
+          <Section title="Recent activity" icon={Activity} href="/activity">
+            {recentActivityData.visible.length === 0 ? (
+              <Empty text="No activities logged yet." cta="Log activity" href="/activity" search={{ new: true }} />
+            ) : (
+              <ul className="divide-y divide-border/60">
+                {recentActivityData.visible.map((a) => (
+                  <li key={a.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm capitalize">{a.activity_type}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
-                  </div>
-                </li>
-              ))}
-              {recentActivityData.remaining > 0 && (
-                <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
-                  +{recentActivityData.remaining} more activities →
-                </Link>
-              )}
-            </ul>
-          )}
-        </Section>
+                    <div className="text-xs text-muted-foreground">
+                      {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
+                    </div>
+                  </li>
+                ))}
+                {recentActivityData.remaining > 0 && (
+                  <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
+                    +{recentActivityData.remaining} more activities →
+                  </Link>
+                )}
+              </ul>
+            )}
+          </Section>
+        )}
 
         {vaccinationData.visible.length > 0 && (
           <Section title="Vaccinations" icon={Syringe} href="/health/vaccinations">
