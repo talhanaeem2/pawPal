@@ -1,11 +1,12 @@
 import { createFileRoute, type ErrorComponentProps, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Calendar, Stethoscope, Activity, Plus, PawPrint, Syringe } from "lucide-react";
+import { Calendar, Stethoscope, Activity, Plus, PawPrint, Syringe, ShieldPlus } from "lucide-react";
 
-import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery } from "@/lib/queries";
+import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery, dewormingsQuery } from "@/lib/queries";
 import { formatPetNames } from "@/lib/pet-utils";
 import { formatFrequency, formatKind } from "@/lib/schedule.utils";
 import { getActiveVaccinations } from "@/lib/vaccinations-utils";
+import { getActiveDewormings } from "@/lib/dewormings-utils";
 import { cn, formatTime, getPreviewList, todayDateString } from "@/lib/utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
@@ -15,9 +16,10 @@ import PushPrompt from "@/components/ui/common/push-prompt";
 import { Section } from "@/components/layout/section";
 import { Empty } from "@/components/ui/common/empty";
 import { Page } from "@/components/layout/page";
-import { VaccinationRow } from "@/components/ui/vaccinations/vaccination-row";
 import { PetAvatar } from "@/components/ui/common/pet-avatar";
+import { DewormingRow } from "@/components/ui/dewormings/deworming-row";
 import { VetRow } from "@/components/ui/vet/vet-row";
+import { VaccinationRow } from "@/components/ui/vaccinations/vaccination-row";
 
 export const Route = createFileRoute("/_authenticated/home")({
   loader: async ({ context }) => await Promise.all([
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/home")({
     context.queryClient.ensureQueryData(vetQuery),
     context.queryClient.ensureQueryData(activityQuery),
     context.queryClient.ensureQueryData(vaccinationsQuery),
+    context.queryClient.ensureQueryData(dewormingsQuery),
   ]),
   pendingComponent: () => <InlineLoader />,
   head: () => ({ meta: [{ title: "Home · Pawpal" }] }),
@@ -40,9 +43,8 @@ function Home() {
   const { data: vet } = useSuspenseQuery(vetQuery);
   const { data: activity } = useSuspenseQuery(activityQuery);
   const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
+  const { data: dewormings } = useSuspenseQuery(dewormingsQuery);
 
-  const now = Date.now();
-  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
   const today = todayDateString();
 
   const todayData = getPreviewList(schedule, 5);
@@ -53,6 +55,12 @@ function Home() {
   const recentActivityData = getPreviewList(activity, 3);
 
   const vaccinationData = getPreviewList(getActiveVaccinations(vaccinations), 3);
+  const dewormingData = getPreviewList(getActiveDewormings(dewormings), 3);
+
+  const showExploreCard =
+    recentActivityData.visible.length === 0 ||
+    vaccinationData.visible.length === 0 ||
+    dewormingData.visible.length === 0;
 
   if (pets.length === 0) {
     return (
@@ -62,7 +70,7 @@ function Home() {
         </div>
         <h2 className="font-display text-2xl mt-4">Welcome to Pawpal</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          Add your first pet to start tracking meals, meds, vet visits and walks.
+          Add your first pet to keep track of reminders, vaccinations, dewormings, vet visits, and everyday care—all in one place.
         </p>
         <Link
           to="/pets"
@@ -235,6 +243,87 @@ function Home() {
               )}
             </ul>
           </Section>
+        )}
+
+        {dewormingData.visible.length > 0 && (
+          <Section title="Dewormings" icon={Syringe} href="/health/dewormings">
+            <ul className="divide-y divide-border/60">
+              {dewormingData.visible.map((d) => (
+                <DewormingRow
+                  item={d}
+                  pets={pets}
+                  key={d.id}
+                />
+              ))}
+              {dewormingData.remaining > 0 && (
+                <Link to="/health/dewormings" className="block py-2 text-xs text-primary hover:underline">
+                  +{dewormingData.remaining} more dewormings →
+                </Link>
+              )}
+            </ul>
+          </Section>
+        )}
+
+        {showExploreCard && (
+          <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
+            <h2 className="font-display text-lg">Explore more</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Keep your pet's health and history organized.
+            </p>
+
+            <div className="mt-4 space-y-2">
+              {vaccinationData.visible.length === 0 && (
+                <Link
+                  to="/health/vaccinations"
+                  className="flex items-center justify-between rounded-2xl border border-border p-3 hover:bg-muted/40 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <Syringe className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Vaccinations</p>
+                      <p className="text-xs text-muted-foreground">
+                        Track vaccines and reminders
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              )}
+
+              {dewormingData.visible.length === 0 && (
+                <Link
+                  to="/health/dewormings"
+                  className="flex items-center justify-between rounded-2xl border border-border p-3 hover:bg-muted/40 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldPlus className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Dewormings</p>
+                      <p className="text-xs text-muted-foreground">
+                        Keep deworming schedules on track
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              )}
+
+              {recentActivityData.visible.length === 0 && (
+                <Link
+                  to="/activity"
+                  className="flex items-center justify-between rounded-2xl border border-border p-3 hover:bg-muted/40 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Activity</p>
+                      <p className="text-xs text-muted-foreground">
+                        Log walks, weight and more
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </div>
+          </section>
         )}
       </Page.Content>
     </Page>

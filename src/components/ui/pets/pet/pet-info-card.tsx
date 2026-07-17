@@ -22,7 +22,7 @@ function InfoRow({
                 <p className="text-xs text-muted-foreground">
                     {label}
                 </p>
-                <p className="text-sm">
+                <p className="text-sm capitalize">
                     {value}
                 </p>
             </div>
@@ -46,7 +46,7 @@ export function PetInfoCard({ pet }: { pet: Pet }) {
                 <InfoRow
                     icon={Dog}
                     label="Breed"
-                    value={pet.breed ?? "Unknown"}
+                    value={pet.breed ?? <span className="normal-case">Not specified</span>}
                 />
 
                 <InfoRow
@@ -61,20 +61,20 @@ export function PetInfoCard({ pet }: { pet: Pet }) {
                     value={
                         pet.weight_kg
                             ? `${pet.weight_kg} kg`
-                            : "Unknown"
+                            : <span className="normal-case">Not recorded</span>
                     }
                 />
 
                 <InfoRow
                     icon={CalendarDays}
                     label="Birthdate"
-                    value={formatDate(pet.birthdate)}
+                    value={pet.birthdate ? formatDate(pet.birthdate) : <span className="normal-case">Not recorded</span>}
                 />
 
                 <InfoRow
                     icon={ScanLine}
                     label="Microchip"
-                    value={pet.microchip ?? "Not registered"}
+                    value={pet.microchip ?? <span className="normal-case">Not registered</span>}
                 />
             </div>
         </Section>
