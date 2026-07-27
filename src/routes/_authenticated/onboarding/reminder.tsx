@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Field } from "@/components/ui/common/field";
 import { Input } from "@/components/ui/common/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/common/select";
+import { TimePicker } from "@/components/ui/common/time-picker";
 
 import { createEmptyScheduleForm, OnboardingReminderForm, onboardingReminderSchema, ScheduleForm } from "@/schemas/schedule";
 
@@ -171,8 +172,6 @@ function ReminderPage() {
                         onSubmit={(e) => {
                             e.preventDefault();
                             const data = form.getValidated();
-                            console.log("validated:", data);
-                            console.log("errors:", form.errors);
                             if (!data) return;
                             save.mutate(data);
                         }}
@@ -180,7 +179,11 @@ function ReminderPage() {
                     >
                         <div className="space-y-4">
                             <Field label="When should we remind you?">
-                                <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} />
+                                {/* <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} /> */}
+                                <TimePicker
+                                    value={form.values.time_of_day}
+                                    onChange={(time) => form.setField("time_of_day", time)}
+                                />
                             </Field>
 
                             <Field label="How often?">
