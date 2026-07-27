@@ -10,6 +10,7 @@ import { Button } from "../common/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../common/select";
 import { Input } from "../common/input";
 import { Textarea } from "../common/textarea";
+import { DatePicker } from "../common/date-picker";
 import { FormDialog } from "../common/form-dialog";
 import { Field } from "../common/field";
 
@@ -116,7 +117,12 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
                     <Input type="text" value={form.values.vaccine_name} onChange={(e) => form.setField("vaccine_name", e.target.value)} placeholder="Rabies, DHPP, FVRCP" required />
                 </Field>
                 <Field label="Date given" error={form.errors.administered_at}>
-                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
+                    {/* <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required /> */}
+                    <DatePicker
+                        value={form.values.administered_at}
+                        onChange={(date) => form.setField("administered_at", date)}
+                        placeholder="Select date"
+                    />
                 </Field>
                 <Field label="Vet or clinic">
                     <Input
@@ -127,7 +133,12 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
                 </Field>
                 {!form.values.completed_at && (
                     <Field label="Next dose due">
-                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} />
+                        {/* <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} /> */}
+                        <DatePicker
+                            value={form.values.next_due_at}
+                            onChange={(date) => form.setField("next_due_at", date)}
+                            placeholder="Select date"
+                        />
                     </Field>
                 )}
                 <Field label="Another dose required?">

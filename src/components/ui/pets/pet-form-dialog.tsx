@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormDialog } from "@/components/ui/common/form-dialog";
 import { Input } from "@/components/ui/common/input";
 import { Textarea } from "@/components/ui/common/textarea";
+import { DatePicker } from "../common/date-picker";
 import { Button } from "@/components/ui/common/button";
 import { Field } from "../common/field";
 
@@ -220,7 +221,12 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
                             <div className="col-span-2">
                                 {useBirthday ? (
                                     <Field label="Birthdate" className="col-span-2">
-                                        <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} />
+                                        {/* <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} /> */}
+                                        <DatePicker
+                                            value={form.values.birthdate}
+                                            onChange={(date) => form.setField("birthdate", date)}
+                                            placeholder="Select date"
+                                        />
                                     </Field>
                                 ) : (
                                     <Field label="Age" className="col-span-2">

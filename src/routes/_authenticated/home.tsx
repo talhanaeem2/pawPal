@@ -57,10 +57,7 @@ function Home() {
   const vaccinationData = getPreviewList(getActiveVaccinations(vaccinations), 3);
   const dewormingData = getPreviewList(getActiveDewormings(dewormings), 3);
 
-  const showExploreCard =
-    recentActivityData.visible.length === 0 ||
-    vaccinationData.visible.length === 0 ||
-    dewormingData.visible.length === 0;
+  const showExploreCard = vaccinationData.visible.length === 0 || dewormingData.visible.length === 0;
 
   if (pets.length === 0) {
     return (

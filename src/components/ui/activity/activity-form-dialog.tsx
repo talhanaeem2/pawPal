@@ -121,18 +121,18 @@ export function ActivityFormDialog({ pets, item, trigger, initialOpen, onClose }
                 </div>
                 {form.values.activity_type !== "weight" ? (
                     <Field label="Duration (min)">
-                        <Input type="number" value={form.values.duration_min} onChange={(e) => form.setField("duration_min", e.target.value)} />
+                        <Input type="number" value={form.values.duration_min} onChange={(e) => form.setField("duration_min", e.target.value)} placeholder="e.g. 30" required />
                     </Field>
                 ) : (
                     <Field label="Weight (kg)">
-                        <Input type="number" step="0.1" value={form.values.weight} onChange={(e) => form.setField("weight", e.target.value)} required />
+                        <Input type="number" step="0.1" value={form.values.weight} onChange={(e) => form.setField("weight", e.target.value)} placeholder="e.g. 25.5" required />
                     </Field>
                 )}
                 <Field label="Notes">
-                    <Textarea rows={2} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
+                    <Textarea rows={2} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember about your pet" />
                 </Field>
                 <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
-                    {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
+                    {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save log"}
                 </Button>
             </form>
         </FormDialog>

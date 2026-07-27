@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "../common/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../common/select";
 import { Input } from "../common/input";
+import { DateTimePicker } from "../common/date-time-picker";
 import { Textarea } from "../common/textarea";
 import { FormDialog } from "../common/form-dialog";
 import { Field } from "../common/field";
@@ -97,7 +98,11 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
                     </Select>
                 </Field>
                 <Field label="When" error={form.errors.date}>
-                    <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} required />
+                    {/* <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} required /> */}
+                    <DateTimePicker
+                        value={form.values.date}
+                        onChange={(v) => form.setField("date", v)}
+                    />
                 </Field>
                 <Field label="Reason" error={form.errors.reason}>
                     <Input value={form.values.reason} onChange={(e) => form.setField("reason", e.target.value)} placeholder="Annual checkup" required />

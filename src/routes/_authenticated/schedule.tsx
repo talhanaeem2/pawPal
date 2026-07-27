@@ -32,6 +32,7 @@ import { Card, CardContent } from "@/components/ui/common/card";
 import { Progress } from "@/components/ui/common/progress";
 import { Page } from "@/components/layout/page";
 import { Field } from "@/components/ui/common/field";
+import { TimePicker } from "@/components/ui/common/time-picker";
 
 import { createEmptyScheduleForm, ScheduleForm, scheduleFormSchema, scheduleToForm, ScheduleWithPets } from "@/schemas/schedule";
 
@@ -760,7 +761,11 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
             </div>
             {needsTime && (
               <Field label={getTimeLabel(form.values.kind)}>
-                <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} />
+                {/* <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} /> */}
+                <TimePicker
+                  value={form.values.time_of_day}
+                  onChange={(time) => form.setField("time_of_day", time)}
+                />
               </Field>
             )}
             <Field label="Repeat every">

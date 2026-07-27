@@ -10,6 +10,7 @@ import { Button } from "../common/button";
 import { FormDialog } from "../common/form-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../common/select";
 import { Input } from "../common/input";
+import { DatePicker } from "../common/date-picker";
 import { Textarea } from "../common/textarea";
 import { Field } from "../common/field";
 
@@ -140,10 +141,20 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
                     <Input type="text" value={form.values.product_name} onChange={(e) => form.setField("product_name", e.target.value)} placeholder="e.g. Drontal, Milbemax, Panacur" required />
                 </Field>
                 <Field label="Date given" error={form.errors.administered_at}>
-                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
+                    {/* <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required /> */}
+                    <DatePicker
+                        value={form.values.administered_at}
+                        onChange={(date) => form.setField("administered_at", date)}
+                        placeholder="Select date"
+                    />
                 </Field>
                 <Field label="Next dose due" error={form.errors.next_due_at}>
-                    <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} required />
+                    {/* <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} required /> */}
+                    <DatePicker
+                        value={form.values.next_due_at}
+                        onChange={(date) => form.setField("next_due_at", date)}
+                        placeholder="Select date"
+                    />
                 </Field>
                 <Field label="Vet or clinic">
                     <Input

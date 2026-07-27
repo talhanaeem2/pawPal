@@ -3538,6 +3538,11 @@ react-is@^18.3.1:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-18.3.1.tgz#e83557dc12eae63a99e003a46388b1dcbb44db7e"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
 
+react-mobile-picker@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/react-mobile-picker/-/react-mobile-picker-1.2.0.tgz#59ef798e764982243c5eaa7036c43133d79dc073"
+  integrity sha512-utIgq/rqJfDw+qL3CA6j5e3JqlAoc1kHucJi2vNiwspjaa1XJurJN/FKWBSgui1wV0gzS0BYutd2CbwcyR2eDA==
+
 react-refresh@^0.18.0:
   version "0.18.0"
   resolved "https://registry.yarnpkg.com/react-refresh/-/react-refresh-0.18.0.tgz#2dce97f4fe932a4d8142fa1630e475c1729c8062"
