@@ -118,4 +118,8 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari */
   }
+
+  input[type="date"] {
+  color-scheme: light;
+}
 }
