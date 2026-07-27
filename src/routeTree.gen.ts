@@ -18,9 +18,14 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedPetsRouteRouteImport } from './routes/_authenticated/pets/route'
+import { Route as AuthenticatedOnboardingRouteRouteImport } from './routes/_authenticated/onboarding/route'
 import { Route as AuthenticatedHealthRouteRouteImport } from './routes/_authenticated/health/route'
 import { Route as AuthenticatedPetsIndexRouteImport } from './routes/_authenticated/pets/index'
 import { Route as AuthenticatedHealthIndexRouteImport } from './routes/_authenticated/health/index'
+import { Route as AuthenticatedOnboardingWelcomeRouteImport } from './routes/_authenticated/onboarding/welcome'
+import { Route as AuthenticatedOnboardingReminderRouteImport } from './routes/_authenticated/onboarding/reminder'
+import { Route as AuthenticatedOnboardingPetRouteImport } from './routes/_authenticated/onboarding/pet'
+import { Route as AuthenticatedOnboardingCompleteRouteImport } from './routes/_authenticated/onboarding/complete'
 import { Route as AuthenticatedHealthVetRouteImport } from './routes/_authenticated/health/vet'
 import { Route as AuthenticatedHealthVaccinationsRouteImport } from './routes/_authenticated/health/vaccinations'
 import { Route as AuthenticatedHealthDewormingsRouteImport } from './routes/_authenticated/health/dewormings'
@@ -73,6 +78,12 @@ const AuthenticatedPetsRouteRoute = AuthenticatedPetsRouteRouteImport.update({
   path: '/pets',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOnboardingRouteRoute =
+  AuthenticatedOnboardingRouteRouteImport.update({
+    id: '/onboarding',
+    path: '/onboarding',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedHealthRouteRoute =
   AuthenticatedHealthRouteRouteImport.update({
     id: '/health',
@@ -89,6 +100,30 @@ const AuthenticatedHealthIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedHealthRouteRoute,
+  } as any)
+const AuthenticatedOnboardingWelcomeRoute =
+  AuthenticatedOnboardingWelcomeRouteImport.update({
+    id: '/welcome',
+    path: '/welcome',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
+  } as any)
+const AuthenticatedOnboardingReminderRoute =
+  AuthenticatedOnboardingReminderRouteImport.update({
+    id: '/reminder',
+    path: '/reminder',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
+  } as any)
+const AuthenticatedOnboardingPetRoute =
+  AuthenticatedOnboardingPetRouteImport.update({
+    id: '/pet',
+    path: '/pet',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
+  } as any)
+const AuthenticatedOnboardingCompleteRoute =
+  AuthenticatedOnboardingCompleteRouteImport.update({
+    id: '/complete',
+    path: '/complete',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
   } as any)
 const AuthenticatedHealthVetRoute = AuthenticatedHealthVetRouteImport.update({
   id: '/vet',
@@ -137,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/health': typeof AuthenticatedHealthRouteRouteWithChildren
+  '/onboarding': typeof AuthenticatedOnboardingRouteRouteWithChildren
   '/pets': typeof AuthenticatedPetsRouteRouteWithChildren
   '/activity': typeof AuthenticatedActivityRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -146,6 +182,10 @@ export interface FileRoutesByFullPath {
   '/health/dewormings': typeof AuthenticatedHealthDewormingsRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
+  '/onboarding/complete': typeof AuthenticatedOnboardingCompleteRoute
+  '/onboarding/pet': typeof AuthenticatedOnboardingPetRoute
+  '/onboarding/reminder': typeof AuthenticatedOnboardingReminderRoute
+  '/onboarding/welcome': typeof AuthenticatedOnboardingWelcomeRoute
   '/health/': typeof AuthenticatedHealthIndexRoute
   '/pets/': typeof AuthenticatedPetsIndexRoute
   '/pets/$petId/dewormings': typeof AuthenticatedPetsPetIdDewormingsRoute
@@ -156,6 +196,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/onboarding': typeof AuthenticatedOnboardingRouteRouteWithChildren
   '/activity': typeof AuthenticatedActivityRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -163,6 +204,10 @@ export interface FileRoutesByTo {
   '/health/dewormings': typeof AuthenticatedHealthDewormingsRoute
   '/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/health/vet': typeof AuthenticatedHealthVetRoute
+  '/onboarding/complete': typeof AuthenticatedOnboardingCompleteRoute
+  '/onboarding/pet': typeof AuthenticatedOnboardingPetRoute
+  '/onboarding/reminder': typeof AuthenticatedOnboardingReminderRoute
+  '/onboarding/welcome': typeof AuthenticatedOnboardingWelcomeRoute
   '/health': typeof AuthenticatedHealthIndexRoute
   '/pets': typeof AuthenticatedPetsIndexRoute
   '/pets/$petId/dewormings': typeof AuthenticatedPetsPetIdDewormingsRoute
@@ -176,6 +221,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/health': typeof AuthenticatedHealthRouteRouteWithChildren
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteRouteWithChildren
   '/_authenticated/pets': typeof AuthenticatedPetsRouteRouteWithChildren
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
@@ -185,6 +231,10 @@ export interface FileRoutesById {
   '/_authenticated/health/dewormings': typeof AuthenticatedHealthDewormingsRoute
   '/_authenticated/health/vaccinations': typeof AuthenticatedHealthVaccinationsRoute
   '/_authenticated/health/vet': typeof AuthenticatedHealthVetRoute
+  '/_authenticated/onboarding/complete': typeof AuthenticatedOnboardingCompleteRoute
+  '/_authenticated/onboarding/pet': typeof AuthenticatedOnboardingPetRoute
+  '/_authenticated/onboarding/reminder': typeof AuthenticatedOnboardingReminderRoute
+  '/_authenticated/onboarding/welcome': typeof AuthenticatedOnboardingWelcomeRoute
   '/_authenticated/health/': typeof AuthenticatedHealthIndexRoute
   '/_authenticated/pets/': typeof AuthenticatedPetsIndexRoute
   '/_authenticated/pets/$petId/dewormings': typeof AuthenticatedPetsPetIdDewormingsRoute
@@ -198,6 +248,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/health'
+    | '/onboarding'
     | '/pets'
     | '/activity'
     | '/home'
@@ -207,6 +258,10 @@ export interface FileRouteTypes {
     | '/health/dewormings'
     | '/health/vaccinations'
     | '/health/vet'
+    | '/onboarding/complete'
+    | '/onboarding/pet'
+    | '/onboarding/reminder'
+    | '/onboarding/welcome'
     | '/health/'
     | '/pets/'
     | '/pets/$petId/dewormings'
@@ -217,6 +272,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/onboarding'
     | '/activity'
     | '/home'
     | '/profile'
@@ -224,6 +280,10 @@ export interface FileRouteTypes {
     | '/health/dewormings'
     | '/health/vaccinations'
     | '/health/vet'
+    | '/onboarding/complete'
+    | '/onboarding/pet'
+    | '/onboarding/reminder'
+    | '/onboarding/welcome'
     | '/health'
     | '/pets'
     | '/pets/$petId/dewormings'
@@ -236,6 +296,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/_authenticated/health'
+    | '/_authenticated/onboarding'
     | '/_authenticated/pets'
     | '/_authenticated/activity'
     | '/_authenticated/home'
@@ -245,6 +306,10 @@ export interface FileRouteTypes {
     | '/_authenticated/health/dewormings'
     | '/_authenticated/health/vaccinations'
     | '/_authenticated/health/vet'
+    | '/_authenticated/onboarding/complete'
+    | '/_authenticated/onboarding/pet'
+    | '/_authenticated/onboarding/reminder'
+    | '/_authenticated/onboarding/welcome'
     | '/_authenticated/health/'
     | '/_authenticated/pets/'
     | '/_authenticated/pets/$petId/dewormings'
@@ -324,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPetsRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/health': {
       id: '/_authenticated/health'
       path: '/health'
@@ -344,6 +416,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/health/'
       preLoaderRoute: typeof AuthenticatedHealthIndexRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
+    }
+    '/_authenticated/onboarding/welcome': {
+      id: '/_authenticated/onboarding/welcome'
+      path: '/welcome'
+      fullPath: '/onboarding/welcome'
+      preLoaderRoute: typeof AuthenticatedOnboardingWelcomeRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
+    }
+    '/_authenticated/onboarding/reminder': {
+      id: '/_authenticated/onboarding/reminder'
+      path: '/reminder'
+      fullPath: '/onboarding/reminder'
+      preLoaderRoute: typeof AuthenticatedOnboardingReminderRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
+    }
+    '/_authenticated/onboarding/pet': {
+      id: '/_authenticated/onboarding/pet'
+      path: '/pet'
+      fullPath: '/onboarding/pet'
+      preLoaderRoute: typeof AuthenticatedOnboardingPetRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
+    }
+    '/_authenticated/onboarding/complete': {
+      id: '/_authenticated/onboarding/complete'
+      path: '/complete'
+      fullPath: '/onboarding/complete'
+      preLoaderRoute: typeof AuthenticatedOnboardingCompleteRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
     }
     '/_authenticated/health/vet': {
       id: '/_authenticated/health/vet'
@@ -417,6 +517,26 @@ const AuthenticatedHealthRouteRouteWithChildren =
     AuthenticatedHealthRouteRouteChildren,
   )
 
+interface AuthenticatedOnboardingRouteRouteChildren {
+  AuthenticatedOnboardingCompleteRoute: typeof AuthenticatedOnboardingCompleteRoute
+  AuthenticatedOnboardingPetRoute: typeof AuthenticatedOnboardingPetRoute
+  AuthenticatedOnboardingReminderRoute: typeof AuthenticatedOnboardingReminderRoute
+  AuthenticatedOnboardingWelcomeRoute: typeof AuthenticatedOnboardingWelcomeRoute
+}
+
+const AuthenticatedOnboardingRouteRouteChildren: AuthenticatedOnboardingRouteRouteChildren =
+  {
+    AuthenticatedOnboardingCompleteRoute: AuthenticatedOnboardingCompleteRoute,
+    AuthenticatedOnboardingPetRoute: AuthenticatedOnboardingPetRoute,
+    AuthenticatedOnboardingReminderRoute: AuthenticatedOnboardingReminderRoute,
+    AuthenticatedOnboardingWelcomeRoute: AuthenticatedOnboardingWelcomeRoute,
+  }
+
+const AuthenticatedOnboardingRouteRouteWithChildren =
+  AuthenticatedOnboardingRouteRoute._addFileChildren(
+    AuthenticatedOnboardingRouteRouteChildren,
+  )
+
 interface AuthenticatedPetsPetIdRouteRouteChildren {
   AuthenticatedPetsPetIdDewormingsRoute: typeof AuthenticatedPetsPetIdDewormingsRoute
   AuthenticatedPetsPetIdVaccinationsRoute: typeof AuthenticatedPetsPetIdVaccinationsRoute
@@ -456,6 +576,7 @@ const AuthenticatedPetsRouteRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedHealthRouteRoute: typeof AuthenticatedHealthRouteRouteWithChildren
+  AuthenticatedOnboardingRouteRoute: typeof AuthenticatedOnboardingRouteRouteWithChildren
   AuthenticatedPetsRouteRoute: typeof AuthenticatedPetsRouteRouteWithChildren
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
@@ -465,6 +586,8 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHealthRouteRoute: AuthenticatedHealthRouteRouteWithChildren,
+  AuthenticatedOnboardingRouteRoute:
+    AuthenticatedOnboardingRouteRouteWithChildren,
   AuthenticatedPetsRouteRoute: AuthenticatedPetsRouteRouteWithChildren,
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,

@@ -1,3 +1,37 @@
+import { Dog, Cat, Rabbit, Bird, Fish, Bug, Ham, PawPrint } from "lucide-react";
+
+export const PET_SPECIES = [
+    "dog",
+    "cat",
+    "rabbit",
+    "bird",
+    "fish",
+    "reptile",
+    "hamster",
+    "other",
+];
+
+export const PET_SPECIES_ICONS = {
+    dog: Dog,
+    cat: Cat,
+    rabbit: Rabbit,
+    bird: Bird,
+    fish: Fish,
+    reptile: Bug,
+    hamster: Ham,
+} satisfies Record<(typeof PET_SPECIES)[number], React.ElementType>;
+
+export function getSpeciesIcon(species: string) {
+    return PET_SPECIES_ICONS[
+        species as keyof typeof PET_SPECIES_ICONS
+    ] ?? PawPrint;
+}
+
+export const speciesEmoji = (s: string) => {
+    const map: Record<string, string> = { dog: "🐶", cat: "🐱", rabbit: "🐰", bird: "🐦", fish: "🐠", reptile: "🦎", hamster: "🐹" };
+    return map[s.toLowerCase()] ?? "🐾";
+};
+
 export function getPetAgeLabel(birthdate: string | null) {
     if (!birthdate) return null;
 
@@ -48,4 +82,50 @@ export function formatPetNames(names: string[]) {
     }
 
     return `${validNames.slice(0, 3).join(", ")} +${validNames.length - 3}`;
+}
+
+export function ageToBirthdate(
+    years?: string,
+    months?: string
+): string | null {
+    const y = Number(years || 0);
+    const m = Number(months || 0);
+
+    if (y === 0 && m === 0) return null;
+
+    const date = new Date();
+
+    date.setFullYear(date.getFullYear() - y);
+    date.setMonth(date.getMonth() - m);
+
+    return date.toISOString().split("T")[0];
+}
+
+export function birthdateToAge(birthdate: string | null) {
+    if (!birthdate) {
+        return {
+            years: "",
+            months: "",
+        };
+    }
+
+    const birth = new Date(birthdate);
+    const today = new Date();
+
+    let years = today.getFullYear() - birth.getFullYear();
+    let months = today.getMonth() - birth.getMonth();
+
+    if (today.getDate() < birth.getDate()) {
+        months--;
+    }
+
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+
+    return {
+        years: String(Math.max(years, 0)),
+        months: String(Math.max(months, 0)),
+    };
 }

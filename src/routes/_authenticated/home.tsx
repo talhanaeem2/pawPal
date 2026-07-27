@@ -266,7 +266,7 @@ function Home() {
 
         {showExploreCard && (
           <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
-            <h2 className="font-display text-lg">Explore more</h2>
+            <h2 className="font-display text-lg">Complete your pet's profile</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Keep your pet's health and history organized.
             </p>

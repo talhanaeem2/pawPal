@@ -7,6 +7,7 @@ export const profileSchema = z.object({
     timezone: z.string(),
     locale: z.string(),
     notifications_enabled: z.boolean(),
+    has_completed_onboarding: z.boolean(),
     created_at: z.string(),
     updated_at: z.string(),
 });
@@ -19,6 +20,7 @@ export const profileFormSchema = z.object({
     timezone: z.string().default("UTC"),
     locale: z.string().default("en"),
     notifications_enabled: z.boolean().default(true),
+    has_completed_onboarding: z.boolean().default(false),
 });
 
 export type ProfileForm = z.infer<typeof profileFormSchema>;
@@ -29,6 +31,7 @@ export const profileFormDefaults: ProfileForm = {
     timezone: "UTC",
     locale: "en",
     notifications_enabled: true,
+    has_completed_onboarding: false,
 };
 
 export function profileToForm(profile: Profile): ProfileForm {
@@ -38,6 +41,7 @@ export function profileToForm(profile: Profile): ProfileForm {
         timezone: profile.timezone,
         locale: profile.locale,
         notifications_enabled: profile.notifications_enabled,
+        has_completed_onboarding: profile.has_completed_onboarding,
     };
 }
 

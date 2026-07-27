@@ -113,3 +113,6 @@ export function formatDateTime(date: string | null) {
     minute: "2-digit",
   }).format(new Date(date));
 }
+
+export const capitalize = (text: string) =>
+  text.charAt(0).toUpperCase() + text.slice(1);

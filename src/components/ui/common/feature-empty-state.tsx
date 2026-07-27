@@ -7,7 +7,7 @@ type FeatureEmptyStateProps = {
     description: string;
     cta?: string;
     children?: React.ReactNode;
-} & Pick<LinkProps, "to" | "search">;
+} & Pick<LinkProps, "to" | "search" | "params">;
 
 export function FeatureEmptyState({
     icon: Icon,
@@ -51,7 +51,7 @@ export function FeatureEmptyState({
 function ButtonAsLink({
     children,
     ...props
-}: React.PropsWithChildren<Pick<LinkProps, "to" | "search"> & { className?: string }>) {
+}: React.PropsWithChildren<Pick<LinkProps, "to" | "search" | "params"> & { className?: string }>) {
     return (
         <Link
             {...props}

@@ -206,8 +206,3 @@ export const profileQuery = (userId: string) =>
       return profileSchema.parse(data);
     },
   });
-
-export const speciesEmoji = (s: string) => {
-  const map: Record<string, string> = { dog: "🐶", cat: "🐱", rabbit: "🐰", bird: "🐦", fish: "🐠", reptile: "🦎", hamster: "🐹" };
-  return map[s.toLowerCase()] ?? "🐾";
-};

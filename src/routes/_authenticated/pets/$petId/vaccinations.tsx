@@ -213,7 +213,8 @@ function VaccinationsPetPage() {
             title="Never miss an important vaccine"
             description="Record vaccinations and we'll remind you when the next dose is due."
             cta="Add vaccination"
-            to="/health/vaccinations"
+            to="/pets/$petId/vaccinations"
+            params={{ petId }}
             search={{ new: true }}
           />
         ) : sections.filter(section => section.items.length > 0 || section.showWhenEmpty)

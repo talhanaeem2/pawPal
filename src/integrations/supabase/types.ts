@@ -213,6 +213,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string
+          has_completed_onboarding: boolean
           id: string
           locale: string
           notifications_enabled: boolean
@@ -223,6 +224,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name: string
+          has_completed_onboarding?: boolean
           id: string
           locale?: string
           notifications_enabled?: boolean
@@ -233,6 +235,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string
+          has_completed_onboarding?: boolean
           id?: string
           locale?: string
           notifications_enabled?: boolean

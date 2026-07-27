@@ -83,7 +83,7 @@ export function DewormingRow({
                     )}
 
                     <div className="text-xs text-muted-foreground">
-                        Administered ·{" "}
+                        Date given ·{" "}
                         {formatDate(item.administered_at)}
                     </div>
 
