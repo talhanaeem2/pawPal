@@ -220,7 +220,7 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
                             <div className="col-span-2">
                                 {useBirthday ? (
                                     <Field label="Birthdate" className="col-span-2">
-                                        <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} className="block" />
+                                        <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} />
                                     </Field>
                                 ) : (
                                     <Field label="Age" className="col-span-2">

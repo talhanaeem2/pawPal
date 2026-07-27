@@ -97,7 +97,7 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
                     </Select>
                 </Field>
                 <Field label="When" error={form.errors.date}>
-                    <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} className="block" required />
+                    <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} required />
                 </Field>
                 <Field label="Reason" error={form.errors.reason}>
                     <Input value={form.values.reason} onChange={(e) => form.setField("reason", e.target.value)} placeholder="Annual checkup" required />

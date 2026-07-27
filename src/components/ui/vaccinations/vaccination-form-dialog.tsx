@@ -116,7 +116,7 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
                     <Input type="text" value={form.values.vaccine_name} onChange={(e) => form.setField("vaccine_name", e.target.value)} placeholder="Rabies, DHPP, FVRCP" required />
                 </Field>
                 <Field label="Date given" error={form.errors.administered_at}>
-                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} className="block" required />
+                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
                 </Field>
                 <Field label="Vet or clinic">
                     <Input
@@ -127,7 +127,7 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
                 </Field>
                 {!form.values.completed_at && (
                     <Field label="Next dose due">
-                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} className="block" />
+                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} />
                     </Field>
                 )}
                 <Field label="Another dose required?">

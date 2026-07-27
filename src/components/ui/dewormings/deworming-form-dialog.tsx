@@ -140,10 +140,10 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
                     <Input type="text" value={form.values.product_name} onChange={(e) => form.setField("product_name", e.target.value)} placeholder="e.g. Drontal, Milbemax, Panacur" required />
                 </Field>
                 <Field label="Date given" error={form.errors.administered_at}>
-                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} className="block" required />
+                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
                 </Field>
                 <Field label="Next dose due" error={form.errors.next_due_at}>
-                    <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} className="block" required />
+                    <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} required />
                 </Field>
                 <Field label="Vet or clinic">
                     <Input
