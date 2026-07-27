@@ -118,14 +118,6 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
             title={isEdit ? "Edit deworming" : "New deworming"}
             trigger={trigger}
         >
-            {!hidePetSelector && (
-                <Field label="Pet">
-                    <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                </Field>
-            )}
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
@@ -136,16 +128,24 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
                 }}
                 className="space-y-3"
             >
-                <Field label="Product" error={form.errors.product_name}>
-                    <Input type="text" value={form.values.product_name} onChange={(e) => form.setField("product_name", e.target.value)} required />
+                {!hidePetSelector && (
+                    <Field label="Pet">
+                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </Field>
+                )}
+                <Field label="Dewormer" error={form.errors.product_name}>
+                    <Input type="text" value={form.values.product_name} onChange={(e) => form.setField("product_name", e.target.value)} placeholder="e.g. Drontal, Milbemax, Panacur" required />
                 </Field>
-                <Field label="Administered on" error={form.errors.administered_at}>
-                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
+                <Field label="Date given" error={form.errors.administered_at}>
+                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} className="block" required />
                 </Field>
-                <Field label="Next due" error={form.errors.next_due_at}>
-                    <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} required />
+                <Field label="Next dose due" error={form.errors.next_due_at}>
+                    <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} className="block" required />
                 </Field>
-                <Field label="Vet / Clinic">
+                <Field label="Vet or clinic">
                     <Input
                         value={form.values.administered_by}
                         onChange={(e) => form.setField("administered_by", e.target.value)}
@@ -153,10 +153,10 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
                     />
                 </Field>
                 <Field label="Notes">
-                    <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
+                    <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember" />
                 </Field>
                 <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
-                    {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
+                    {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save deworming"}
                 </Button>
             </form>
         </FormDialog>

@@ -36,21 +36,14 @@ function AuthedLayout() {
     staleTime: Infinity,
   });
 
-  if (profileError) {
-    return <ErrorState onRetry={refetch} />
-  }
+  const isOnboarding = pathname.startsWith("/onboarding");
 
   useEffect(() => {
     async function loadUser() {
       const {
         data: { user }, error } = await supabase.auth.getUser();
 
-      if (!user) {
-        navigate({ to: "/auth", replace: true });
-        return;
-      }
-
-      if (error) {
+      if (error || !user) {
         navigate({ to: "/auth", replace: true });
         return;
       }
@@ -79,6 +72,34 @@ function AuthedLayout() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  useEffect(() => {
+    if (!checked || profileLoading) return;
+    if (!user) { navigate({ to: "/auth", replace: true }); return; }
+    if (!profile) return;
+    if (!profile.has_completed_onboarding) {
+      if (!pathname.startsWith("/onboarding")) {
+        navigate({ to: "/onboarding/welcome", replace: true });
+      }
+    }
+  }, [checked, user, profile, profileLoading, navigate, pathname]);
+
+  async function signOut() {
+    try {
+      setSigningOut(true);
+
+      await supabase.auth.signOut();
+
+      await qc.cancelQueries();
+      qc.clear();
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
+  if (profileError) {
+    return <ErrorState onRetry={refetch} />
+  }
+
   if (!checked) {
     return <Loader />;
   }
@@ -95,29 +116,20 @@ function AuthedLayout() {
     return <ErrorState />;
   }
 
-  async function signOut() {
-    try {
-      setSigningOut(true);
-
-      await supabase.auth.signOut();
-
-      await qc.cancelQueries();
-      qc.clear();
-    } finally {
-      setSigningOut(false);
-    }
-  }
-
   return (
     <AuthContext.Provider value={{ user, profile, refetchProfile: refetch, signOut, signingOut, }}>
-      <div className="h-dvh flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 min-h-0 mx-auto max-w-2xl px-5 py-2 w-full">
-          <Outlet />
-        </main>
-        <BottomNav pathname={pathname} />
-        <InstallPrompt />
-      </div>
+      {isOnboarding ? (
+        <Outlet />
+      ) : (
+        <div className="h-dvh flex flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 min-h-0 mx-auto max-w-2xl px-5 py-2 w-full">
+            <Outlet />
+          </main>
+          <BottomNav pathname={pathname} />
+          <InstallPrompt />
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

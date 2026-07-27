@@ -196,7 +196,8 @@ function DewormingPetPage() {
                         title="Stay on top of deworming"
                         description="Track treatments and receive reminders when the next dose is due."
                         cta="Add deworming"
-                        to="/health/dewormings"
+                        to="/pets/$petId/dewormings"
+                        params={{ petId }}
                         search={{ new: true }}
                     />
                 ) : sections.filter(section => section.items.length > 0).map(section => (

@@ -39,20 +39,20 @@ export function PetInfoCard({ pet }: { pet: Pet }) {
             <div className="grid gap-4">
                 <InfoRow
                     icon={Cat}
-                    label="Species"
+                    label="Animal"
                     value={pet.species}
                 />
 
                 <InfoRow
                     icon={Dog}
-                    label="Breed"
+                    label="Type / Breed"
                     value={pet.breed ?? <span className="normal-case">Not specified</span>}
                 />
 
                 <InfoRow
                     icon={pet.gender === "female" ? Venus : Mars}
                     label="Gender"
-                    value={pet.gender}
+                    value={pet.gender ?? <span className="normal-case">Not set</span>}
                 />
 
                 <InfoRow

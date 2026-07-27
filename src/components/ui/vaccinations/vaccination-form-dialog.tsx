@@ -113,15 +113,24 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
                     </Field>
                 )}
                 <Field label="Vaccine" error={form.errors.vaccine_name}>
-                    <Input type="text" value={form.values.vaccine_name} onChange={(e) => form.setField("vaccine_name", e.target.value)} required />
+                    <Input type="text" value={form.values.vaccine_name} onChange={(e) => form.setField("vaccine_name", e.target.value)} placeholder="Rabies, DHPP, FVRCP" required />
                 </Field>
-                <Field label="Administered on" error={form.errors.administered_at}>
-                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required />
+                <Field label="Date given" error={form.errors.administered_at}>
+                    <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} className="block" required />
                 </Field>
-                <Field label="Next due">
-                    <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} disabled={!!form.values.completed_at} />
+                <Field label="Vet or clinic">
+                    <Input
+                        value={form.values.administered_by}
+                        onChange={(e) => form.setField("administered_by", e.target.value)}
+                        placeholder="Happy Paws Clinic"
+                    />
                 </Field>
-                <Field label="Completed">
+                {!form.values.completed_at && (
+                    <Field label="Next dose due">
+                        <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} className="block" />
+                    </Field>
+                )}
+                <Field label="Another dose required?">
                     <div className="flex items-center h-10 gap-2">
                         <button
                             type="button"
@@ -132,21 +141,14 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
                         >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.completed_at ? "translate-x-6" : "translate-x-1"}`} />
                         </button>
-                        <span className="text-sm text-muted-foreground">{form.values.completed_at ? "Completed" : "Pending"}</span>
+                        <span className="text-sm text-muted-foreground">{form.values.completed_at ? "No, this series is complete" : "Yes, another dose is needed"}</span>
                     </div>
                 </Field>
-                <Field label="Vet / Clinic">
-                    <Input
-                        value={form.values.administered_by}
-                        onChange={(e) => form.setField("administered_by", e.target.value)}
-                        placeholder="Happy Paws Clinic"
-                    />
-                </Field>
                 <Field label="Notes">
-                    <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
+                    <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember" />
                 </Field>
                 <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
-                    {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}
+                    {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save vaccination"}
                 </Button>
             </form>
         </FormDialog >

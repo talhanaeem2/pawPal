@@ -107,3 +107,9 @@ export function createEmptyScheduleForm(petId?: string): ScheduleForm {
             : [],
     };
 }
+
+export const onboardingReminderSchema = scheduleFormSchema.omit({
+    title: true,
+});
+
+export type OnboardingReminderForm = z.infer<typeof onboardingReminderSchema>;

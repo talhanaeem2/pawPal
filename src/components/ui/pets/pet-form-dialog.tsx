@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { petQuery, petsQuery } from "@/lib/queries";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { supabase } from "@/integrations/supabase/client";
-import { extractStoragePath } from "@/lib/utils";
+import { ageToBirthdate, PET_SPECIES } from "@/lib/pet-utils";
+import { capitalize, extractStoragePath } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/common/select";
@@ -40,6 +41,8 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
     const [photoPreview, setPhotoPreview] = useState<string | null>(pet?.photo_url ?? null);
     const [photoRemoved, setPhotoRemoved] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [showMore, setShowMore] = useState(false);
+    const [useBirthday, setUseBirthday] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -95,11 +98,17 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
             if (photoFile) photo_url = await uploadNewPhoto();
             else if (photoRemoved) photo_url = null;
 
+            const birthdate = useBirthday
+                ? data.birthdate
+                : ageToBirthdate(data.age_years, data.age_months);
+
             const payload = {
-                name: data.name.trim(),
-                species: data.species,
+                name: data.name.trim().replace(/\s+/g, " "),
+                species: data.species === "other"
+                    ? data.other_species.trim().replace(/\s+/g, " ").toLowerCase()
+                    : data.species.toLowerCase(),
                 breed: data.breed || null,
-                birthdate: data.birthdate || null,
+                birthdate: birthdate,
                 weight_kg: data.weight_kg ? Number(data.weight_kg) : null,
                 notes: data.notes || null,
                 gender: data.gender,
@@ -179,60 +188,123 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
                 {/* Basic info */}
                 <div className="grid grid-cols-2 gap-3">
                     <Field label="Name" error={form.errors.name}>
-                        <Input value={form.values.name} onChange={(e) => form.setField("name", e.target.value)} required />
+                        <Input value={form.values.name} onChange={(e) => form.setField("name", e.target.value)} placeholder="e.g. Bruno" required />
                     </Field>
-                    <Field label="Species" error={form.errors.species}>
+                    <Field label="Animal" error={form.errors.species}>
                         <Select value={form.values.species} onValueChange={(v) => form.setField("species", v)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="Choose an animal" /></SelectTrigger>
                             <SelectContent>
-                                {["dog", "cat", "rabbit", "bird", "fish", "reptile", "hamster", "other"].map((s) =>
-                                    <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+                                {PET_SPECIES.map((s) =>
+                                    <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)
+                                }
                             </SelectContent>
                         </Select>
                     </Field>
-                    <Field label="Breed">
-                        <Input value={form.values.breed} onChange={(e) => form.setField("breed", e.target.value)} />
-                    </Field>
-                    <Field label="Weight (kg)">
-                        <Input type="number" step="0.1" value={form.values.weight_kg} onChange={(e) => form.setField("weight_kg", e.target.value)} />
-                    </Field>
-                    <Field label="Birthdate" className="col-span-2">
-                        <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} />
-                    </Field>
+                    {form.values.species === "other" && (
+                        <Field label="What animal is it?" className="col-span-2">
+                            <Input
+                                value={form.values.other_species}
+                                onChange={(e) => form.setField("other_species", e.target.value)}
+                                placeholder="e.g. Turtle"
+                            />
+                        </Field>
+                    )}
+                    {showMore && (
+                        <>
+                            <Field label="Type / Breed">
+                                <Input value={form.values.breed} onChange={(e) => form.setField("breed", e.target.value)} placeholder="e.g. Labrador, Persian, Mixed" />
+                            </Field>
+                            <Field label="Weight (kg)">
+                                <Input type="number" step="0.1" value={form.values.weight_kg} onChange={(e) => form.setField("weight_kg", e.target.value)} placeholder="e.g. 25.5" />
+                            </Field>
+                            <div className="col-span-2">
+                                {useBirthday ? (
+                                    <Field label="Birthdate" className="col-span-2">
+                                        <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} className="block" />
+                                    </Field>
+                                ) : (
+                                    <Field label="Age" className="col-span-2">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    max={50}
+                                                    placeholder="Years (e.g. 3)"
+                                                    value={form.values.age_years}
+                                                    onChange={(e) =>
+                                                        form.setField("age_years", e.target.value)
+                                                    }
+                                                />
+                                            </div>
+                                            <div>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    max={11}
+                                                    placeholder="Months (e.g. 6)"
+                                                    value={form.values.age_months}
+                                                    onChange={(e) =>
+                                                        form.setField("age_months", e.target.value)
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    </Field>
+                                )}
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="col-span-2 justify-start"
+                                    onClick={() => setUseBirthday(!useBirthday)}
+                                >
+                                    {useBirthday
+                                        ? "Use age instead"
+                                        : "Enter birthday instead"}
+                                </Button>
+                            </div>
+                            <Field label="Gender">
+                                <Select value={form.values.gender} onValueChange={(v) => form.setField("gender", v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="male">Male</SelectItem>
+                                        <SelectItem value="female">Female</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label={form.values.gender === "female" ? "Spayed" : "Neutered"}>
+                                <div className="flex items-center h-10 gap-2">
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={form.values.neutered}
+                                        onClick={() => form.setField("neutered", !form.values.neutered)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.neutered ? "bg-primary" : "bg-input"}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.neutered ? "translate-x-6" : "translate-x-1"}`} />
+                                    </button>
+                                    <span className="text-sm text-muted-foreground">{form.values.neutered ? "Yes" : "No"}</span>
+                                </div>
+                            </Field>
+                            <Field label="Microchip ID" className="col-span-2">
+                                <Input value={form.values.microchip} onChange={(e) => form.setField("microchip", e.target.value)} placeholder="e.g. 981000123456789" />
+                            </Field>
+                            <Field className="col-span-2" label="Notes">
+                                <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember about your pet" />
+                            </Field>
+                        </>
+                    )}
+                    <Button
+                        type="button"
+                        variant="link"
+                        onClick={() => setShowMore((v) => !v)}
+                        className="col-span-2 justify-start"
+                    >
+                        {showMore ? "Hide details" : "More details (optional)"}
+                    </Button>
                 </div>
-
-                {/* Gender + neutered */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Field label="Gender">
-                        <Select value={form.values.gender} onValueChange={(v) => form.setField("gender", v)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="male">Male</SelectItem>
-                                <SelectItem value="female">Female</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </Field>
-                    <Field label={form.values.gender === "female" ? "Spayed" : "Neutered"}>
-                        <div className="flex items-center h-10 gap-2">
-                            <button
-                                type="button"
-                                role="switch"
-                                aria-checked={form.values.neutered}
-                                onClick={() => form.setField("neutered", !form.values.neutered)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.neutered ? "bg-primary" : "bg-input"}`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.neutered ? "translate-x-6" : "translate-x-1"}`} />
-                            </button>
-                            <span className="text-sm text-muted-foreground">{form.values.neutered ? "Yes" : "No"}</span>
-                        </div>
-                    </Field>
-                </div>
-                <Field label="Microchip number">
-                    <Input value={form.values.microchip} onChange={(e) => form.setField("microchip", e.target.value)} placeholder="Optional" />
-                </Field>
-                <Field label="Notes"><Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} /></Field>
                 <Button type="submit" className="w-full rounded-full" disabled={save.isPending || uploading}>
-                    {save.isPending || uploading ? "Saving…" : isEdit ? "Save changes" : "Save"}
+                    {save.isPending || uploading ? "Saving…" : isEdit ? "Save changes" : "Add pet"}
                 </Button>
             </form>
         </FormDialog>

@@ -31,7 +31,6 @@ export function PetCard({ pet }: { pet: Pet }) {
                         </div>
                     </div>
                 </div>
-                {pet.notes && <p className="text-sm text-muted-foreground mt-3">{pet.notes}</p>}
             </Link>
         </li>
     );

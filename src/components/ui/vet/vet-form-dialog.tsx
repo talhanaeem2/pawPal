@@ -97,16 +97,16 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
                     </Select>
                 </Field>
                 <Field label="When" error={form.errors.date}>
-                    <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} required />
+                    <Input type="datetime-local" value={form.values.date} onChange={(e) => form.setField("date", e.target.value)} className="block" required />
                 </Field>
                 <Field label="Reason" error={form.errors.reason}>
                     <Input value={form.values.reason} onChange={(e) => form.setField("reason", e.target.value)} placeholder="Annual checkup" required />
                 </Field>
-                <Field label="Vet / Clinic">
-                    <Input value={form.values.vet_name} onChange={(e) => form.setField("vet_name", e.target.value)} />
+                <Field label="Vet or clinic">
+                    <Input value={form.values.vet_name} onChange={(e) => form.setField("vet_name", e.target.value)} placeholder="Happy Paws Clinic" />
                 </Field>
                 <Field label="Notes">
-                    <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
+                    <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember" />
                 </Field>
                 <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
                     {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save"}

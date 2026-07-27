@@ -699,7 +699,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
         >
           <div className="flex-1 overflow-y-auto space-y-3 scrollbar-hide">
             <Field
-              label="Pets"
+              label="Pet"
               error={form.errors.pet_ids}
             >
               <PetMultiSelect
@@ -727,7 +727,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Title" error={form.errors.title}>
+              <Field label="Reminder name" error={form.errors.title}>
                 <Input
                   value={form.values.title}
                   onChange={(e) => {
@@ -738,7 +738,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                   required
                 />
               </Field>
-              <Field label="Type">
+              <Field label="Reminder type">
                 <Select value={form.values.kind} onValueChange={(v) => form.setField("kind", v as ScheduleForm["kind"])}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -763,7 +763,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                 <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} />
               </Field>
             )}
-            <Field label="Repeat">
+            <Field label="Repeat every">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground whitespace-nowrap">
                   Every
