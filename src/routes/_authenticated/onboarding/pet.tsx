@@ -66,7 +66,7 @@ function PetOnboardingPage() {
     return (
         <Page>
             <Page.Content>
-                <div className="w-full space-y-8">
+                <div className="w-full space-y-8 pt-10">
                     <div className="text-center">
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/15">
                             <PawPrint className="h-10 w-10 text-primary" />
