@@ -64,84 +64,86 @@ function PetOnboardingPage() {
     });
 
     return (
-        <Page.Content>
-            <div className="w-full space-y-8">
-                <div className="text-center">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/15">
-                        <PawPrint className="h-10 w-10 text-primary" />
+        <Page>
+            <Page.Content>
+                <div className="w-full space-y-8">
+                    <div className="text-center">
+                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/15">
+                            <PawPrint className="h-10 w-10 text-primary" />
+                        </div>
+
+                        <h1 className="mt-6 font-display text-3xl">
+                            Tell us about your pet
+                        </h1>
+
+                        <p className="mt-2 text-muted-foreground">
+                            You can always add more details later.
+                        </p>
                     </div>
 
-                    <h1 className="mt-6 font-display text-3xl">
-                        Tell us about your pet
-                    </h1>
+                    <div className="space-y-5">
+                        <div className="space-y-2">
+                            <Label>Name</Label>
 
-                    <p className="mt-2 text-muted-foreground">
-                        You can always add more details later.
-                    </p>
-                </div>
+                            <Input
+                                placeholder="e.g. Rex"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                            {animal === "other" && (
+                                <>
+                                    <Label>What animal is it?</Label>
 
-                <div className="space-y-5">
-                    <div className="space-y-2">
-                        <Label>Name</Label>
+                                    <Input
+                                        placeholder="e.g. Turtle"
+                                        value={otherAnimal}
+                                        onChange={(e) => setOtherAnimal(e.target.value)}
+                                    />
+                                </>
+                            )}
+                        </div>
 
-                        <Input
-                            placeholder="e.g. Rex"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                        {animal === "other" && (
-                            <>
-                                <Label>What animal is it?</Label>
+                        <div className="space-y-2">
+                            <Label>Animal</Label>
 
-                                <Input
-                                    placeholder="e.g. Turtle"
-                                    value={otherAnimal}
-                                    onChange={(e) => setOtherAnimal(e.target.value)}
-                                />
-                            </>
-                        )}
-                    </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {PET_SPECIES.map((item) => {
+                                    const Icon = getSpeciesIcon(item);
 
-                    <div className="space-y-2">
-                        <Label>Animal</Label>
+                                    return (
+                                        <button
+                                            key={item}
+                                            type="button"
+                                            onClick={() => setAnimal(item)}
+                                            className={cn(
+                                                "rounded-2xl border p-4 transition-all duration-200",
+                                                "flex flex-col items-center justify-center gap-3",
+                                                animal === item
+                                                    ? "border-primary bg-primary/10 shadow-(--shadow-soft)"
+                                                    : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
+                                            )}
+                                        >
+                                            <Icon className="h-9 w-9 text-primary" />
 
-                        <div className="grid grid-cols-2 gap-3">
-                            {PET_SPECIES.map((item) => {
-                                const Icon = getSpeciesIcon(item);
-
-                                return (
-                                    <button
-                                        key={item}
-                                        type="button"
-                                        onClick={() => setAnimal(item)}
-                                        className={cn(
-                                            "rounded-2xl border p-4 transition-all duration-200",
-                                            "flex flex-col items-center justify-center gap-3",
-                                            animal === item
-                                                ? "border-primary bg-primary/10 shadow-(--shadow-soft)"
-                                                : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
-                                        )}
-                                    >
-                                        <Icon className="h-9 w-9 text-primary" />
-
-                                        <span className="text-sm font-medium">
-                                            {item}
-                                        </span>
-                                    </button>
-                                );
-                            })}
+                                            <span className="text-sm font-medium">
+                                                {item}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <Button
-                    className="w-full rounded-full h-11"
-                    disabled={!name.trim() || (animal === "other" && !otherAnimal.trim()) || createPet.isPending}
-                    onClick={() => createPet.mutate()}
-                >
-                    {createPet.isPending ? "Creating..." : "Continue"}
-                </Button>
-            </div>
-        </Page.Content>
+                    <Button
+                        className="w-full rounded-full h-11"
+                        disabled={!name.trim() || (animal === "other" && !otherAnimal.trim()) || createPet.isPending}
+                        onClick={() => createPet.mutate()}
+                    >
+                        {createPet.isPending ? "Creating..." : "Continue"}
+                    </Button>
+                </div>
+            </Page.Content>
+        </Page>
     );
 }
