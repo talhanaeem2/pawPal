@@ -81,11 +81,9 @@ export function TimesOfDayField({
                     </Field>
 
                     {/* Preview */}
-                    {simpleTimes.length > 0 && (
-                        <div className="rounded-2xl bg-muted/40 px-3 py-2">
-                            {TimesDisplay({ times: value })}
-                        </div>
-                    )}
+                    {simpleTimes.length > 0 &&
+                        TimesDisplay({ times: value })
+                    }
 
                     {/* Switch to custom */}
                     <button
@@ -249,7 +247,7 @@ function TimesDisplay({ times }: { times: string[] }) {
         const intervalHrs = intervals[0] / 60;
 
         return (
-            <div className="rounded-2xl bg-muted/40 px-3 py-2">
+            <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Reminders at</p>
                 <p className="text-sm font-medium">
                     {allEqual
@@ -264,11 +262,11 @@ function TimesDisplay({ times }: { times: string[] }) {
     // 6-11 times: compact 3-column grid
     if (times.length >= 6) {
         return (
-            <div className="rounded-2xl bg-muted/40 px-3 py-2">
+            <div>
                 <p className="text-xs text-muted-foreground mb-2">Reminders at</p>
                 <div className="grid grid-cols-3 gap-1">
                     {times.map((t) => (
-                        <span key={t} className="text-xs font-medium text-center bg-background rounded-lg py-1">
+                        <span key={t} className="text-xs font-medium text-center bg-secondary rounded-lg py-1">
                             {t}
                         </span>
                     ))}
@@ -279,11 +277,11 @@ function TimesDisplay({ times }: { times: string[] }) {
 
     // Under 6: pills (current behaviour)
     return (
-        <div className="rounded-2xl bg-muted/40 px-3 py-2">
+        <div>
             <p className="text-xs text-muted-foreground mb-1">Reminders at</p>
             <div className="flex flex-wrap gap-1.5">
                 {times.map((t) => (
-                    <span key={t} className="text-xs font-medium bg-background rounded-full px-2.5 py-1">
+                    <span key={t} className="text-xs font-medium bg-secondary rounded-full px-2.5 py-1">
                         {t}
                     </span>
                 ))}

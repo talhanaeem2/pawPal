@@ -1,4 +1,7 @@
 import { z } from "zod";
+
+import { todayDateString } from "@/lib/utils";
+
 import { scheduleItemPetSchema, schedulePetFormSchema } from "./schedule-item-pets";
 
 export const scheduleKindSchema = z.enum([
@@ -55,22 +58,24 @@ export const scheduleFormSchema = z.object({
         "year",
     ]),
     repeat_every: z.number().int().min(1).default(1),
-    start_date: z.string().default(() => new Date().toISOString().split("T")[0]),
+    start_date: z.string().default(() => todayDateString()),
     pet_details: z.array(schedulePetFormSchema),
 });
 
 export type ScheduleForm = z.infer<typeof scheduleFormSchema>;
 
 // SINGLE SOURCE OF DEFAULTS
-export const scheduleFormDefaults: ScheduleForm = {
-    pet_ids: [],
-    kind: "feeding",
-    title: "",
-    times_of_day: ["07:00", "19:00"],
-    repeat_unit: "day",
-    repeat_every: 1,
-    start_date: new Date().toISOString().split("T")[0],
-    pet_details: [],
+export function createScheduleFormDefaults(): ScheduleForm {
+    return {
+        pet_ids: [],
+        kind: "feeding",
+        title: "",
+        times_of_day: ["07:00", "19:00"],
+        repeat_unit: "day",
+        repeat_every: 1,
+        start_date: todayDateString(),
+        pet_details: [],
+    }
 };
 
 // DB → Form
@@ -93,8 +98,10 @@ export function scheduleToForm(item: ScheduleWithPets): ScheduleForm {
 
 // Empty form
 export function createEmptyScheduleForm(petId?: string): ScheduleForm {
+    const defaults = createScheduleFormDefaults();
+
     return {
-        ...scheduleFormDefaults,
+        ...defaults,
         pet_ids: petId ? [petId] : [],
         pet_details: petId
             ? [

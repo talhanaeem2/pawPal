@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/common/textarea";
 import { PetMultiSelect } from "@/components/ui/common/pet-multi-select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/common/accordion";
 import { FeatureEmptyState } from "@/components/ui/common/feature-empty-state";
+import { DatePicker } from "@/components/ui/common/date-picker";
 import { Card, CardContent } from "@/components/ui/common/card";
 import { Progress } from "@/components/ui/common/progress";
 import { Page } from "@/components/layout/page";
@@ -275,8 +276,14 @@ function SchedulePage() {
                 repeat_unit: s.repeat_unit,
               });
 
-              const preview = s.times_of_day.length > 0
-                ? `${repeatText} · ${s.times_of_day.map(formatTime).join(", ")}`
+              const timeSummary = requiresScheduleTime(s.kind) && s.times_of_day.length > 0
+                ? s.times_of_day.length === 1
+                  ? formatTime(s.times_of_day[0])
+                  : `${s.times_of_day.length} times/day`
+                : null;
+
+              const preview = timeSummary
+                ? `${repeatText} · ${timeSummary}`
                 : repeatText;
 
               const detailField = getScheduleDetailField(s.kind);
@@ -370,6 +377,27 @@ function SchedulePage() {
                                 {pet.pet?.name}
                               </Button>
                             ))}
+                          </div>
+                        )}
+
+                        {requiresScheduleTime(s.kind) && s.times_of_day.length > 0 && (
+                          <div className="space-y-2 mt-4">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              {s.times_of_day.length > 1
+                                ? "Reminder times"
+                                : "Reminder time"}
+                            </p>
+
+                            <div className="flex flex-wrap gap-2">
+                              {s.times_of_day.map(time => (
+                                <span
+                                  key={time}
+                                  className="rounded-full bg-secondary px-3 py-1 text-xs"
+                                >
+                                  {formatTime(time)}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         )}
 
@@ -536,18 +564,18 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
   useEffect(() => {
     if (isTitleCustomized || isEdit) return;
 
-    form.setField(
-      "title",
-      generateScheduleTitle(
-        form.values.kind,
-        form.values.times_of_day
-      )
-    );
-  }, [
-    form.values.kind,
-    form.values.times_of_day,
-    isTitleCustomized,
-  ]);
+    form.setField("title", generateScheduleTitle(form.values.kind, form.values.times_of_day));
+
+  }, [form.values.kind, form.values.times_of_day, isTitleCustomized]);
+
+  useEffect(() => {
+    if (!requiresScheduleTime(form.values.kind)) {
+      form.setField("times_of_day", []);
+    } else if (form.values.times_of_day.length === 0) {
+      form.setField("times_of_day", ["07:00", "19:00"]);
+    }
+
+  }, [form.values.kind]);
 
   function resetForm() {
     form.reset(
@@ -594,10 +622,10 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
       const payload = {
         kind: data.kind,
         title: data.title.trim(),
-        times_of_day: form.values.times_of_day,
+        times_of_day: requiresScheduleTime(data.kind) ? data.times_of_day : [],
         repeat_every: data.repeat_every,
         repeat_unit: data.repeat_unit,
-        start_date: data.start_date,
+        start_date: requiresScheduleStartDate(data.kind) ? data.start_date : todayDateString(),
       };
 
       const petLinks = (scheduleId: string) =>
@@ -826,12 +854,10 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                 label={getStartDateLabel(form.values.kind)}
                 description={getStartDateDescription(form.values.kind)}
               >
-                <Input
-                  type="date"
+                <DatePicker
                   value={form.values.start_date}
-                  onChange={(e) =>
-                    form.setField("start_date", e.target.value)
-                  }
+                  onChange={(date) => form.setField("start_date", date)}
+                  placeholder="Select date"
                 />
               </Field>
             )}
@@ -958,6 +984,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                             <Textarea
                               rows={2}
                               value={detail.notes}
+                              placeholder={getNotesPlaceholder(form.values.kind)}
                               ref={(el) => {
                                 notesRefs.current[detail.pet_id] = el;
                               }}

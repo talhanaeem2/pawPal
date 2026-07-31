@@ -18,23 +18,23 @@ export const KIND_LABELS: Record<ScheduleKind, string> = {
 export const repeatUnitOptions = [
     {
         value: "day",
-        singular: "day",
-        plural: "days",
+        singular: "Day",
+        plural: "Days",
     },
     {
         value: "week",
-        singular: "week",
-        plural: "weeks",
+        singular: "Week",
+        plural: "Weeks",
     },
     {
         value: "month",
-        singular: "month",
-        plural: "months",
+        singular: "Month",
+        plural: "Months",
     },
     {
         value: "year",
-        singular: "year",
-        plural: "years",
+        singular: "Year",
+        plural: "Years",
     },
 ];
 
