@@ -30,6 +30,21 @@ type DueNotification = {
   body: string;
 };
 
+const SCHEDULE_LABELS: Record<string, string> = {
+  feeding: "Feeding",
+  medication: "Medication",
+  supplements: "Supplements",
+  exercise: "Exercise",
+  training: "Training",
+  bath: "Bath",
+  grooming: "Grooming",
+  ear_cleaning: "Ear Cleaning",
+  teeth_brushing: "Teeth Brushing",
+  nail_trim: "Nail Trim",
+  weight_check: "Weight Check",
+  flea_tick: "Flea & Tick",
+};
+
 function withinWindow(targetMs: number, nowMs: number, windowMin: number) {
   const diff = targetMs - nowMs;
   // True if target falls within the last WINDOW_MINUTES up to now (catch-up safe)
@@ -45,7 +60,7 @@ async function findDueScheduleNotifications(
 ): Promise<DueNotification[]> {
   const { data: items, error } = await supabase
     .from("schedule_items")
-    .select(`id, user_id, title, kind, time_of_day, start_date, repeat_every, repeat_unit, 
+    .select(`id, user_id, title, kind, times_of_day, start_date, repeat_every, repeat_unit, 
     schedule_item_pets (
     id,
     pet_id,
@@ -55,7 +70,7 @@ async function findDueScheduleNotifications(
       completed_on
     )
   )`)
-    .not("time_of_day", "is", null);
+    .not("times_of_day", "is", null);
 
   if (error) {
     console.error("Failed to fetch schedule_items", error);
@@ -158,51 +173,60 @@ async function findDueScheduleNotifications(
       return !completedToday;
     });
 
-    const [h, m] = String(item.time_of_day).split(":").map(Number);
-    const target = new Date(localNow);
-    target.setUTCHours(h, m, 0, 0);
-
-    const targetMs = target.getTime();
     const nowMs = localNow.getTime();
 
-    if (pendingPets.length === 0) {
-      continue;
-    }
+    const times = [...(item.times_of_day ?? [])].sort();
+    for (const time of times) {
+      const [h, m] = time.split(":").map(Number);
 
-    const petNames = pendingPets
-      .flatMap((p) => p.pets ?? [])
-      .map((pet) => pet.name)
-      .filter((n): n is string => !!n)
-      .sort();
+      const target = new Date(localNow);
+      target.setUTCHours(h, m, 0, 0);
 
-    if (withinWindow(targetMs, nowMs, WINDOW_MINUTES)) {
-      out.push({
-        refType: "schedule_due",
-        refId: item.id,
-        fireDate: today,
-        userId: item.user_id,
-        title: `Time for ${item.title}`,
-        body: buildScheduleBody(
-          item.kind,
-          petNames,
-          false,
-        ),
-      });
-    } else if (
-      withinWindow(targetMs - HEADS_UP_MINUTES * 60_000, nowMs, WINDOW_MINUTES)
-    ) {
-      out.push({
-        refType: "schedule_heads_up",
-        refId: item.id,
-        fireDate: today,
-        userId: item.user_id,
-        title: `Coming up: ${item.title}`,
-        body: buildScheduleBody(
-          item.kind,
-          petNames,
-          true,
-        ),
-      });
+      const targetMs = target.getTime();
+
+      if (pendingPets.length === 0) {
+        continue;
+      }
+
+      const petNames = pendingPets
+        .flatMap((p) => p.pets ?? [])
+        .map((pet) => pet.name)
+        .filter((n): n is string => !!n)
+        .sort();
+
+      if (withinWindow(targetMs, nowMs, WINDOW_MINUTES)) {
+        out.push({
+          refType: "schedule_due",
+          refId: `${item.id}-${time}`,
+          fireDate: today,
+          userId: item.user_id,
+          title: `Time for ${item.title}`,
+          body: buildScheduleBody(
+            item.kind,
+            petNames,
+            false,
+          ),
+        });
+      } else if (
+        withinWindow(
+          targetMs - HEADS_UP_MINUTES * 60_000,
+          nowMs,
+          WINDOW_MINUTES,
+        )
+      ) {
+        out.push({
+          refType: "schedule_heads_up",
+          refId: `${item.id}-${time}`,
+          fireDate: today,
+          userId: item.user_id,
+          title: `Coming up: ${item.title}`,
+          body: buildScheduleBody(
+            item.kind,
+            petNames,
+            true,
+          ),
+        });
+      }
     }
   }
 
@@ -349,7 +373,7 @@ function buildScheduleBody(
 ) {
   const pets = formatPetNames(names);
 
-  const action = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : "Task";
+  const action = SCHEDULE_LABELS[kind ?? ""] ?? "Task";
 
   if (names.length <= 3) {
     return isHeadsUp

@@ -146,8 +146,8 @@ function Home() {
                       <div className="text-xs text-muted-foreground capitalize">
                         {petLabel && `${petLabel} · `}
                         {formatKind(item)} ·{" "}
-                        {item.time_of_day
-                          ? formatTime(item.time_of_day)
+                        {item.times_of_day.length > 0
+                          ? item.times_of_day.map(formatTime).join(", ")
                           : formatFrequency(item)}
                       </div>
                     </div>

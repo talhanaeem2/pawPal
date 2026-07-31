@@ -32,7 +32,7 @@ import { Card, CardContent } from "@/components/ui/common/card";
 import { Progress } from "@/components/ui/common/progress";
 import { Page } from "@/components/layout/page";
 import { Field } from "@/components/ui/common/field";
-import { TimePicker } from "@/components/ui/common/time-picker";
+import { TimesOfDayField } from "@/components/ui/common/times-of-day-field";
 
 import { createEmptyScheduleForm, ScheduleForm, scheduleFormSchema, scheduleToForm, ScheduleWithPets } from "@/schemas/schedule";
 
@@ -275,8 +275,8 @@ function SchedulePage() {
                 repeat_unit: s.repeat_unit,
               });
 
-              const preview = s.time_of_day
-                ? `${repeatText} · ${formatTime(s.time_of_day)}`
+              const preview = s.times_of_day.length > 0
+                ? `${repeatText} · ${s.times_of_day.map(formatTime).join(", ")}`
                 : repeatText;
 
               const detailField = getScheduleDetailField(s.kind);
@@ -540,12 +540,12 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
       "title",
       generateScheduleTitle(
         form.values.kind,
-        form.values.time_of_day
+        form.values.times_of_day
       )
     );
   }, [
     form.values.kind,
-    form.values.time_of_day,
+    form.values.times_of_day,
     isTitleCustomized,
   ]);
 
@@ -594,7 +594,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
       const payload = {
         kind: data.kind,
         title: data.title.trim(),
-        time_of_day: data.time_of_day || null,
+        times_of_day: form.values.times_of_day,
         repeat_every: data.repeat_every,
         repeat_unit: data.repeat_unit,
         start_date: data.start_date,
@@ -762,9 +762,9 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
             {needsTime && (
               <Field label={getTimeLabel(form.values.kind)}>
                 {/* <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} /> */}
-                <TimePicker
-                  value={form.values.time_of_day}
-                  onChange={(time) => form.setField("time_of_day", time)}
+                <TimesOfDayField
+                  value={form.values.times_of_day}
+                  onChange={(times) => form.setField("times_of_day", times)}
                 />
               </Field>
             )}

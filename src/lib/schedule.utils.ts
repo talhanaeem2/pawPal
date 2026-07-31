@@ -189,10 +189,12 @@ export function getStartDateDescription(kind: ScheduleForm["kind"]) {
 
 export function generateScheduleTitle(
     kind: ScheduleForm["kind"],
-    timeOfDay?: string
+    timesOfDay?: string[]
 ) {
-    const hour = timeOfDay
-        ? Number(timeOfDay.split(":")[0])
+    const usePeriod = timesOfDay?.length === 1;
+
+    const hour = usePeriod
+        ? Number(timesOfDay![0].split(":")[0])
         : undefined;
 
     const period =

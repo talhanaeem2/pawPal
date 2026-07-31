@@ -353,7 +353,7 @@ export type Database = {
           repeat_every: number
           repeat_unit: string
           start_date: string
-          time_of_day: string | null
+          times_of_day: string[]
           title: string
           updated_at: string | null
           user_id: string
@@ -365,7 +365,7 @@ export type Database = {
           repeat_every?: number
           repeat_unit?: string
           start_date?: string
-          time_of_day?: string | null
+          times_of_day?: string[]
           title: string
           updated_at?: string | null
           user_id?: string
@@ -377,7 +377,7 @@ export type Database = {
           repeat_every?: number
           repeat_unit?: string
           start_date?: string
-          time_of_day?: string | null
+          times_of_day?: string[]
           title?: string
           updated_at?: string | null
           user_id?: string
