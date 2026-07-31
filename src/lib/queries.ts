@@ -65,8 +65,7 @@ export const scheduleQuery = queryOptions({
             completed_on
           )
         )
-      `)
-      .order("time_of_day", { ascending: true });
+      `);
 
     if (error) throw error;
 
@@ -77,7 +76,12 @@ export const scheduleQuery = queryOptions({
       return [];
     }
 
-    return parsed.data;
+    return parsed.data.sort((a, b) => {
+      const aTime = a.times_of_day[0] ?? "99:99";
+      const bTime = b.times_of_day[0] ?? "99:99";
+
+      return aTime.localeCompare(bTime);
+    });
   },
 });
 
