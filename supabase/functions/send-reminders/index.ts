@@ -60,17 +60,15 @@ async function findDueScheduleNotifications(
 ): Promise<DueNotification[]> {
   const { data: items, error } = await supabase
     .from("schedule_items")
-    .select(`id, user_id, title, kind, times_of_day, start_date, repeat_every, repeat_unit, 
+    .select(
+      `id, user_id, title, kind, times_of_day, start_date, repeat_every, repeat_unit, 
     schedule_item_pets (
     id,
     pet_id,
     pets (name),
-    schedule_completions (
-    schedule_item_pet_id,
-      completed_on
-    )
-  )`)
-    .not("times_of_day", "is", null);
+    schedule_completions (schedule_item_pet_id, completed_on)
+  )`,
+    );
 
   if (error) {
     console.error("Failed to fetch schedule_items", error);
@@ -106,8 +104,7 @@ async function findDueScheduleNotifications(
         break;
 
       case "week":
-        shouldRunToday =
-          daysSinceStart % (item.repeat_every * 7) === 0;
+        shouldRunToday = daysSinceStart % (item.repeat_every * 7) === 0;
         break;
 
       case "month": {
@@ -123,8 +120,7 @@ async function findDueScheduleNotifications(
 
         const scheduledDay = Math.min(start.getDate(), lastDayOfMonth);
 
-        shouldRunToday =
-          todayDate.getDate() === scheduledDay &&
+        shouldRunToday = todayDate.getDate() === scheduledDay &&
           monthsSinceStart >= 0 &&
           monthsSinceStart % item.repeat_every === 0;
 
@@ -132,8 +128,7 @@ async function findDueScheduleNotifications(
       }
 
       case "year": {
-        const yearsSinceStart =
-          todayDate.getFullYear() - start.getFullYear();
+        const yearsSinceStart = todayDate.getFullYear() - start.getFullYear();
 
         const lastDayOfMonth = new Date(
           todayDate.getFullYear(),
@@ -143,8 +138,7 @@ async function findDueScheduleNotifications(
 
         const scheduledDay = Math.min(start.getDate(), lastDayOfMonth);
 
-        shouldRunToday =
-          todayDate.getMonth() === start.getMonth() &&
+        shouldRunToday = todayDate.getMonth() === start.getMonth() &&
           todayDate.getDate() === scheduledDay &&
           yearsSinceStart >= 0 &&
           yearsSinceStart % item.repeat_every === 0;
@@ -167,7 +161,7 @@ async function findDueScheduleNotifications(
       }
 
       const completedToday = completions.some(
-        c => c.completed_on === today,
+        (c) => c.completed_on === today,
       );
 
       return !completedToday;
@@ -176,6 +170,7 @@ async function findDueScheduleNotifications(
     const nowMs = localNow.getTime();
 
     const times = [...(item.times_of_day ?? [])].sort();
+    if (times.length === 0) continue;
     for (const time of times) {
       const [h, m] = time.split(":").map(Number);
 
@@ -296,7 +291,9 @@ async function findDueHealthNotifications(
         "id,user_id,next_due_at,product_name,pets(name)",
       );
 
-  const { data, error } = await query.not("next_due_at", "is", null).order("next_due_at");
+  const { data, error } = await query.not("next_due_at", "is", null).order(
+    "next_due_at",
+  );
 
   if (error) {
     console.error(`Failed to fetch ${table}`, error);
@@ -310,7 +307,6 @@ async function findDueHealthNotifications(
   const fireDate = todayDateStr(localNow);
 
   for (const item of data ?? []) {
-
     const [year, month, day] = item.next_due_at!.split("-").map(Number);
 
     const dueDate = new Date(year, month - 1, day, 12, 0, 0); // Local noon
@@ -329,8 +325,10 @@ async function findDueHealthNotifications(
         refId: item.id,
         fireDate,
         userId: item.user_id,
-        title: isVaccination ? "Vaccination due tomorrow" : "Deworming due tomorrow",
-        body: `${petName} is due for ${treatmentName}.`
+        title: isVaccination
+          ? "Vaccination due tomorrow"
+          : "Deworming due tomorrow",
+        body: `${petName} is due for ${treatmentName}.`,
       });
     }
 
@@ -340,8 +338,10 @@ async function findDueHealthNotifications(
         refId: item.id,
         fireDate,
         userId: item.user_id,
-        title: isVaccination ? "Vaccination due in 1 hour" : "Deworming due in 1 hour",
-        body: `${petName} is due for ${treatmentName}.`
+        title: isVaccination
+          ? "Vaccination due in 1 hour"
+          : "Deworming due in 1 hour",
+        body: `${petName} is due for ${treatmentName}.`,
       });
     }
   }
@@ -388,7 +388,7 @@ function buildScheduleBody(
 
 async function sendToUser(
   userId: string,
-  payload: { title: string; body: string, tag?: string; },
+  payload: { title: string; body: string; tag?: string },
 ) {
   const { data: subs, error } = await supabase
     .from("push_subscriptions")
@@ -466,7 +466,11 @@ export default {
         continue;
       }
 
-      await sendToUser(n.userId, { title: n.title, body: n.body, tag: `${n.refType}-${n.refId}` });
+      await sendToUser(n.userId, {
+        title: n.title,
+        body: n.body,
+        tag: `${n.refType}-${n.refId}`,
+      });
       sent++;
     }
 
