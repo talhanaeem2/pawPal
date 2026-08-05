@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/home")({
   errorComponent: ({ reset }: ErrorComponentProps) => <InlineErrorState onRetry={reset} />,
   notFoundComponent: () => <NotFoundState />,
 });
+// For deployment
 
 function Home() {
   const { data: pets } = useSuspenseQuery(petsQuery);
