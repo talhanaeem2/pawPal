@@ -352,3 +352,28 @@ export function requiresScheduleTime(kind: string) {
 export function requiresScheduleStartDate(kind: string) {
     return START_DATE_REQUIRED_KINDS.has(kind);
 }
+
+export function applyTimeSlotFilter<T extends {
+    in: (...args: any[]) => T;
+    is: (...args: any[]) => T;
+    or: (...args: any[]) => T;
+}>(
+    query: T,
+    timeSlots: (string | null)[]
+): T {
+    const nonNullTimes = timeSlots.filter(
+        (t): t is string => t !== null
+    );
+
+    if (nonNullTimes.length && timeSlots.includes(null)) {
+        return query.or(
+            `time_slot.in.(${nonNullTimes.join(",")}),time_slot.is.null`
+        );
+    }
+
+    if (nonNullTimes.length) {
+        return query.in("time_slot", nonNullTimes);
+    }
+
+    return query.is("time_slot", null);
+}

@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { Sunrise, Sun, Sunset, Moon, Clock3 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -116,3 +117,73 @@ export function formatDateTime(date: string | null) {
 
 export const capitalize = (text: string) =>
   text.charAt(0).toUpperCase() + text.slice(1);
+
+export function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+export function getTimeSection(time: string | null) {
+  if (!time) return "Any time";
+
+  const hour = Number(time.split(":")[0]);
+
+  if (hour >= 5 && hour < 12) return "Morning";
+  if (hour >= 12 && hour < 17) return "Afternoon";
+  if (hour >= 17 && hour < 21) return "Evening";
+  return "Night";
+}
+
+export const sectionOrder = [
+  "Morning",
+  "Afternoon",
+  "Evening",
+  "Night",
+  "Any time",
+];
+
+export function sectionStyle(section: string) {
+  switch (section) {
+    case "Morning":
+      return {
+        icon: "text-amber-500",
+        border: "border-amber-400",
+        pill: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+        Icon: Sunrise,
+      };
+
+    case "Afternoon":
+      return {
+        icon: "text-yellow-500",
+        border: "border-yellow-400",
+        pill: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+        Icon: Sun,
+      };
+
+    case "Evening":
+      return {
+        icon: "text-orange-500",
+        border: "border-orange-400",
+        pill: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+        Icon: Sunset,
+      };
+
+    case "Night":
+      return {
+        icon: "text-indigo-500",
+        border: "border-indigo-400",
+        pill: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+        Icon: Moon,
+      };
+
+    default:
+      return {
+        icon: "text-muted-foreground",
+        border: "border-border",
+        pill: "bg-muted text-muted-foreground",
+        Icon: Clock3,
+      };
+  }
+}

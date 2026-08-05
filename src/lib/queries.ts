@@ -62,7 +62,8 @@ export const scheduleQuery = queryOptions({
           notes,
           schedule_completions (
             id,
-            completed_on
+            completed_on,
+            time_slot
           )
         )
       `);

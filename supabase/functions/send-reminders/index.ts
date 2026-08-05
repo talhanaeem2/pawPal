@@ -66,7 +66,7 @@ async function findDueScheduleNotifications(
     id,
     pet_id,
     pets (name),
-    schedule_completions (schedule_item_pet_id, completed_on)
+    schedule_completions (schedule_item_pet_id, completed_on, time_slot)
   )`,
     );
 
@@ -153,20 +153,6 @@ async function findDueScheduleNotifications(
 
     const petStatuses = item.schedule_item_pets ?? [];
 
-    const pendingPets = petStatuses.filter((pet) => {
-      const completions = pet.schedule_completions ?? [];
-
-      if (completions.length === 0) {
-        return true;
-      }
-
-      const completedToday = completions.some(
-        (c) => c.completed_on === today,
-      );
-
-      return !completedToday;
-    });
-
     const nowMs = localNow.getTime();
 
     const times = [...(item.times_of_day ?? [])].sort();
@@ -178,6 +164,16 @@ async function findDueScheduleNotifications(
       target.setUTCHours(h, m, 0, 0);
 
       const targetMs = target.getTime();
+
+      const pendingPets = petStatuses.filter((pet) => {
+        const completions = pet.schedule_completions ?? [];
+
+        return !completions.some(
+          c =>
+            c.completed_on === today &&
+            c.time_slot === time
+        );
+      });
 
       if (pendingPets.length === 0) {
         continue;

@@ -4,11 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Footprints, Pill, UtensilsCrossed, Clock } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
+import { cn, todayDateString } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { scheduleQuery } from "@/lib/queries";
-import { formatFrequency, generateScheduleTitle, repeatUnitOptions } from "@/lib/schedule.utils";
+import { formatFrequency, generateScheduleTitle, repeatUnitOptions } from "@/lib/schedule-utils";
 
 import { Button } from "@/components/ui/common/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/common/dialog";
@@ -53,24 +53,30 @@ function ReminderPage() {
     const qc = useQueryClient();
 
     const [open, setOpen] = useState(false);
+    const initialForm = {
+        ...createEmptyScheduleForm(petId),
+        times_of_day: ["07:00"],
+    };
     const form = useZodForm(
         onboardingReminderSchema,
-        createEmptyScheduleForm(petId)
+        initialForm
     );
 
     const dialogTitle = reminders.find(r => r.value === form.values.kind)?.title ?? "Reminder";
 
+    const singleTime = form.values.times_of_day[0] ?? "07:00";
+
     const save = useMutation({
         mutationFn: async (data: OnboardingReminderForm) => {
-            const title = generateScheduleTitle(data.kind, data.time_of_day);
+            const title = generateScheduleTitle(data.kind, data.times_of_day);
 
             const payload = {
                 kind: data.kind,
                 title,
-                time_of_day: data.time_of_day || null,
+                times_of_day: data.times_of_day,
                 repeat_every: data.repeat_every,
                 repeat_unit: data.repeat_unit,
-                start_date: data.start_date,
+                start_date: data.start_date ?? todayDateString(),
             };
 
             const petLinks = (scheduleId: string) =>
@@ -97,7 +103,7 @@ function ReminderPage() {
         },
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: scheduleQuery.queryKey });
-            toast.success("Added");
+            toast.success("Reminder added");
             setOpen(false);
             form.reset(createEmptyScheduleForm(petId));
             navigate({ to: "/onboarding/complete" })
@@ -178,11 +184,14 @@ function ReminderPage() {
                         className="flex flex-1 flex-col min-h-0"
                     >
                         <div className="space-y-4">
-                            <Field label="When should we remind you?">
+                            <Field
+                                label="When should we remind you?"
+                                description="You can add more times later from the Schedule page."
+                            >
                                 {/* <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} /> */}
                                 <TimePicker
-                                    value={form.values.time_of_day}
-                                    onChange={(time) => form.setField("time_of_day", time)}
+                                    value={singleTime}
+                                    onChange={(time) => form.setField("times_of_day", [time])}
                                 />
                             </Field>
 

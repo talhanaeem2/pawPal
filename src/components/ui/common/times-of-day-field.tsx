@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
 
+import { formatTime } from "@/lib/utils";
+
 import { Button } from "./button";
 import { Field } from "./field";
 import { TimePicker } from "./time-picker";
@@ -12,22 +14,32 @@ export function TimesOfDayField({
     value: string[];
     onChange: (times: string[]) => void;
 }) {
-    const [mode, setMode] = useState<"simple" | "custom">(
-        // Start in custom mode if existing times don't fit the evenly-spaced pattern
-        value.length > 0 && !isEvenlySpaced(value) ? "custom" : "simple"
-    );
-    const [count, setCount] = useState(() => Math.max(value.length, 2));
+    const [mode, setMode] = useState<"simple" | "custom">(() => {
+        if (value.length > 4) return "custom";
+        return isEvenlySpaced(value) ? "simple" : "custom";
+    });
+    const [count, setCount] = useState(() => value.length > 0 ? value.length : 2);
     const [startTime, setStartTime] = useState(() => value[0] ?? "07:00");
+
+    useEffect(() => {
+        if (value.length > 0) {
+            setCount(value.length);
+            setStartTime(value[0]);
+        }
+    }, [value.join(",")]);
 
     // Recalculate preview times for simple mode
     const simpleTimes = generateEvenTimes(startTime, count);
 
-    // Sync simple mode → onChange whenever count or startTime changes
-    useEffect(() => {
-        if (mode === "simple") {
-            onChange(simpleTimes);
-        }
-    }, [mode, startTime, count]);
+    function handleCountChange(n: number) {
+        setCount(n);
+        onChange(generateEvenTimes(startTime, n));
+    }
+
+    function handleStartTimeChange(t: string) {
+        setStartTime(t);
+        onChange(generateEvenTimes(t, count));
+    }
 
     function handleCustomTimeChange(index: number, newTime: string) {
         const updated = [...value];
@@ -39,7 +51,6 @@ export function TimesOfDayField({
 
     function addCustomTime() {
         if (value.length >= 24) return;
-        // Just find the middle of the largest gap (original algorithm, no midnight avoidance)
         const candidate = findLargestGapMidpoint(value);
         const deduped = [...new Set([...value, candidate])].sort();
         onChange(deduped);
@@ -54,17 +65,29 @@ export function TimesOfDayField({
         onChange(value.filter((_, i) => i !== index));
     }
 
+    function switchToCustom() {
+        onChange(simpleTimes);
+        setMode("custom");
+    }
+
+    function switchToSimple() {
+        const newCount = Math.max(value.length, 1);
+        const newStart = value[0] ?? "07:00";
+        setCount(newCount);
+        setStartTime(newStart);
+        setMode("simple");
+    }
+
     if (mode === "simple") {
         return (
             <Field label="Times per day">
                 <div className="space-y-3">
-                    {/* Count selector */}
                     <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5, 6].map((n) => (
+                        {[1, 2, 3, 4].map((n) => (
                             <button
                                 key={n}
                                 type="button"
-                                onClick={() => setCount(n)}
+                                onClick={() => handleCountChange(n)}
                                 className={`h-10 w-10 rounded-full text-sm font-medium transition ${count === n
                                     ? "bg-primary text-primary-foreground"
                                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -75,26 +98,18 @@ export function TimesOfDayField({
                         ))}
                     </div>
 
-                    {/* Start time */}
                     <Field label="Starting from">
-                        <TimePicker value={startTime} onChange={setStartTime} />
+                        <TimePicker value={startTime} onChange={handleStartTimeChange} />
                     </Field>
 
-                    {/* Preview */}
-                    {simpleTimes.length > 0 &&
-                        TimesDisplay({ times: value })
-                    }
+                    {simpleTimes.length > 0 && <TimesDisplay times={simpleTimes} />}
 
-                    {/* Switch to custom */}
                     <button
                         type="button"
-                        onClick={() => {
-                            onChange(simpleTimes); // commit current simple times
-                            setMode("custom");
-                        }}
+                        onClick={switchToCustom}
                         className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
                     >
-                        Set custom times instead
+                        Use custom schedule
                     </button>
                 </div>
             </Field>
@@ -145,17 +160,12 @@ export function TimesOfDayField({
                     </button>
                 )}
 
-                {/* Switch back to simple */}
                 <button
                     type="button"
-                    onClick={() => {
-                        setCount(Math.max(value.length, 2));
-                        setStartTime(value[0] ?? "07:00");
-                        setMode("simple");
-                    }}
+                    onClick={switchToSimple}
                     className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
                 >
-                    Use evenly spaced times instead
+                    Use evenly spaced times
                 </button>
             </div>
         </Field>
@@ -180,13 +190,22 @@ function generateEvenTimes(startTime: string, count: number): string[] {
 // Helper: check if times array is evenly spaced (within 1 min tolerance)
 function isEvenlySpaced(times: string[]): boolean {
     if (times.length <= 1) return true;
-    const minutes = times.map((t) => {
+
+    const minutes = [...times].map((t) => {
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
-    });
-    const intervals = minutes.slice(1).map((m, i) => m - minutes[i]);
-    const first = intervals[0];
-    return intervals.every((iv) => Math.abs(iv - first) <= 1);
+    }).sort((a, b) => a - b);
+
+    const intervals: number[] = [];
+
+    for (let i = 0; i < minutes.length - 1; i++) {
+        intervals.push(minutes[i + 1] - minutes[i]);
+    }
+
+    // wrap around midnight
+    intervals.push((minutes[0] + 1440) - minutes[minutes.length - 1]);
+
+    return intervals.every(i => Math.abs(i - intervals[0]) <= 1);
 }
 
 function findLargestGapMidpoint(existing: string[]): string {
@@ -267,7 +286,7 @@ function TimesDisplay({ times }: { times: string[] }) {
                 <div className="grid grid-cols-3 gap-1">
                     {times.map((t) => (
                         <span key={t} className="text-xs font-medium text-center bg-secondary rounded-lg py-1">
-                            {t}
+                            {formatTime(t)}
                         </span>
                     ))}
                 </div>
@@ -282,7 +301,7 @@ function TimesDisplay({ times }: { times: string[] }) {
             <div className="flex flex-wrap gap-1.5">
                 {times.map((t) => (
                     <span key={t} className="text-xs font-medium bg-secondary rounded-full px-2.5 py-1">
-                        {t}
+                        {formatTime(t)}
                     </span>
                 ))}
             </div>

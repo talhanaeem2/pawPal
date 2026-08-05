@@ -278,6 +278,7 @@ export type Database = {
           created_at: string
           id: string
           schedule_item_pet_id: string
+          time_slot: string | null
         }
         Insert: {
           completed_at?: string
@@ -285,6 +286,7 @@ export type Database = {
           created_at?: string
           id?: string
           schedule_item_pet_id: string
+          time_slot?: string | null
         }
         Update: {
           completed_at?: string
@@ -292,6 +294,7 @@ export type Database = {
           created_at?: string
           id?: string
           schedule_item_pet_id?: string
+          time_slot?: string | null
         }
         Relationships: [
           {

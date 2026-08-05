@@ -1,13 +1,13 @@
 import { createFileRoute, type ErrorComponentProps, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Calendar, Stethoscope, Activity, Plus, PawPrint, Syringe, ShieldPlus } from "lucide-react";
+import { Calendar, Stethoscope, Activity, Plus, PawPrint, Syringe, ShieldPlus, Sunrise, Sun, Sunset, Moon, Clock3 } from "lucide-react";
 
 import { petsQuery, scheduleQuery, vetQuery, activityQuery, vaccinationsQuery, dewormingsQuery } from "@/lib/queries";
 import { formatPetNames } from "@/lib/pet-utils";
-import { formatFrequency, formatKind } from "@/lib/schedule.utils";
+import { formatKind } from "@/lib/schedule-utils";
 import { getActiveVaccinations } from "@/lib/vaccinations-utils";
 import { getActiveDewormings } from "@/lib/dewormings-utils";
-import { cn, formatTime, getPreviewList, todayDateString } from "@/lib/utils";
+import { cn, formatTime, getPreviewList, todayDateString, greeting, sectionStyle, getTimeSection, sectionOrder } from "@/lib/utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
@@ -47,17 +47,42 @@ function Home() {
 
   const today = todayDateString();
 
-  const todayData = getPreviewList(schedule, 5);
   const upcomingVetSorted = vet
-    .filter((v) => !v.completed && new Date(v.date) >= new Date(Date.now() - 86_400_000))
+    .filter((v) => {
+      if (v.completed) return false;
+      const ms = new Date(v.date).getTime();
+      return ms >= Date.now() - 86_400_000 && ms <= Date.now() + 7 * 86_400_000;
+    })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
   const upcomingVetData = getPreviewList(upcomingVetSorted, 3);
   const recentActivityData = getPreviewList(activity, 3);
 
-  const vaccinationData = getPreviewList(getActiveVaccinations(vaccinations), 3);
-  const dewormingData = getPreviewList(getActiveDewormings(dewormings), 3);
+  const vaccinationData = getPreviewList(
+    getActiveVaccinations(vaccinations).filter((v) => {
+      if (!v.next_due_at) return false;
+      return new Date(v.next_due_at).getTime() <= Date.now() + 7 * 86_400_000;
+    }),
+    3
+  );
 
-  const showExploreCard = vaccinationData.visible.length === 0 || dewormingData.visible.length === 0;
+  const dewormingData = getPreviewList(
+    getActiveDewormings(dewormings).filter((d) => {
+      if (!d.next_due_at) return false;
+      return new Date(d.next_due_at).getTime() <= Date.now() + 7 * 86_400_000;
+    }),
+    3
+  );
+
+  const hasVaccinations = vaccinations.length > 0;
+  const hasDewormings = dewormings.length > 0;
+  const hasVetVisits = vet.length > 0;
+  const hasActivities = activity.length > 0;
+  const showExploreCard =
+    !hasVaccinations ||
+    !hasDewormings ||
+    !hasVetVisits ||
+    !hasActivities;
 
   if (pets.length === 0) {
     return (
@@ -106,77 +131,134 @@ function Home() {
 
       <Page.Content>
         <Section title="Today's care" icon={Calendar} href="/schedule">
-          {todayData.visible.length === 0 ? (
+          {schedule.length === 0 ? (
             <Empty text="No reminders yet." cta="Add reminder" href="/schedule" search={{ new: true }} />
-          ) : (
-            <ul className="divide-y divide-border/60">
-              {todayData.visible.map((item) => {
-                const petStatuses = item.schedule_item_pets
-                  .map((schedulePet) => ({
-                    ...schedulePet,
-                    pet: pets.find((p) => p.id === schedulePet.pet_id),
-                    done: schedulePet.schedule_completions.some(
-                      (c) => c.completed_on === today
-                    ),
-                  }))
-                  .sort((a, b) =>
-                    (a.pet?.name ?? "").localeCompare(b.pet?.name ?? "")
-                  );
+          ) : (() => {
+            const rows = schedule.flatMap((item) => {
+              const times = item.times_of_day.length > 0 ? item.times_of_day : [null as null];
 
-                const doneToday =
-                  petStatuses.length > 0 &&
-                  petStatuses.every((p) => p.done);
+              return times.map((time) => ({
+                item,
+                time,
+                key: `${item.id}-${time ?? "no-time"}`,
+              }));
+            });
 
-                const petLabel = formatPetNames(
-                  petStatuses
-                    .map((p) => p.pet?.name)
-                    .filter((name): name is string => !!name)
-                );
+            const groupedRows = rows.reduce((acc, row) => {
+              const section = getTimeSection(row.time);
 
-                return (
-                  <li
-                    key={item.id}
-                    className="py-3 flex items-center justify-between"
-                  >
-                    <div className={cn(doneToday && "opacity-70", "transition-all duration-200")}>
-                      <div className={cn(doneToday && "line-through", "font-medium text-sm capitalize")}>
-                        {item.title}
+              if (!acc[section]) {
+                acc[section] = [];
+              }
+
+              acc[section].push(row);
+
+              return acc;
+            }, {} as Record<string, typeof rows>);
+
+            return (
+              <div className="space-y-3">
+                {sectionOrder.map((section) => {
+                  const sectionRows = groupedRows[section];
+
+                  if (!sectionRows?.length) return null;
+
+                  const timeGroups = sectionRows.reduce((acc, row) => {
+                    const key = row.time ?? "no-time";
+
+                    if (!acc[key]) {
+                      acc[key] = [];
+                    }
+
+                    acc[key].push(row);
+
+                    return acc;
+                  }, {} as Record<string, typeof sectionRows>);
+
+                  const { Icon: SectionIcon } = sectionStyle(section);
+
+                  return (
+                    <div
+                      key={section}
+                      className={cn(
+                        "rounded-2xl border-l-4 pl-4 py-2",
+                        sectionStyle(section).border
+                      )}
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <SectionIcon className={cn("h-4 w-4", sectionStyle(section).icon)} />
+                        <h3 className="text-xs font-semibold uppercase tracking-wide">
+                          {section}
+                        </h3>
                       </div>
 
-                      <div className="text-xs text-muted-foreground capitalize">
-                        {petLabel && `${petLabel} · `}
-                        {formatKind(item)} ·{" "}
-                        {item.times_of_day.length > 0
-                          ? item.times_of_day.map(formatTime).join(", ")
-                          : formatFrequency(item)}
-                      </div>
+                      <ul className="divide-border/60 flex flex-col gap-4">
+                        {Object.entries(timeGroups).map(([timeKey, rows], index) => {
+                          return (
+                            <li key={timeKey}>
+                              {index > 0 && (
+                                <div className="mb-1 h-px bg-border/50" />
+                              )}
+                              {timeKey !== "no-time" && (
+                                <div
+                                  className={cn("mb-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold items-center",
+                                    sectionStyle(section).pill)}
+                                >
+                                  {formatTime(timeKey)}
+                                </div>
+                              )}
+                              <div className="space-y-2">
+                                {rows.map(({ item, time, key }) => {
+                                  const petStatuses = item.schedule_item_pets.map((sip) => ({
+                                    ...sip,
+                                    pet: pets.find((p) => p.id === sip.pet_id),
+                                    done: sip.schedule_completions.some(
+                                      (c) => c.completed_on === today && c.time_slot === time
+                                    ),
+                                  }));
+
+                                  const doneToday = petStatuses.length > 0 && petStatuses.every((p) => p.done);
+
+                                  const petLabel = formatPetNames(
+                                    petStatuses.map((p) => p.pet?.name).filter((n): n is string => !!n)
+                                  );
+
+                                  return (
+                                    <div
+                                      key={key}
+                                      className="flex items-center justify-between gap-2"
+                                    >
+                                      <div className={cn(doneToday && "opacity-70", "transition-all duration-200 min-w-0")}>
+                                        <div className={cn(doneToday && "line-through", "text-sm capitalize truncate")}>
+                                          {item.title}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground capitalize truncate">
+                                          {petLabel && `${petLabel} · `}
+                                          {formatKind(item)}
+                                        </div>
+                                      </div>
+
+                                      {doneToday && (
+                                        <span className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary">Completed</span>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </div>
-
-                    {doneToday ? (
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary">
-                        Done
-                      </span>
-                    ) : (
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">
-                        {formatFrequency(item)}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-              {todayData.remaining > 0 && (
-                <Link to="/schedule" className="block py-2 text-xs text-primary hover:underline">
-                  +{todayData.remaining} more reminders →
-                </Link>
-              )}
-            </ul>
-          )}
+                  );
+                })}
+              </div>
+            );
+          })()}
         </Section>
 
-        <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
-          {upcomingVetData.visible.length === 0 ? (
-            <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" search={{ new: true }} />
-          ) : (
+        {upcomingVetData.visible.length > 0 && (
+          <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
             <ul className="divide-y divide-border/60">
               {upcomingVetData.visible.map((v) => (
                 <VetRow
@@ -191,35 +273,31 @@ function Home() {
                 </Link>
               )}
             </ul>
-          )}
-        </Section>
+          </Section>
+        )}
 
         {recentActivityData.visible.length > 0 && (
           <Section title="Recent activity" icon={Activity} href="/activity">
-            {recentActivityData.visible.length === 0 ? (
-              <Empty text="No activities logged yet." cta="Log activity" href="/activity" search={{ new: true }} />
-            ) : (
-              <ul className="divide-y divide-border/60">
-                {recentActivityData.visible.map((a) => (
-                  <li key={a.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm capitalize">{a.activity_type}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                      </div>
-                    </div>
+            <ul className="divide-y divide-border/60">
+              {recentActivityData.visible.map((a) => (
+                <li key={a.id} className="py-3 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm capitalize">{a.activity_type}</div>
                     <div className="text-xs text-muted-foreground">
-                      {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
+                      {new Date(a.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                     </div>
-                  </li>
-                ))}
-                {recentActivityData.remaining > 0 && (
-                  <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
-                    +{recentActivityData.remaining} more activities →
-                  </Link>
-                )}
-              </ul>
-            )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
+                  </div>
+                </li>
+              ))}
+              {recentActivityData.remaining > 0 && (
+                <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
+                  +{recentActivityData.remaining} more activities →
+                </Link>
+              )}
+            </ul>
           </Section>
         )}
 
@@ -263,13 +341,13 @@ function Home() {
 
         {showExploreCard && (
           <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
-            <h2 className="font-display text-lg">Complete your pet's profile</h2>
+            <h2 className="font-display text-lg">Get started</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Keep your pet's health and history organized.
             </p>
 
             <div className="mt-4 space-y-2">
-              {vaccinationData.visible.length === 0 && (
+              {!hasVaccinations && (
                 <Link
                   to="/health/vaccinations"
                   className="flex items-center justify-between rounded-2xl border border-border p-3 hover:bg-muted/40 transition"
@@ -286,7 +364,7 @@ function Home() {
                 </Link>
               )}
 
-              {dewormingData.visible.length === 0 && (
+              {!hasDewormings && (
                 <Link
                   to="/health/dewormings"
                   className="flex items-center justify-between rounded-2xl border border-border p-3 hover:bg-muted/40 transition"
@@ -303,7 +381,7 @@ function Home() {
                 </Link>
               )}
 
-              {recentActivityData.visible.length === 0 && (
+              {!hasActivities && (
                 <Link
                   to="/activity"
                   className="flex items-center justify-between rounded-2xl border border-border p-3 hover:bg-muted/40 transition"
@@ -319,17 +397,28 @@ function Home() {
                   </div>
                 </Link>
               )}
+
+              {!hasVetVisits && (
+                <Link
+                  to="/health/vet"
+                  search={{ new: true }}
+                  className="flex items-center justify-between rounded-2xl border border-border p-3 hover:bg-muted/40 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <Stethoscope className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Vet visits</p>
+                      <p className="text-xs text-muted-foreground">
+                        Schedule checkups and appointments
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              )}
             </div>
           </section>
         )}
       </Page.Content>
     </Page>
   );
-}
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 export const scheduleCompletionSchema = z.object({
     id: z.string(),
     completed_on: z.string(),
+    time_slot: z.string().nullable(),
 });
 
 // DB SCHEMA (Supabase shape)
