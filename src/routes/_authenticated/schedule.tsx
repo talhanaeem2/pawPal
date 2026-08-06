@@ -472,10 +472,7 @@ function SchedulePage() {
                     <AccordionContent className="px-4 pb-4 space-y-4">
                       {/* Per-time-slot, per-pet grid */}
                       <div
-                        className={cn(
-                          "grid gap-2 px-4",
-                          multiplePets && times.length === 1 ? "grid-cols-2" : "grid-cols-1"
-                        )}
+                        className="grid gap-2 px-4 grid-cols-1"
                       >
                         {petsSorted.map((pet) => (
                           <div
@@ -491,6 +488,12 @@ function SchedulePage() {
                               const slotPetDone = pet.schedule_completions.some(
                                 (c) => c.completed_on === today && c.time_slot === time
                               );
+                              const slotPetDoneTime = pet.schedule_completions.some(
+                                (c) => c.completed_on === today
+                              );
+
+                              const isDone = hasTime ? slotPetDone : slotPetDoneTime;
+
                               return (
                                 <button
                                   key={`${pet.id}-${time}`}
@@ -498,23 +501,23 @@ function SchedulePage() {
                                     toggle.mutate({
                                       scheduleItemId: s.id,
                                       scheduleItemPetId: pet.id,
-                                      markDone: !slotPetDone,
-                                      timeSlots: [time],
+                                      markDone: !isDone,
+                                      timeSlots: hasTime ? [time] : [null],
                                     })
                                   }
                                   disabled={toggle.isPending}
                                   className={cn(
                                     "flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                                    slotPetDone
+                                    isDone
                                       ? "bg-primary border-primary text-primary-foreground opacity-70"
                                       : "border-border bg-card hover:bg-accent/40"
                                   )}
                                 >
                                   <Check className={cn(
                                     "h-3 w-3",
-                                    !slotPetDone && "opacity-70"
+                                    !isDone && "opacity-70"
                                   )} />
-                                  {formatTime(time)}
+                                  {hasTime ? formatTime(time) : "Done"}
                                 </button>
                               );
                             })}
