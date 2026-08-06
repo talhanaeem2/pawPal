@@ -1,6 +1,6 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Check, Trash2, Pencil, Calendar } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
@@ -197,22 +197,36 @@ function SchedulePage() {
 
   const confirmItem = items.find((i) => i.id === confirmId);
 
-  const totalSlots = items.reduce((sum, item) =>
-    sum + Math.max(item.times_of_day.length, 1), 0
-  );
+  const { totalSlots, completedSlots, progress } = useMemo(() => {
+    const totalSlots = items.reduce(
+      (sum, item) => sum + Math.max(item.times_of_day.length, 1),
+      0
+    );
 
-  const completedSlots = items.reduce((sum, item) => {
-    const times = item.times_of_day.length > 0 ? item.times_of_day : [null as null];
-    return sum + times.filter((time) =>
-      item.schedule_item_pets.every((pet) =>
-        pet.schedule_completions.some(
-          (c) => c.completed_on === today && c.time_slot === time
+    const completedSlots = items.reduce((sum, item) => {
+      const times =
+        item.times_of_day.length > 0 ? item.times_of_day : [null as null];
+
+      const completedForItem = times.filter((time) =>
+        item.schedule_item_pets.every((pet) =>
+          pet.schedule_completions.some(
+            (c) => c.completed_on === today && c.time_slot === time
+          )
         )
-      )
-    ).length;
-  }, 0);
+      ).length;
 
-  const progress = totalSlots === 0 ? 0 : Math.round((completedSlots / totalSlots) * 100);
+      return sum + completedForItem;
+    }, 0);
+
+    return {
+      totalSlots,
+      completedSlots,
+      progress:
+        totalSlots === 0
+          ? 0
+          : Math.round((completedSlots / totalSlots) * 100),
+    };
+  }, [items, today]);
 
   return (
     <Page>
@@ -263,7 +277,7 @@ function SchedulePage() {
           <Accordion
             type="single"
             collapsible
-            className="rounded-3xl bg-card shadow-(--shadow-soft)"
+            className="rounded-3xl bg-card shadow-(--shadow-soft) pb-4"
           >
             {items.map((s) => {
               const times = s.times_of_day.length > 0 ? s.times_of_day : [null as null];
@@ -311,7 +325,7 @@ function SchedulePage() {
               if (!useAccordion) {
                 return (
                   <React.Fragment key={s.id}>
-                    <li className="border-b last:border-b-0 flex flex-col gap-1">
+                    <div className="border-b last:border-b-0 flex flex-col gap-1">
                       {/* Header row */}
                       <div className="flex items-center gap-3 px-4 pt-3 pb-2">
                         <button
@@ -346,13 +360,14 @@ function SchedulePage() {
                             {formatKind(s)} · {preview}
                           </div>
                           {petCount === 1 && hasDetails && detailRows[0].dosage && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {detailField.label}: {detailRows[0].dosage}
+                            <div className="text-xs">
+                              <span className="font-medium">{detailField.label}:</span>{" "}
+                              <span className="text-muted-foreground">{detailRows[0].dosage}</span>
                             </div>
                           )}
                           {petCount === 1 && hasDetails && detailRows[0].notes && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              Notes: {detailRows[0].notes}
+                            <div className="text-xs text-muted-foreground mt-0.5 italic">
+                              {detailRows[0].notes}
                             </div>
                           )}
                         </div>
@@ -375,7 +390,7 @@ function SchedulePage() {
                           </Button>
                         </div>
                       </div>
-                    </li>
+                    </div>
                   </React.Fragment>
                 );
               }
@@ -456,68 +471,74 @@ function SchedulePage() {
 
                     <AccordionContent className="px-4 pb-4 space-y-4">
                       {/* Per-time-slot, per-pet grid */}
-                      <div className="grid grid-cols-2 gap-2 justify-center items-center px-4 pb-4">
-                        {times.map((time) =>
-                          petsSorted.map((pet) => {
-                            const slotPetDone = pet.schedule_completions.some(
-                              (c) => c.completed_on === today && c.time_slot === time
-                            );
-                            return (
-                              <button
-                                key={`${pet.id}-${time}`}
-                                onClick={() =>
-                                  toggle.mutate({
-                                    scheduleItemId: s.id,
-                                    scheduleItemPetId: pet.id,
-                                    markDone: !slotPetDone,
-                                    timeSlots: [time],
-                                  })
-                                }
-                                disabled={toggle.isPending}
-                                className={cn(
-                                  "flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                                  slotPetDone
-                                    ? "bg-primary border-primary text-primary-foreground opacity-70"
-                                    : "border-border bg-card hover:bg-accent/40"
-                                )}
-                              >
-                                <Check className={cn(
-                                  "h-3 w-3",
-                                  !slotPetDone && "opacity-70"
-                                )} />
-                                {formatTime(time)}
-                              </button>
-                            );
-                          }
-                          ))}
+                      <div
+                        className={cn(
+                          "grid gap-2 px-4",
+                          multiplePets && times.length === 1 ? "grid-cols-2" : "grid-cols-1"
+                        )}
+                      >
+                        {petsSorted.map((pet) => (
+                          <div
+                            className="flex flex-col gap-1"
+                            key={pet.id}
+                          >
+                            {multiplePets && (
+                              <div className="text-sm font-medium capitalize">
+                                {pet.pet?.name}
+                              </div>
+                            )}
+                            {times.map((time) => {
+                              const slotPetDone = pet.schedule_completions.some(
+                                (c) => c.completed_on === today && c.time_slot === time
+                              );
+                              return (
+                                <button
+                                  key={`${pet.id}-${time}`}
+                                  onClick={() =>
+                                    toggle.mutate({
+                                      scheduleItemId: s.id,
+                                      scheduleItemPetId: pet.id,
+                                      markDone: !slotPetDone,
+                                      timeSlots: [time],
+                                    })
+                                  }
+                                  disabled={toggle.isPending}
+                                  className={cn(
+                                    "flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                                    slotPetDone
+                                      ? "bg-primary border-primary text-primary-foreground opacity-70"
+                                      : "border-border bg-card hover:bg-accent/40"
+                                  )}
+                                >
+                                  <Check className={cn(
+                                    "h-3 w-3",
+                                    !slotPetDone && "opacity-70"
+                                  )} />
+                                  {formatTime(time)}
+                                </button>
+                              );
+                            })}
+                            {/* Dosage / notes */}
+                            {(pet.dosage || pet.notes) && (
+                              <div className="space-y-2 pt-2">
+                                <div className="space-y-0.5">
+                                  {pet.dosage && (
+                                    <div className="px-2 text-xs">
+                                      <span className="font-medium">{detailField.label}:</span>{" "}
+                                      <span className="text-muted-foreground">{pet.dosage}</span>
+                                    </div>
+                                  )}
+                                  {pet.notes && (
+                                    <div className="px-2 text-xs text-muted-foreground italic">
+                                      <span>{pet.notes}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-
-                      {/* Dosage / notes */}
-                      {hasDetails && (
-                        <div className="space-y-2 pt-2 border-t">
-                          {detailRows.map((pet) => (
-                            <div key={pet.pet_id} className="space-y-0.5">
-                              {multiplePets && (
-                                <div className="text-xs font-medium capitalize">
-                                  {pet.pet?.name}
-                                </div>
-                              )}
-                              {pet.dosage && (
-                                <div className="flex gap-1 text-xs text-muted-foreground">
-                                  <span className="font-medium">{detailField.label}:</span>
-                                  <span>{pet.dosage}</span>
-                                </div>
-                              )}
-                              {pet.notes && (
-                                <div className="flex gap-1 text-xs text-muted-foreground">
-                                  <span className="font-medium">Notes:</span>
-                                  <span>{pet.notes}</span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </AccordionContent>
                   </AccordionItem>
                 </React.Fragment>
