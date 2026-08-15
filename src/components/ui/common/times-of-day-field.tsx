@@ -10,9 +10,11 @@ import { TimePicker } from "./time-picker";
 export function TimesOfDayField({
     value,
     onChange,
+    hideCustomMode = false,
 }: {
     value: string[];
     onChange: (times: string[]) => void;
+    hideCustomMode?: boolean;
 }) {
     const [mode, setMode] = useState<"simple" | "custom">(() => {
         if (value.length > 4) return "custom";
@@ -103,14 +105,15 @@ export function TimesOfDayField({
                     </Field>
 
                     {simpleTimes.length > 0 && <TimesDisplay times={simpleTimes} />}
-
-                    <button
-                        type="button"
-                        onClick={switchToCustom}
-                        className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                    >
-                        Use custom schedule
-                    </button>
+                    {!hideCustomMode && (
+                        <button
+                            type="button"
+                            onClick={switchToCustom}
+                            className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                        >
+                            Use custom schedule
+                        </button>
+                    )}
                 </div>
             </Field>
         );

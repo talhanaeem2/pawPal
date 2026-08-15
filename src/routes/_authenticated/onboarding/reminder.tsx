@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Field } from "@/components/ui/common/field";
 import { Input } from "@/components/ui/common/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/common/select";
-import { TimePicker } from "@/components/ui/common/time-picker";
+import { TimesOfDayField } from "@/components/ui/common/times-of-day-field";
 
 import { createEmptyScheduleForm, OnboardingReminderForm, onboardingReminderSchema, ScheduleForm } from "@/schemas/schedule";
 
@@ -64,7 +64,7 @@ function ReminderPage() {
 
     const dialogTitle = reminders.find(r => r.value === form.values.kind)?.title ?? "Reminder";
 
-    const singleTime = form.values.times_of_day[0] ?? "07:00";
+    // const singleTime = form.values.times_of_day[0] ?? "07:00";
 
     const save = useMutation({
         mutationFn: async (data: OnboardingReminderForm) => {
@@ -189,9 +189,10 @@ function ReminderPage() {
                                 description="You can add more times later from the Schedule page."
                             >
                                 {/* <Input type="time" value={form.values.time_of_day} onChange={(e) => form.setField("time_of_day", e.target.value)} /> */}
-                                <TimePicker
-                                    value={singleTime}
-                                    onChange={(time) => form.setField("times_of_day", [time])}
+                                <TimesOfDayField
+                                    value={form.values.times_of_day}
+                                    onChange={(times) => form.setField("times_of_day", times)}
+                                    hideCustomMode={true}
                                 />
                             </Field>
 
