@@ -15,6 +15,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Cron runs every 5 minutes — this is the tolerance window for "is it time yet".
 const WINDOW_MINUTES = 10;
 const HEADS_UP_MINUTES = 10;
+// Schedules such as baths do not have a user-selected time. Send their single
+// daily notification at this local time, without a separate heads-up alert.
+const UNTIMED_REMINDER_TIME = "09:00";
 
 // MVP: single fixed timezone offset (Pakistan Standard Time, UTC+5, no DST).
 // time_of_day is entered by users in local time but the server clock is UTC,
@@ -156,9 +159,11 @@ async function findDueScheduleNotifications(
     const nowMs = localNow.getTime();
 
     const times = [...(item.times_of_day ?? [])].sort();
-    if (times.length === 0) continue;
-    for (const time of times) {
-      const [h, m] = time.split(":").map(Number);
+    // Untimed schedules are completed with a null time_slot in the app. Keep
+    // that slot for completion checks, but use a fixed time to send the alert.
+    const notificationSlots = times.length > 0 ? times : [null];
+    for (const time of notificationSlots) {
+      const [h, m] = (time ?? UNTIMED_REMINDER_TIME).split(":").map(Number);
 
       const target = new Date(localNow);
       target.setUTCHours(h, m, 0, 0);
@@ -188,7 +193,7 @@ async function findDueScheduleNotifications(
       if (withinWindow(targetMs, nowMs, WINDOW_MINUTES)) {
         out.push({
           refType: "schedule_due",
-          refId: `${item.id}-${time}`,
+          refId: `${item.id}-${time ?? "untimed"}`,
           fireDate: today,
           userId: item.user_id,
           title: `Time for ${item.title}`,
@@ -199,6 +204,7 @@ async function findDueScheduleNotifications(
           ),
         });
       } else if (
+        time !== null &&
         withinWindow(
           targetMs - HEADS_UP_MINUTES * 60_000,
           nowMs,
