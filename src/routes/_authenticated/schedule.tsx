@@ -277,7 +277,7 @@ function SchedulePage() {
           <Accordion
             type="single"
             collapsible
-            className="rounded-3xl bg-card shadow-(--shadow-soft) pb-4"
+            className="rounded-3xl bg-card shadow-(--shadow-soft)"
           >
             {items.map((s) => {
               const times = s.times_of_day.length > 0 ? s.times_of_day : [null as null];
