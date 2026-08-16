@@ -7,16 +7,10 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-function extractStoragePath(
-  url: string | null | undefined,
-  bucket: string
-): string | null {
+function extractStoragePath(url: string | null | undefined, bucket: string): string | null {
   if (!url) return null;
 
-  const markers = [
-    `/storage/v1/object/public/${bucket}/`,
-    `/object/public/${bucket}/`,
-  ];
+  const markers = [`/storage/v1/object/public/${bucket}/`, `/object/public/${bucket}/`];
 
   for (const marker of markers) {
     const idx = url.indexOf(marker);
@@ -29,6 +23,24 @@ function extractStoragePath(
   return null;
 }
 
+function errorDetails(error: unknown) {
+  if (!(error instanceof Error)) {
+    return { error };
+  }
+
+  const authError = error as Error & {
+    code?: string;
+    status?: number;
+  };
+
+  return {
+    name: authError.name,
+    message: authError.message,
+    code: authError.code,
+    status: authError.status,
+  };
+}
+
 async function deleteProfilePhoto(userId: string) {
   const { data: profile, error } = await supabase
     .from("profiles")
@@ -36,7 +48,8 @@ async function deleteProfilePhoto(userId: string) {
     .eq("id", userId)
     .single();
 
-  if (error) throw error;
+  // A missing profile must not prevent deletion of an otherwise valid account.
+  if (error && error.code !== "PGRST116") throw error;
 
   if (!profile?.avatar_url) return;
 
@@ -44,9 +57,7 @@ async function deleteProfilePhoto(userId: string) {
 
   if (!path) return;
 
-  const { error: storageError } = await supabase.storage
-    .from("profile-photos")
-    .remove([path]);
+  const { error: storageError } = await supabase.storage.from("profile-photos").remove([path]);
 
   if (storageError) {
     console.error("Failed to delete profile photo", storageError);
@@ -67,9 +78,7 @@ async function deletePetPhotos(userId: string) {
 
   if (paths.length === 0) return;
 
-  const { error: storageError } = await supabase.storage
-    .from("pet-photos")
-    .remove(paths);
+  const { error: storageError } = await supabase.storage.from("pet-photos").remove(paths);
 
   if (storageError) {
     console.error("Failed to delete pet photos", storageError);
@@ -124,23 +133,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await Promise.all([
-      deleteProfilePhoto(user.id),
-      deletePetPhotos(user.id),
-    ]);
+    await Promise.all([deleteProfilePhoto(user.id), deletePetPhotos(user.id)]);
 
     const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
 
     if (deleteError) {
+      console.error("Supabase Auth rejected account deletion", {
+        userId: user.id,
+        ...errorDetails(deleteError),
+      });
       throw deleteError;
     }
 
-    return Response.json(
-      { success: true },
-      { headers: corsHeaders }
-    );
+    return Response.json({ success: true }, { headers: corsHeaders });
   } catch (err) {
-    console.error(err);
+    console.error("Account deletion failed", {
+      userId: user.id,
+      ...errorDetails(err),
+    });
 
     return Response.json(
       {
@@ -149,7 +159,7 @@ Deno.serve(async (req) => {
       {
         status: 500,
         headers: corsHeaders,
-      }
+      },
     );
   }
 });
