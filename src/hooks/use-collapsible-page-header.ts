@@ -16,13 +16,6 @@ export function useCollapsiblePageHeader() {
   }, []);
 
   const handleContentScroll = (event: UIEvent<HTMLDivElement>) => {
-    const container = event.currentTarget;
-    const maxScrollTop = container.scrollHeight - container.clientHeight;
-
-    if (maxScrollTop < 112) {
-      return;
-    }
-
     scrollProgressRef.current = Math.min(event.currentTarget.scrollTop / 112, 1);
 
     if (scrollFrameRef.current !== null) return;

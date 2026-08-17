@@ -125,13 +125,6 @@ function Home() {
   }, []);
 
   function handleContentScroll(event: UIEvent<HTMLDivElement>) {
-    const container = event.currentTarget;
-    const maxScrollTop = container.scrollHeight - container.clientHeight;
-
-    if (maxScrollTop < 112) {
-      return;
-    }
-
     scrollProgressRef.current = Math.min(event.currentTarget.scrollTop / 112, 1);
 
     if (scrollFrameRef.current !== null) return;
@@ -211,10 +204,12 @@ function Home() {
             <p className="text-sm text-muted-foreground">{greeting()}</p>
             <h1 className="font-display text-3xl mt-1">
               Today with{" "}
-              {pets
-                .map((p) => p.name)
-                .slice(0, 2)
-                .join(" & ")}
+              <span className="capitalize">
+                {pets
+                  .map((p) => p.name)
+                  .slice(0, 2)
+                  .join(" & ")}
+              </span>
             </h1>
           </div>
           <div className="mt-4">
@@ -235,7 +230,11 @@ function Home() {
               data-pet-dock-item
               className="flex h-14 w-32 shrink-0 items-center gap-2.5 overflow-hidden rounded-full bg-card px-2.5 shadow-(--shadow-soft) hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary will-change-[width,height,padding,gap]"
             >
-              <PetAvatar pet={p} className="h-10 w-10 min-w-10 text-2xl" />
+              <PetAvatar
+                pet={p}
+                className="h-10 w-10 min-w-10"
+                emojiSize="text-2xl"
+              />
               <div
                 data-pet-dock-label
                 className="w-16 min-w-0 overflow-hidden whitespace-nowrap will-change-[width,opacity]"
@@ -248,7 +247,7 @@ function Home() {
         </nav>
       </Page.Header>
 
-      <Page.Content onScroll={handleContentScroll}>
+      <Page.Content extraScrollRoom={112} onScroll={handleContentScroll}>
         <Section title="Today's care" icon={Calendar} href="/schedule">
           {schedule.length === 0 ? (
             <Empty
@@ -558,7 +557,6 @@ function Home() {
             </div>
           </section>
         )}
-        <div className="h-24 shrink-0" aria-hidden="true" />
       </Page.Content>
     </Page>
   );

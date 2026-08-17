@@ -13,6 +13,7 @@ interface SectionProps {
 
 interface ContentProps extends SectionProps {
   onScroll?: UIEventHandler<HTMLDivElement>;
+  extraScrollRoom?: number;
 }
 
 function Root({ children }: RootProps) {
@@ -38,7 +39,7 @@ const Header = forwardRef<HTMLDivElement, SectionProps>(function Header(
 
 Header.displayName = "PageHeader";
 
-function Content({ children, className, onScroll }: ContentProps) {
+function Content({ children, className, onScroll, extraScrollRoom }: ContentProps) {
   return (
     <div
       onScroll={onScroll}
@@ -47,6 +48,7 @@ function Content({ children, className, onScroll }: ContentProps) {
       <div
         style={{
           paddingBottom: "calc(var(--bottom-nav-height) + env(safe-area-inset-bottom))",
+          minHeight: extraScrollRoom ? `calc(100% + ${extraScrollRoom}px)` : undefined,
         }}
         className="flex flex-col gap-6"
       >

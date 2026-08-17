@@ -28,7 +28,7 @@ export function FormDialog({
             </DialogTrigger>
             <DialogContent className="rounded-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="font-display">
+                    <DialogTitle className="font-display capitalize">
                         {title}
                     </DialogTitle>
                 </DialogHeader>

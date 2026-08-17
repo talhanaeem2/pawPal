@@ -177,6 +177,7 @@ function VaccinationsPetPage() {
                 <Link
                   to="/pets/$petId"
                   params={{ petId: pet.id }}
+                  className="capitalize"
                 >
                   {pet.name}
                 </Link>

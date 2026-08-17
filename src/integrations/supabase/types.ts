@@ -279,6 +279,7 @@ export type Database = {
           id: string
           schedule_item_pet_id: string
           time_slot: string | null
+          user_id: string
         }
         Insert: {
           completed_at?: string
@@ -287,6 +288,7 @@ export type Database = {
           id?: string
           schedule_item_pet_id: string
           time_slot?: string | null
+          user_id?: string
         }
         Update: {
           completed_at?: string
@@ -295,6 +297,7 @@ export type Database = {
           id?: string
           schedule_item_pet_id?: string
           time_slot?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -314,6 +317,7 @@ export type Database = {
           notes: string | null
           pet_id: string
           schedule_item_id: string
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -322,6 +326,7 @@ export type Database = {
           notes?: string | null
           pet_id: string
           schedule_item_id: string
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -330,6 +335,7 @@ export type Database = {
           notes?: string | null
           pet_id?: string
           schedule_item_id?: string
+          user_id?: string
         }
         Relationships: [
           {

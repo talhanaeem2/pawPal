@@ -44,6 +44,7 @@ function PetPage() {
     const nameRef = useRef<HTMLHeadingElement>(null);
     const detailsRef = useRef<HTMLDivElement>(null);
     const metaRef = useRef<HTMLDivElement>(null);
+    const emojiRef = useRef<HTMLSpanElement>(null);
     const progressRef = useRef(0);
     const frameRef = useRef<number | null>(null);
 
@@ -60,7 +61,7 @@ function PetPage() {
 
     function handleContentScroll(event: UIEvent<HTMLDivElement>) {
         progressRef.current = Math.min(
-            event.currentTarget.scrollTop / 140,
+            event.currentTarget.scrollTop / 112,
             1
         );
 
@@ -105,6 +106,11 @@ function PetPage() {
                 meta.style.pointerEvents = progress > 0.98 ? "none" : "auto";
             }
 
+            if (emojiRef?.current) {
+                const emojiSize = 48 - 22 * progress;
+                emojiRef.current.style.fontSize = `${emojiSize}px`;
+            }
+
             frameRef.current = null;
         });
     }
@@ -134,6 +140,7 @@ function PetPage() {
                         nameRef={nameRef}
                         detailsRef={detailsRef}
                         metaRef={metaRef}
+                        emojiRef={emojiRef}
                         pet={pet}
                     />
                 </header>

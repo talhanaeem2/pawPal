@@ -11,6 +11,7 @@ type PetHeroCardProps = {
     nameRef: React.RefObject<HTMLHeadingElement | null>;
     detailsRef: React.RefObject<HTMLDivElement | null>;
     metaRef: React.RefObject<HTMLDivElement | null>;
+    emojiRef?: React.RefObject<HTMLSpanElement | null>;
 };
 
 export function PetHeroCard({
@@ -20,6 +21,7 @@ export function PetHeroCard({
     nameRef,
     detailsRef,
     metaRef,
+    emojiRef,
 }: PetHeroCardProps) {
     const ageLabel = getPetAgeLabel(pet.birthdate);
     const genderLabel = getPetGenderLabel(
@@ -33,11 +35,17 @@ export function PetHeroCard({
             className="rounded-3xl bg-card p-4 shadow-(--shadow-soft)"
         >
             <div className="flex flex-col items-center gap-4 text-center">
-                <PetAvatar
-                    pet={pet}
-                    className="text-5xl h-24 w-24"
-                    avatarRef={avatarRef}
-                />
+                <div
+                    className="relative"
+                    ref={avatarRef}
+                    style={{ width: 96, height: 96 }}>
+                    <PetAvatar
+                        pet={pet}
+                        emojiRef={emojiRef}
+                        emojiSize="text-5xl"
+                        className="h-full w-full"
+                    />
+                </div>
 
                 <div
                     ref={detailsRef}

@@ -705,18 +705,47 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
 
         if (error) throw error;
 
-        const { error: deleteError } = await supabase
-          .from("schedule_item_pets")
-          .delete()
-          .eq("schedule_item_id", item.id);
+        const newPetIds = data.pet_details.map((d) => d.pet_id);
+        const oldPetIds = item.schedule_item_pets.map((p) => p.pet_id);
 
-        if (deleteError) throw deleteError;
+        // Delete only pets that were removed, not all pets
+        const petsToRemove = oldPetIds.filter((id) => !newPetIds.includes(id));
+        if (petsToRemove.length > 0) {
+          const { error: deleteError } = await supabase
+            .from("schedule_item_pets")
+            .delete()
+            .eq("schedule_item_id", item.id)
+            .in("pet_id", petsToRemove);
+          if (deleteError) throw deleteError;
+        }
 
-        const { error: insertError } = await supabase
-          .from("schedule_item_pets")
-          .insert(petLinks(item.id));
+        // Insert only new pets, update existing ones
+        const petsToAdd = data.pet_details.filter((d) => !oldPetIds.includes(d.pet_id));
+        const petsToUpdate = data.pet_details.filter((d) => oldPetIds.includes(d.pet_id));
 
-        if (insertError) throw insertError;
+        if (petsToAdd.length > 0) {
+          const { error: insertError } = await supabase
+            .from("schedule_item_pets")
+            .insert(petsToAdd.map((detail) => ({
+              schedule_item_id: item.id,
+              pet_id: detail.pet_id,
+              dosage: detail.dosage.trim() || null,
+              notes: detail.notes.trim() || null,
+            })));
+          if (insertError) throw insertError;
+        }
+
+        for (const detail of petsToUpdate) {
+          const { error: updateError } = await supabase
+            .from("schedule_item_pets")
+            .update({
+              dosage: detail.dosage.trim() || null,
+              notes: detail.notes.trim() || null,
+            })
+            .eq("schedule_item_id", item.id)
+            .eq("pet_id", detail.pet_id);
+          if (updateError) throw updateError;
+        }
       } else {
         const { data: schedule, error } = await supabase
           .from("schedule_items")
@@ -1071,7 +1100,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
             </div>
           </div>
           <div className="border-t">
-            {save.isError && <p className="text-sm text-destructive">{save.error instanceof Error ? save.error.message : "Failed to save"}</p>}
+            {/* {save.isError && <p className="text-sm text-destructive">{save.error instanceof Error ? save.error.message : "Failed to save"}</p>} */}
             <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
               {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Create reminder"}
             </Button>

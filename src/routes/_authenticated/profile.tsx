@@ -52,13 +52,6 @@ function ProfilePage() {
     }, []);
 
     function handleContentScroll(event: UIEvent<HTMLDivElement>) {
-        const container = event.currentTarget;
-        const maxScrollTop = container.scrollHeight - container.clientHeight;
-
-        if (maxScrollTop < 112) {
-            return;
-        }
-
         progressRef.current = Math.min(
             event.currentTarget.scrollTop / 140,
             1
@@ -141,12 +134,15 @@ function ProfilePage() {
                     className="rounded-3xl bg-card p-8 shadow-(--shadow-soft) flex flex-col gap-4"
                 >
                     <div className="flex flex-col items-center text-center gap-4">
-                        <div className="relative">
+                        <div
+                            className="relative"
+                            ref={avatarRef}
+                            style={{ width: 96, height: 96 }}
+                        >
                             <UserAvatar
                                 name={profile.display_name}
                                 avatarUrl={profile.avatar_url}
-                                className="h-24 w-24"
-                                avatarRef={avatarRef}
+                                className="h-full w-full"
                             />
                         </div>
 
@@ -178,7 +174,7 @@ function ProfilePage() {
                 </section>
             </Page.Header>
 
-            <Page.Content onScroll={handleContentScroll}>
+            <Page.Content extraScrollRoom={140} onScroll={handleContentScroll}>
                 <section className="space-y-3">
                     <h3 className="px-1 text-sm font-medium text-muted-foreground uppercase tracking-wide">
                         Profile
@@ -287,7 +283,6 @@ function ProfilePage() {
                         </Button>
                     </DialogContent>
                 </Dialog>
-                <div className="h-24 shrink-0" aria-hidden="true" />
             </Page.Content>
         </Page>
     );
