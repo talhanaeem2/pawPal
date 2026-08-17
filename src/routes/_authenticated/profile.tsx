@@ -52,6 +52,13 @@ function ProfilePage() {
     }, []);
 
     function handleContentScroll(event: UIEvent<HTMLDivElement>) {
+        const container = event.currentTarget;
+        const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+        if (maxScrollTop < 112) {
+            return;
+        }
+
         progressRef.current = Math.min(
             event.currentTarget.scrollTop / 140,
             1
@@ -280,7 +287,7 @@ function ProfilePage() {
                         </Button>
                     </DialogContent>
                 </Dialog>
-                <div className="h-24" aria-hidden="true" />
+                <div className="h-24 shrink-0" aria-hidden="true" />
             </Page.Content>
         </Page>
     );

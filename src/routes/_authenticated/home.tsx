@@ -125,6 +125,13 @@ function Home() {
   }, []);
 
   function handleContentScroll(event: UIEvent<HTMLDivElement>) {
+    const container = event.currentTarget;
+    const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+    if (maxScrollTop < 112) {
+      return;
+    }
+
     scrollProgressRef.current = Math.min(event.currentTarget.scrollTop / 112, 1);
 
     if (scrollFrameRef.current !== null) return;
@@ -551,7 +558,7 @@ function Home() {
             </div>
           </section>
         )}
-        <div className="h-24" aria-hidden="true" />
+        <div className="h-24 shrink-0" aria-hidden="true" />
       </Page.Content>
     </Page>
   );
