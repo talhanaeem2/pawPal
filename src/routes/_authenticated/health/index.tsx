@@ -6,6 +6,7 @@ import { dewormingsQuery, petsQuery, vaccinationsQuery, vetQuery } from "@/lib/q
 import { getActiveDewormings } from "@/lib/dewormings-utils";
 import { getActiveVaccinations } from "@/lib/vaccinations-utils";
 import { getPreviewList, getUpcomingItems } from "@/lib/utils";
+import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
 
 import InlineLoader from "@/components/ui/common/inline-loader";
 import NotFoundState from "@/components/ui/common/not-found-state";
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/health/")({
 });
 
 function HealthPage() {
+    const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
     const { data: pets } = useSuspenseQuery(petsQuery);
     const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
     const { data: dewormings } = useSuspenseQuery(dewormingsQuery);
@@ -45,16 +47,18 @@ function HealthPage() {
 
     return (
         <Page>
-            <Page.Header>
+            <Page.Header ref={headerRef} className="gap-2 pt-3 pb-2">
                 <header>
-                    <h1 className="font-display text-3xl">Health</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Medical care, appointments & records.
-                    </p>
+                    <h1 className="font-display text-2xl">Health</h1>
+                    <div ref={descriptionRef} className="overflow-hidden will-change-[max-height,opacity,transform] motion-reduce:transform-none">
+                        <p className="text-sm text-muted-foreground">
+                            Medical care, appointments & records.
+                        </p>
+                    </div>
                 </header>
             </Page.Header>
 
-            <Page.Content>
+            <Page.Content onScroll={handleContentScroll}>
                 <Section title="Upcoming vet" icon={Stethoscope} href="/health/vet">
                     {upcomingVetData.visible.length === 0 ? (
                         <Empty text="Nothing booked." cta="Schedule visit" href="/health/vet" search={{ new: true }} />

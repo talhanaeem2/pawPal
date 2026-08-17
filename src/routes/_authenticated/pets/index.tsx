@@ -4,6 +4,7 @@ import { Plus, PawPrint } from "lucide-react";
 import z from "zod";
 
 import { petsQuery } from "@/lib/queries";
+import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
 
 import InlineLoader from "@/components/ui/common/inline-loader";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
@@ -30,14 +31,17 @@ function PetsPage() {
     const { data: pets } = useSuspenseQuery(petsQuery);
     const { new: openCreate } = Route.useSearch();
     const navigate = Route.useNavigate();
+    const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
 
     return (
         <Page>
-            <Page.Header>
+            <Page.Header ref={headerRef} className="gap-2 pt-3 pb-2">
                 <header className="flex items-end justify-between">
                     <div>
-                        <h1 className="font-display text-3xl">Pets</h1>
-                        <p className="text-sm text-muted-foreground">Your little household.</p>
+                        <h1 className="font-display text-2xl">Pets</h1>
+                        <div ref={descriptionRef} className="overflow-hidden will-change-[max-height,opacity,transform] motion-reduce:transform-none">
+                            <p className="text-sm text-muted-foreground">Your little household.</p>
+                        </div>
                     </div>
                     <PetFormDialog
                         initialOpen={openCreate}
@@ -54,7 +58,7 @@ function PetsPage() {
                 </header>
             </Page.Header>
 
-            <Page.Content>
+            <Page.Content onScroll={handleContentScroll}>
                 {pets.length === 0 ? (
                     <FeatureEmptyState
                         icon={PawPrint}

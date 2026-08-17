@@ -4,7 +4,23 @@ import { PetAvatar } from "@/components/ui/common/pet-avatar";
 
 import { Pet } from "@/schemas/pets";
 
-export function PetHeroCard({ pet }: { pet: Pet }) {
+type PetHeroCardProps = {
+    pet: Pet;
+    cardRef: React.RefObject<HTMLDivElement | null>;
+    avatarRef: React.RefObject<HTMLDivElement | null>;
+    nameRef: React.RefObject<HTMLHeadingElement | null>;
+    detailsRef: React.RefObject<HTMLDivElement | null>;
+    metaRef: React.RefObject<HTMLDivElement | null>;
+};
+
+export function PetHeroCard({
+    pet,
+    cardRef,
+    avatarRef,
+    nameRef,
+    detailsRef,
+    metaRef,
+}: PetHeroCardProps) {
     const ageLabel = getPetAgeLabel(pet.birthdate);
     const genderLabel = getPetGenderLabel(
         pet.gender,
@@ -12,15 +28,25 @@ export function PetHeroCard({ pet }: { pet: Pet }) {
     );
 
     return (
-        <section className="rounded-3xl bg-card p-4 shadow-(--shadow-soft)">
+        <section
+            ref={cardRef}
+            className="rounded-3xl bg-card p-4 shadow-(--shadow-soft)"
+        >
             <div className="flex flex-col items-center gap-4 text-center">
                 <PetAvatar
                     pet={pet}
-                    className="h-24 w-24 text-5xl"
+                    className="text-5xl h-24 w-24"
+                    avatarRef={avatarRef}
                 />
 
-                <div className="flex-1 flex flex-col gap-2">
-                    <h1 className="font-display text-3xl">
+                <div
+                    ref={detailsRef}
+                    className="flex-1 flex flex-col"
+                >
+                    <h1
+                        ref={nameRef}
+                        className="font-display text-3xl"
+                    >
                         {pet.name}
                     </h1>
 
@@ -28,7 +54,10 @@ export function PetHeroCard({ pet }: { pet: Pet }) {
                         {pet.breed ?? pet.species}
                     </p>
 
-                    <div className="flex flex-wrap justify-center gap-2">
+                    <div
+                        ref={metaRef}
+                        className="flex flex-wrap justify-center gap-2 overflow-hidden"
+                    >
                         {ageLabel && (
                             <span className="rounded-full bg-secondary px-3 py-1 text-xs">
                                 {ageLabel}

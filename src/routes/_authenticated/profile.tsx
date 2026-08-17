@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
 import { Camera, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type UIEvent } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/auth-context";
@@ -35,6 +35,67 @@ function ProfilePage() {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteText, setDeleteText] = useState("");
+    const profileCardRef = useRef<HTMLDivElement>(null);
+    const avatarRef = useRef<HTMLDivElement>(null);
+    const nameRef = useRef<HTMLHeadingElement>(null);
+    const emailRef = useRef<HTMLParagraphElement>(null);
+
+    const progressRef = useRef(0);
+    const frameRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (frameRef.current !== null) {
+                cancelAnimationFrame(frameRef.current);
+            }
+        };
+    }, []);
+
+    function handleContentScroll(event: UIEvent<HTMLDivElement>) {
+        progressRef.current = Math.min(
+            event.currentTarget.scrollTop / 140,
+            1
+        );
+
+        if (frameRef.current !== null) return;
+
+        frameRef.current = requestAnimationFrame(() => {
+            const progress = progressRef.current;
+
+            const card = profileCardRef.current;
+            const avatar = avatarRef.current;
+            const name = nameRef.current;
+            const email = emailRef.current;
+
+            if (card) {
+                card.style.paddingTop = `${32 - 16 * progress}px`;
+                card.style.paddingBottom = `${32 - 16 * progress}px`;
+                card.style.gap = `${16 - 8 * progress}px`;
+            }
+
+            if (avatar) {
+                const size = 96 - 44 * progress;
+
+                avatar.style.width = `${size}px`;
+                avatar.style.height = `${size}px`;
+            }
+
+            if (name) {
+                const fontSize = 24 - 4 * progress;
+
+                name.style.fontSize = `${fontSize}px`;
+            }
+
+            if (email) {
+                email.style.maxHeight = `${20 * (1 - progress)}px`;
+                email.style.opacity = `${1 - progress}`;
+                email.style.transform = `translateY(${-6 * progress}px)`;
+                email.style.pointerEvents = progress > 0.98 ? "none" : "auto";
+            }
+
+            frameRef.current = null;
+        });
+    }
 
     const deleteAccount = useMutation({
         mutationFn: async () => {
@@ -68,23 +129,35 @@ function ProfilePage() {
                     </p>
                 </header>
 
-                <section className="rounded-3xl bg-card p-8 shadow-(--shadow-soft)">
-                    <div className="flex flex-col items-center text-center mb-4">
+                <section
+                    ref={profileCardRef}
+                    className="rounded-3xl bg-card p-8 shadow-(--shadow-soft) flex flex-col gap-4"
+                >
+                    <div className="flex flex-col items-center text-center gap-4">
                         <div className="relative">
                             <UserAvatar
                                 name={profile.display_name}
                                 avatarUrl={profile.avatar_url}
                                 className="h-24 w-24"
+                                avatarRef={avatarRef}
                             />
                         </div>
 
-                        <h2 className="mt-4 text-2xl font-semibold">
-                            {profile.display_name}
-                        </h2>
+                        <div className="flex flex-col gap-1">
+                            <h2
+                                ref={nameRef}
+                                className="text-2xl font-semibold"
+                            >
+                                {profile.display_name}
+                            </h2>
 
-                        <p className="mt-1 text-sm text-muted-foreground break-all">
-                            {user.email}
-                        </p>
+                            <p
+                                ref={emailRef}
+                                className="text-sm text-muted-foreground break-all"
+                            >
+                                {user.email}
+                            </p>
+                        </div>
                     </div>
                     <ProfileDialog
                         profile={profile}
@@ -98,7 +171,7 @@ function ProfilePage() {
                 </section>
             </Page.Header>
 
-            <Page.Content>
+            <Page.Content onScroll={handleContentScroll}>
                 <section className="space-y-3">
                     <h3 className="px-1 text-sm font-medium text-muted-foreground uppercase tracking-wide">
                         Profile
@@ -207,6 +280,7 @@ function ProfilePage() {
                         </Button>
                     </DialogContent>
                 </Dialog>
+                <div className="h-24" aria-hidden="true" />
             </Page.Content>
         </Page>
     );
@@ -285,10 +359,10 @@ function ProfileDialog({ profile, trigger }: { profile: Profile; trigger: React.
             const payload = {
                 display_name: data.display_name,
                 avatar_url: data.avatar_url || null,
+                notifications_enabled: data.notifications_enabled,
                 ...(avatar_url !== undefined ? { avatar_url } : {}),
                 // timezone: data.timezone,
                 // locale: data.locale,
-                // notifications_enabled: data.notifications_enabled,
             };
 
             const { error } = await supabase.from("profiles").update(payload).eq("id", profile?.id);
@@ -347,15 +421,33 @@ function ProfileDialog({ profile, trigger }: { profile: Profile; trigger: React.
                             <button
                                 type="button"
                                 role="switch"
-                                disabled
                                 aria-checked={form.values.notifications_enabled}
-                                onClick={() => form.setField("notifications_enabled", !form.values.notifications_enabled)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.notifications_enabled ? "bg-primary" : "bg-input"}`}
+                                onClick={() =>
+                                    form.setField(
+                                        "notifications_enabled",
+                                        !form.values.notifications_enabled
+                                    )
+                                }
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.notifications_enabled
+                                    ? "bg-primary"
+                                    : "bg-input"
+                                    }`}
                             >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.notifications_enabled ? "translate-x-6" : "translate-x-1"}`} />
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.notifications_enabled
+                                        ? "translate-x-6"
+                                        : "translate-x-1"
+                                        }`}
+                                />
                             </button>
-                            <span className="text-sm text-muted-foreground">{form.values.notifications_enabled ? "Enabled" : "Disabled"}</span>
+
+                            <span className="text-sm text-muted-foreground">
+                                {form.values.notifications_enabled ? "Enabled" : "Disabled"}
+                            </span>
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                            Receive reminders and other updates
+                        </p>
                     </Field>
                     <Button type="submit" className="w-full rounded-full" disabled={save.isPending || uploading}>
                         {save.isPending || uploading ? "Saving…" : "Save changes"}

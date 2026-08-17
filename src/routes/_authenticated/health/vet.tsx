@@ -7,6 +7,7 @@ import z from "zod";
 
 import { petsQuery, vetQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
 
 import InlineLoader from "@/components/ui/common/inline-loader";
 import NotFoundState from "@/components/ui/common/not-found-state";
@@ -43,6 +44,7 @@ function VetPage() {
   const qc = useQueryClient();
   const navigate = Route.useNavigate();
   const { new: openCreate } = Route.useSearch();
+  const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const now = Date.now();
@@ -112,7 +114,7 @@ function VetPage() {
 
   return (
     <Page>
-      <Page.Header>
+      <Page.Header ref={headerRef}>
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -131,7 +133,11 @@ function VetPage() {
         <header className="flex items-end justify-between">
           <div>
             <h1 className="font-display text-3xl">Vet</h1>
-            <p className="text-sm text-muted-foreground">Appointments & history.</p>
+            <div ref={descriptionRef} className="overflow-hidden will-change-[max-height,opacity,transform] motion-reduce:transform-none">
+              <p className="text-sm text-muted-foreground">
+                Appointments & history.
+              </p>
+            </div>
           </div>
           <VetFormDialog
             pets={pets}
@@ -145,7 +151,7 @@ function VetPage() {
         </header>
       </Page.Header>
 
-      <Page.Content>
+      <Page.Content onScroll={handleContentScroll}>
         {appts.length === 0 ? (
           <FeatureEmptyState
             icon={Stethoscope}

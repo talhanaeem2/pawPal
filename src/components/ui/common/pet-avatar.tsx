@@ -4,18 +4,25 @@ import { cn } from "@/lib/utils";
 
 export function PetAvatar({
     pet,
-    className = "h-14 w-14 text-3xl"
+    className = "h-14 w-14 text-3xl",
+    avatarRef
 }: {
-    pet: { species: string; photo_url?: string | null };
+    pet: { species: string; photo_url?: string | null; name: string; };
     className?: string;
+    avatarRef?: React.RefObject<HTMLDivElement | null>;
 }) {
     if (pet.photo_url) {
         return (
-            <img
-                src={pet.photo_url}
-                alt=""
-                className={cn("rounded-full object-cover bg-secondary/60 min-w-14", className)}
-            />
+            <div
+                ref={avatarRef}
+                className={cn("rounded-full bg-secondary/60 overflow-hidden shrink-0", className)}
+            >
+                <img
+                    src={pet.photo_url}
+                    alt={pet.name}
+                    className="block h-full w-full object-cover"
+                />
+            </div>
         );
     }
     return (

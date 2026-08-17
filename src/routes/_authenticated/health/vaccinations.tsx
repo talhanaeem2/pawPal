@@ -7,6 +7,7 @@ import z from "zod";
 
 import { petsQuery, petVaccinationsQuery, vaccinationsQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineLoader from "@/components/ui/common/inline-loader";
@@ -43,6 +44,7 @@ function VaccinationsPage() {
     const qc = useQueryClient();
     const navigate = Route.useNavigate();
     const { new: openCreate } = Route.useSearch();
+    const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
     const [confirmDelete, setConfirmDelete] = useState<{ vaccinationId: string; petId: string } | null>(null);
     const now = Date.now();
 
@@ -153,7 +155,7 @@ function VaccinationsPage() {
 
     return (
         <Page>
-            <Page.Header>
+            <Page.Header ref={headerRef}>
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
@@ -172,7 +174,11 @@ function VaccinationsPage() {
                 <header className="flex items-end justify-between">
                     <div>
                         <h1 className="font-display text-3xl">Vaccinations</h1>
-                        <p className="text-sm text-muted-foreground">Vaccine records & due dates.</p>
+                        <div ref={descriptionRef} className="overflow-hidden will-change-[max-height,opacity,transform] motion-reduce:transform-none">
+                            <p className="text-sm text-muted-foreground">
+                                Vaccine records & due dates.
+                            </p>
+                        </div>
                     </div>
                     <VaccinationsFormDialog
                         pets={pets}
@@ -186,7 +192,7 @@ function VaccinationsPage() {
                 </header>
             </Page.Header>
 
-            <Page.Content>
+            <Page.Content onScroll={handleContentScroll}>
                 {vaccinations.length === 0 ? (
                     <FeatureEmptyState
                         icon={Syringe}

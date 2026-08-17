@@ -1,6 +1,6 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import { Plus, Check, Trash2, Pencil, Calendar } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
@@ -12,10 +12,21 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { formatPetNames } from "@/lib/pet-utils";
 import { cn, formatTime, todayDateString } from "@/lib/utils";
 import {
-  formatFrequency, formatKind, generateScheduleTitle, getNotesPlaceholder, getScheduleDetailField, getStartDateDescription,
-  getStartDateLabel, getTimeLabel, getTitlePlaceholder, repeatUnitOptions, requiresScheduleStartDate, requiresScheduleTime,
+  formatFrequency,
+  formatKind,
+  generateScheduleTitle,
+  getNotesPlaceholder,
+  getScheduleDetailField,
+  getStartDateDescription,
+  getStartDateLabel,
+  getTimeLabel,
+  getTitlePlaceholder,
+  repeatUnitOptions,
+  requiresScheduleStartDate,
+  requiresScheduleTime,
   applyTimeSlotFilter
 } from "@/lib/schedule-utils";
+import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineLoader from "@/components/ui/common/inline-loader";
@@ -59,6 +70,7 @@ function SchedulePage() {
   const qc = useQueryClient();
   const { new: openCreate } = Route.useSearch();
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
   const today = todayDateString();
 
   const toggle = useMutation({
@@ -230,11 +242,16 @@ function SchedulePage() {
 
   return (
     <Page>
-      <Page.Header>
+      <Page.Header ref={headerRef} className="gap-2 pt-3 pb-2">
         <header className="flex items-end justify-between">
           <div>
-            <h1 className="font-display text-3xl">Schedule</h1>
-            <p className="text-sm text-muted-foreground">Meals, meds & routines.</p>
+            <h1 className="font-display text-2xl">Schedule</h1>
+            <div
+              ref={descriptionRef}
+              className="overflow-hidden will-change-[max-height,opacity,transform] motion-reduce:transform-none"
+            >
+              <p className="text-sm text-muted-foreground">Meals, meds & routines.</p>
+            </div>
           </div>
           <ScheduleDialog
             pets={pets}
@@ -242,6 +259,8 @@ function SchedulePage() {
             trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add</Button>}
           />
         </header>
+      </Page.Header>
+      <Page.Content onScroll={handleContentScroll}>
         {items.length > 0 && (
           <Card>
             <CardContent className="space-y-2 p-4">
@@ -262,8 +281,6 @@ function SchedulePage() {
             </CardContent>
           </Card>
         )}
-      </Page.Header>
-      <Page.Content>
         {items.length === 0 ? (
           <FeatureEmptyState
             icon={Calendar}

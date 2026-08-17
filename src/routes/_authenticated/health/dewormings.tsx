@@ -7,6 +7,7 @@ import z from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
 import { dewormingsQuery, petDewormingsQuery, petsQuery } from "@/lib/queries";
+import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
 
 import InlineLoader from "@/components/ui/common/inline-loader";
 import NotFoundState from "@/components/ui/common/not-found-state";
@@ -43,6 +44,7 @@ function DewormingPage() {
     const qc = useQueryClient();
     const navigate = Route.useNavigate();
     const { new: openCreate } = Route.useSearch();
+    const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
     const [confirmDelete, setConfirmDelete] = useState<{ dewormingId: string; petId: string } | null>(null);
     const now = Date.now();
 
@@ -138,7 +140,7 @@ function DewormingPage() {
 
     return (
         <Page>
-            <Page.Header>
+            <Page.Header ref={headerRef}>
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
@@ -157,7 +159,11 @@ function DewormingPage() {
                 <header className="flex items-end justify-between">
                     <div>
                         <h1 className="font-display text-3xl">Dewormings</h1>
-                        <p className="text-sm text-muted-foreground">Deworming records & due dates.</p>
+                        <div ref={descriptionRef} className="overflow-hidden will-change-[max-height,opacity,transform] motion-reduce:transform-none">
+                            <p className="text-sm text-muted-foreground">
+                                Deworming records & due dates.
+                            </p>
+                        </div>
                     </div>
                     <DewormingFormDialog
                         pets={pets}
@@ -171,7 +177,7 @@ function DewormingPage() {
                 </header>
             </Page.Header>
 
-            <Page.Content>
+            <Page.Content onScroll={handleContentScroll}>
                 {dewormings.length === 0 ? (
                     <FeatureEmptyState
                         icon={ShieldPlus}

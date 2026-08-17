@@ -7,6 +7,7 @@ type UserAvatarProps = {
     name?: string | null;
     avatarUrl?: string | null;
     className?: string;
+    avatarRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 function getInitials(name?: string | null) {
@@ -53,6 +54,7 @@ export function UserAvatar({
     name,
     avatarUrl,
     className = "h-8 w-8",
+    avatarRef
 }: UserAvatarProps) {
     const [imageError, setImageError] = useState(false);
 
@@ -65,15 +67,17 @@ export function UserAvatar({
 
     if (avatarUrl && !imageError) {
         return (
-            <img
-                src={avatarUrl}
-                alt={name ?? "User"}
-                onError={() => setImageError(true)}
-                className={cn(
-                    "rounded-full object-cover shrink-0",
-                    className
-                )}
-            />
+            <div
+                ref={avatarRef}
+                className={cn("rounded-full bg-secondary/60 overflow-hidden shrink-0", className)}
+            >
+                <img
+                    src={avatarUrl}
+                    alt={name ?? "User"}
+                    onError={() => setImageError(true)}
+                    className="block h-full w-full object-cover"
+                />
+            </div>
         );
     }
 
