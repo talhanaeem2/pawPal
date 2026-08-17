@@ -551,6 +551,7 @@ function Home() {
             </div>
           </section>
         )}
+        <div className="h-24" aria-hidden="true" />
       </Page.Content>
     </Page>
   );
