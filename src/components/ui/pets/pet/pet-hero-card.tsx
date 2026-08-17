@@ -45,7 +45,7 @@ export function PetHeroCard({
                 >
                     <h1
                         ref={nameRef}
-                        className="font-display text-3xl"
+                        className="font-display text-3xl capitalize"
                     >
                         {pet.name}
                     </h1>
