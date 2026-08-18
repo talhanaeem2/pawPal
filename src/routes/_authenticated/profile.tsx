@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
-import { Camera, X } from "lucide-react";
+import { Camera, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState, type UIEvent } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Page } from "@/components/layout/page";
 import { ConfirmDialog } from "@/components/ui/common/confirm-dialog";
 import { Button } from "@/components/ui/common/button";
+import { ChangeEmailDialog } from "@/components/ui/profile/change-email-dialog";
+import { ChangePasswordDialog } from "@/components/ui/profile/change-password-dialog";
 import { Field } from "@/components/ui/common/field";
 import { Input } from "@/components/ui/common/input";
 import { UserAvatar } from "@/components/ui/common/user-avatar";
@@ -39,6 +41,9 @@ function ProfilePage() {
     const avatarRef = useRef<HTMLDivElement>(null);
     const nameRef = useRef<HTMLHeadingElement>(null);
     const emailRef = useRef<HTMLParagraphElement>(null);
+
+    const isGoogleUser = user.app_metadata?.provider === "google";
+    const isEmailUser = user.app_metadata?.provider === "email";
 
     const progressRef = useRef(0);
     const frameRef = useRef<number | null>(null);
@@ -149,7 +154,7 @@ function ProfilePage() {
                         <div className="flex flex-col gap-1">
                             <h2
                                 ref={nameRef}
-                                className="text-2xl font-semibold"
+                                className="text-2xl font-semibold capitalize"
                             >
                                 {profile.display_name}
                             </h2>
@@ -185,7 +190,7 @@ function ProfilePage() {
                             <span>
                                 Name
                             </span>
-                            <span className="truncate text-sm text-muted-foreground">
+                            <span className="truncate text-sm text-muted-foreground capitalize">
                                 {profile.display_name}
                             </span>
                         </div>
@@ -199,6 +204,61 @@ function ProfilePage() {
                         </div>
                     </div>
                 </section>
+
+                {/* Security section — email users only */}
+                {isEmailUser && (
+                    <section className="space-y-3">
+                        <h3 className="px-1 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                            Security
+                        </h3>
+                        <div className="rounded-3xl bg-card shadow-(--shadow-soft) divide-y divide-border/60">
+                            <ChangeEmailDialog trigger={
+                                <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition text-left">
+                                    <div>
+                                        <p className="text-sm font-medium">Email address</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
+                                    </div>
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                            } />
+                            <ChangePasswordDialog trigger={
+                                <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition text-left">
+                                    <div>
+                                        <p className="text-sm font-medium">Password</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Change your password</p>
+                                    </div>
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                            } />
+                        </div>
+                    </section>
+                )}
+
+                {/* Google users — show info instead */}
+                {isGoogleUser && (
+                    <section className="space-y-3">
+                        <h3 className="px-1 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                            Security
+                        </h3>
+                        <div className="rounded-3xl bg-card shadow-(--shadow-soft) px-5 py-4 flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                {/* Google G icon */}
+                                <svg viewBox="0 0 24 24" className="h-4 w-4">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">Signed in with Google</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Manage your password and email at myaccount.google.com
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 <Button
                     variant="outline"

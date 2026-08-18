@@ -108,6 +108,25 @@ function AuthPage() {
     }
   }
 
+  async function forgotPassword() {
+    if (!email) {
+      toast.error("Enter your email address first");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent — check your inbox");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (checkingSession) {
     return <Loader />;
   }
@@ -134,7 +153,18 @@ function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {mode === "signin" && (
+                  <button
+                    type="button"
+                    onClick={forgotPassword}
+                    className="text-xs text-muted-foreground hover:text-foreground transition"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <Input id="password" type="password" required minLength={6} value={password}
                 onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </div>

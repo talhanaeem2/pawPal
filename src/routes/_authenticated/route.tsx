@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/queries";
@@ -82,6 +83,14 @@ function AuthedLayout() {
       }
     }
   }, [checked, user, profile, profileLoading, navigate, pathname]);
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "USER_UPDATED" && session) {
+      // Email was confirmed and updated — refresh the user context
+      refetch();
+      toast.success("Email updated successfully");
+    }
+  });
 
   async function signOut() {
     try {
