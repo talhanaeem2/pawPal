@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, PawPrint } from "lucide-react";
@@ -31,7 +32,15 @@ function PetsPage() {
     const { data: pets } = useSuspenseQuery(petsQuery);
     const { new: openCreate } = Route.useSearch();
     const navigate = Route.useNavigate();
+    const [createOpen, setCreateOpen] = useState(false);
     const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
+
+    useEffect(() => {
+        if (openCreate) {
+            setCreateOpen(true);
+            navigate({ search: { new: undefined }, replace: true });
+        }
+    }, [openCreate]);
 
     return (
         <Page>
@@ -44,16 +53,11 @@ function PetsPage() {
                         </div>
                     </div>
                     <PetFormDialog
-                        initialOpen={openCreate}
                         trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" />Add</Button>}
-                        onClose={() =>
-                            navigate({
-                                search: {
-                                    new: undefined,
-                                },
-                                replace: true,
-                            })
-                        }
+                        open={createOpen}
+                        onOpenChange={(o) => {
+                            setCreateOpen(o);
+                        }}
                     />
                 </header>
             </Page.Header>

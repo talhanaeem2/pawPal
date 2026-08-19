@@ -37,6 +37,7 @@ import {
   sectionStyle,
   getTimeSection,
   sectionOrder,
+  formatDateTime,
 } from "@/lib/utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
@@ -81,6 +82,7 @@ function Home() {
   const { data: vaccinations } = useSuspenseQuery(vaccinationsQuery);
   const { data: dewormings } = useSuspenseQuery(dewormingsQuery);
 
+  const petNameById = new Map(pets.map((p) => [p.id, p.name]));
   const today = todayDateString();
 
   const upcomingVetSorted = vet
@@ -425,11 +427,9 @@ function Home() {
                 <li key={a.id} className="py-3 flex items-center justify-between">
                   <div>
                     <div className="font-medium text-sm capitalize">{a.activity_type}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(a.occurred_at).toLocaleString(undefined, {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
+                    <div className="text-xs text-muted-foreground capitalize">
+                      {petNameById.get(a.pet_id) ?? "Pet"} ·{" "}
+                      {formatDateTime(a.occurred_at)}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">

@@ -1,4 +1,7 @@
-import { Dumbbell, Footprints, Scale, Trash2 } from "lucide-react";
+import { Dumbbell, Footprints, Scale, Trash2, Zap } from "lucide-react";
+
+import { formatDateTime } from "@/lib/utils";
+import { ACTIVITY_LABELS } from "@/lib/activity-utils";
 
 import { Button } from "../common/button";
 
@@ -12,7 +15,7 @@ type ActivityRowProps = {
     renderEdit: (item: ActivityLog) => React.ReactNode;
 };
 
-const icons: Record<string, typeof Footprints> = { walk: Footprints, play: Dumbbell, weight: Scale };
+const icons: Record<string, typeof Footprints> = { walk: Footprints, run: Zap, play: Dumbbell, weight: Scale };
 
 export function ActivityRow({
     item,
@@ -29,11 +32,18 @@ export function ActivityRow({
                 <Icon className="h-4 w-4 text-foreground" strokeWidth={1.75} />
             </div>
             <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm capitalize">{item.activity_type}{pet ? ` · ${pet.name}` : ""}</div>
+                <div className="font-medium text-sm">
+                    {ACTIVITY_LABELS[item.activity_type] ?? item.activity_type}
+                    {pet ? ` · ${pet.name}` : ""}
+                </div>
                 <div className="text-xs text-muted-foreground">
-                    {new Date(item.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                    {formatDateTime(item.occurred_at)}
                     {item.duration_min ? ` · ${item.duration_min} min` : ""}
                     {item.weight ? ` · ${item.weight}${item.activity_type === "weight" ? " kg" : ""}` : ""}
+                    <br />
+                    {!item.duration_min && !item.weight && !item.notes && (
+                        <span className="opacity-50">No data logged</span>
+                    )}
                 </div>
                 {item.notes && <p className="text-xs text-muted-foreground mt-1 truncate">{item.notes}</p>}
             </div>

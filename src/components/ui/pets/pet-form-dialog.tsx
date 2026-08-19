@@ -23,17 +23,18 @@ import { createEmptyPetForm, Pet, petFormSchema, petToForm } from "@/schemas/pet
 interface IPetFormDialog {
     pet?: Pet;
     trigger: React.ReactNode;
-    initialOpen?: boolean
-    onClose?: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDialog) {
+export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange }: IPetFormDialog) {
+    const [internalOpen, setInternalOpen] = useState(false);
     const { user } = useAuth();
     const isEdit = !!pet;
     const qc = useQueryClient();
-    const [open, setOpen] = useState(false);
+    const open = controlledOpen ?? internalOpen;
     const form = useZodForm(
         petFormSchema,
         pet ? petToForm(pet) : createEmptyPetForm()
@@ -45,12 +46,6 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
     const [showMore, setShowMore] = useState(false);
     const [useBirthday, setUseBirthday] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (initialOpen) {
-            setOpen(true);
-        }
-    }, [initialOpen]);
 
     function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -68,6 +63,12 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
         setPhotoPreview(null);
         setPhotoRemoved(true);
         if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+
+    function handleOpenChange(o: boolean) {
+        setInternalOpen(o);
+        onOpenChange?.(o);
+        if (!o) resetForm();
     }
 
     function resetForm() {
@@ -143,7 +144,7 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
             }
             await Promise.all(invalidations);
             toast.success(isEdit ? "Pet updated" : "Pet added");
-            setOpen(false);
+            handleOpenChange(false);
             if (!isEdit) resetForm();
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -153,13 +154,7 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
     return (
         <FormDialog
             open={open}
-            onOpenChange={(o) => {
-                setOpen(o);
-                if (!o) {
-                    resetForm();
-                    onClose?.();
-                }
-            }}
+            onOpenChange={handleOpenChange}
             title={isEdit ? `Edit ${pet!.name}` : "New pet"}
             trigger={trigger}
         >
@@ -270,8 +265,8 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
                                 </Button>
                             </div>
                             <Field label="Gender">
-                                <Select value={form.values.gender} onValueChange={(v) => form.setField("gender", v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                <Select value={form.values.gender ?? ""} onValueChange={(v) => form.setField("gender", v as "male" | "female")}>
+                                    <SelectTrigger><SelectValue placeholder="Choose a gender" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="male">Male</SelectItem>
                                         <SelectItem value="female">Female</SelectItem>

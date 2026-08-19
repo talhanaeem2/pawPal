@@ -10,9 +10,11 @@ export const KIND_LABELS: Record<ScheduleKind, string> = {
     nail_trim: "Nail trimming",
     ear_cleaning: "Ear cleaning",
     teeth_brushing: "Teeth brushing",
-    exercise: "Exercise",
+    walk: "Walk",
+    play: "Play",
+    run: "Run",
     training: "Training",
-    weight_check: "Weight Check",
+    weight: "Weight Check",
 };
 
 export const repeatUnitOptions = [
@@ -37,6 +39,33 @@ export const repeatUnitOptions = [
         plural: "Years",
     },
 ];
+
+// Kinds that warrant logging an activity when marked done
+const ACTIVITY_KINDS = ["walk", "run", "play", "weight"] as const;
+type ActivityKind = typeof ACTIVITY_KINDS[number];
+
+export function isActivityKind(kind: string): kind is ActivityKind {
+    return ACTIVITY_KINDS.includes(kind as ActivityKind);
+}
+
+export function getActivityType(kind: string): string {
+    if (kind === "run") return "walk"; // map run → walk activity type
+    return kind; // walk, play, weight map directly
+}
+
+export function buildOccurredAt(today: string, timeSlot: string | null): string {
+    if (timeSlot) {
+        // Combine today's date with the time slot in local time → UTC
+        const [h, m] = timeSlot.split(":").map(Number);
+        const d = new Date(today); // local midnight
+        d.setHours(h, m, 0, 0);
+        return d.toISOString();
+    }
+    // No time slot — use noon today
+    const d = new Date(today);
+    d.setHours(12, 0, 0, 0);
+    return d.toISOString();
+}
 
 export function formatKind(s: ScheduleItem) {
     return KIND_LABELS[s.kind as ScheduleKind] ?? s.kind;
@@ -73,8 +102,14 @@ export function getTitlePlaceholder(kind: ScheduleForm["kind"]) {
         case "supplements":
             return "Fish oil";
 
-        case "exercise":
+        case "walk":
             return "Morning walk";
+
+        case "play":
+            return "Morning play";
+
+        case "run":
+            return "Morning run";
 
         case "training":
             return "Recall practice";
@@ -97,7 +132,7 @@ export function getTitlePlaceholder(kind: ScheduleForm["kind"]) {
         case "nail_trim":
             return "Trim nails";
 
-        case "weight_check":
+        case "weight":
             return "Weekly weigh-in";
 
         default:
@@ -113,8 +148,14 @@ export function getNotesPlaceholder(kind: ScheduleForm["kind"]) {
         case "medication":
             return "Give after breakfast";
 
-        case "exercise":
+        case "walk":
             return "Easy pace";
+
+        case "play":
+            return "Tug of war";
+
+        case "run":
+            return "Jog";
 
         case "training":
             return "Use treats";
@@ -135,8 +176,14 @@ export function getTimeLabel(kind: ScheduleForm["kind"]) {
         case "medication":
             return "Medication time";
 
-        case "exercise":
-            return "Exercise time";
+        case "walk":
+            return "Walk time";
+
+        case "play":
+            return "Play time";
+
+        case "run":
+            return "Run time";
 
         case "training":
             return "Training time";
@@ -160,7 +207,7 @@ export function getStartDateLabel(kind: ScheduleForm["kind"]) {
         case "flea_tick":
             return "Treatment date";
 
-        case "weight_check":
+        case "weight":
             return "First check";
 
         default:
@@ -179,7 +226,7 @@ export function getStartDateDescription(kind: ScheduleForm["kind"]) {
         case "flea_tick":
             return "The next treatment will be calculated from this date.";
 
-        case "weight_check":
+        case "weight":
             return "The first weight check will be scheduled from this date.";
 
         default:
@@ -216,8 +263,14 @@ export function generateScheduleTitle(
         case "supplements":
             return `${period}Supplements`;
 
-        case "exercise":
-            return "Exercise";
+        case "walk":
+            return "Walk";
+
+        case "play":
+            return "Play";
+
+        case "run":
+            return "Run";
 
         case "training":
             return "Training";
@@ -237,7 +290,7 @@ export function generateScheduleTitle(
         case "nail_trim":
             return "Nail Trim";
 
-        case "weight_check":
+        case "weight":
             return "Weight Check";
 
         case "flea_tick":
@@ -268,10 +321,22 @@ export function getScheduleDetailField(kind: string) {
                 placeholder: "e.g. 1 chew, 2 pumps, 5 ml",
             };
 
-        case "exercise":
+        case "walk":
             return {
                 label: "Duration",
                 placeholder: "e.g. 30 min walk, 20 min run",
+            };
+
+        case "play":
+            return {
+                label: "Duration",
+                placeholder: "e.g. 20 min play",
+            };
+
+        case "run":
+            return {
+                label: "Duration",
+                placeholder: "e.g. 10 min run",
             };
 
         case "training":
@@ -335,7 +400,9 @@ const TIME_REQUIRED_KINDS = new Set([
     "medication",
     "supplements",
     "training",
-    "exercise",
+    "walk",
+    "play",
+    "run",
 ]);
 
 const START_DATE_REQUIRED_KINDS = new Set([

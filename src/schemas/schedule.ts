@@ -14,9 +14,11 @@ export const scheduleKindSchema = z.enum([
     "nail_trim",
     "ear_cleaning",
     "teeth_brushing",
-    "exercise",
+    "walk",
+    "play",
+    "run",
     "training",
-    "weight_check",
+    "weight",
 ]);
 
 export type ScheduleKind = z.infer<typeof scheduleKindSchema>;
@@ -97,21 +99,11 @@ export function scheduleToForm(item: ScheduleWithPets): ScheduleForm {
 }
 
 // Empty form
-export function createEmptyScheduleForm(petId?: string): ScheduleForm {
+export function createEmptyScheduleForm(): ScheduleForm {
     const defaults = createScheduleFormDefaults();
 
     return {
         ...defaults,
-        pet_ids: petId ? [petId] : [],
-        pet_details: petId
-            ? [
-                {
-                    pet_id: petId,
-                    dosage: "",
-                    notes: "",
-                },
-            ]
-            : [],
     };
 }
 

@@ -48,9 +48,8 @@ export function vaccinationToForm(vaccination: Vaccination,): VaccinationForm {
     };
 }
 
-export function createEmptyVaccinationForm(petId?: string,): VaccinationForm {
+export function createEmptyVaccinationForm(): VaccinationForm {
     return {
         ...vaccinationFormDefaults,
-        pet_id: petId ?? "",
     };
 }
