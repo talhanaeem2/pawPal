@@ -24,7 +24,7 @@ export const getDateFromOffset = (offset: number) => {
 
 export function formatMinutes(min: number): string {
     if (min === 0) return "0";
-    if (min < 60) return `${min}`;
+    if (min < 60) return `${min}m`;
     const h = Math.floor(min / 60);
     const m = min % 60;
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
