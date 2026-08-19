@@ -21,29 +21,37 @@ interface IDewormingFormDialog {
     pets: Pet[];
     item?: Deworming;
     trigger: React.ReactNode;
-    initialOpen?: boolean
     hidePetSelector?: boolean;
-    onClose?: () => void;
+    defaultPetId?: string;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetSelector, onClose }: IDewormingFormDialog) {
+export function DewormingFormDialog({ pets, item, trigger, hidePetSelector, defaultPetId, open: controlledOpen, onOpenChange }: IDewormingFormDialog) {
+    const [internalOpen, setInternalOpen] = useState(false);
     const isEdit = !!item;
     const qc = useQueryClient();
-    const [open, setOpen] = useState(false);
+    const open = controlledOpen ?? internalOpen;
     const form = useZodForm(
         dewormingFormSchema,
-        item ? dewormingToForm(item) : createEmptyDewormingForm(pets[0]?.id)
+        item ? dewormingToForm(item) : {
+            ...createEmptyDewormingForm(),
+            pet_id: defaultPetId ?? "",
+        }
     );
 
-    function resetForm() {
-        form.reset(item ? dewormingToForm(item) : createEmptyDewormingForm(pets[0]?.id));
+    function handleOpenChange(o: boolean) {
+        setInternalOpen(o);
+        onOpenChange?.(o);
+        if (!o) resetForm();
     }
 
-    useEffect(() => {
-        if (initialOpen) {
-            setOpen(true);
-        }
-    }, [initialOpen]);
+    function resetForm() {
+        form.reset(item ? dewormingToForm(item) : {
+            ...createEmptyDewormingForm(),
+            pet_id: defaultPetId ?? "",
+        });
+    }
 
     const save = useMutation({
         mutationFn: async (data: DewormingForm) => {
@@ -98,7 +106,7 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
                 qc.invalidateQueries({ queryKey: petDewormingsQuery(data.pet_id).queryKey }),
             ]);
             toast.success(isEdit ? "Updated" : "Deworming saved");
-            setOpen(false);
+            handleOpenChange(false);
             if (!isEdit) resetForm();
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -109,13 +117,7 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
     return (
         <FormDialog
             open={open}
-            onOpenChange={(o) => {
-                setOpen(o);
-                if (!o) {
-                    resetForm();
-                    onClose?.();
-                }
-            }}
+            onOpenChange={handleOpenChange}
             title={isEdit ? "Edit deworming" : "New deworming"}
             trigger={trigger}
         >
@@ -131,9 +133,13 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
             >
                 {!hidePetSelector && (
                     <Field label="Pet">
-                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
+                            <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
+                            <SelectContent>
+                                {pets.map((p) =>
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                )}
+                            </SelectContent>
                         </Select>
                     </Field>
                 )}

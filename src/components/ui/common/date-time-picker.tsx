@@ -40,7 +40,7 @@ export function DateTimePicker({
 
         setSelectedDate(next);
 
-        onChange(format(next, "yyyy-MM-dd'T'HH:mm"));
+        onChange(next.toISOString());
 
         setOpen(false);
         setStep("date");

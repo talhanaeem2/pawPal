@@ -12,7 +12,7 @@ export const petSchema = z.object({
     photo_url: z.string().nullable(),
     notes: z.string().nullable(),
     created_at: z.string(),
-    gender: z.string().nullable(),
+    gender: z.enum(["male", "female"]).nullable(),
     neutered: z.boolean(),
     microchip: z.string().nullable(),
 });
@@ -30,7 +30,7 @@ export const petFormSchema = z.object({
     weight_kg: z.string().default(""),
     photo_url: z.string().default(""),
     notes: z.string().default(""),
-    gender: z.string().default(""),
+    gender: z.enum(["male", "female"]).nullable(),
     neutered: z.boolean().default(false),
     microchip: z.string().default(""),
 }).superRefine((data, ctx) => {
@@ -59,7 +59,7 @@ export const petFormDefaults: PetForm = {
     weight_kg: "",
     photo_url: "",
     notes: "",
-    gender: "",
+    gender: null,
     neutered: false,
     microchip: "",
 };
@@ -79,7 +79,7 @@ export function petToForm(pet: Pet): PetForm {
         weight_kg: pet.weight_kg !== null ? pet.weight_kg.toString() : "",
         photo_url: pet.photo_url ?? "",
         notes: pet.notes ?? "",
-        gender: pet.gender ?? "",
+        gender: pet.gender,
         neutered: pet.neutered,
         microchip: pet.microchip ?? "",
     };
@@ -88,6 +88,5 @@ export function petToForm(pet: Pet): PetForm {
 export function createEmptyPetForm(): PetForm {
     return {
         ...petFormDefaults,
-        gender: "male",
     };
 }

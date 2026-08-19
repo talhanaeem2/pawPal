@@ -45,11 +45,8 @@ export function vetAppointmentToForm(
     };
 }
 
-export function createEmptyVetAppointmentForm(
-    petId?: string,
-): VetAppointmentForm {
+export function createEmptyVetAppointmentForm(): VetAppointmentForm {
     return {
         ...vetAppointmentFormDefaults,
-        pet_id: petId ?? "",
     };
 }

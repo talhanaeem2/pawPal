@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { useZodForm } from "@/hooks/use-zod-form";
@@ -10,44 +10,44 @@ import { Button } from "../common/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../common/select";
 import { Input } from "../common/input";
 import { Textarea } from "../common/textarea";
+import { DatePicker } from "../common/date-picker";
+import { DateTimePicker } from "../common/date-time-picker";
 import { FormDialog } from "../common/form-dialog";
 import { Field } from "../common/field";
 
-import { ActivityLog, activityLogFormSchema, activityLogToForm, createEmptyActivityLogForm } from "@/schemas/activity";
+import { ActivityLog, ActivityLogForm, activityLogFormSchema, activityLogToForm, createEmptyActivityLogForm } from "@/schemas/activity";
 import { Pet } from "@/schemas/pets";
 
 interface IActivityFormDialog {
     pets: Pet[];
     item?: ActivityLog;
     trigger: React.ReactNode;
-    initialOpen?: boolean
-    onClose?: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function ActivityFormDialog({ pets, item, trigger, initialOpen, onClose }: IActivityFormDialog) {
+export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, onOpenChange }: IActivityFormDialog) {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const open = controlledOpen ?? internalOpen;
     const isEdit = !!item;
     const qc = useQueryClient();
-    const [open, setOpen] = useState(false);
     const form = useZodForm(
         activityLogFormSchema,
-        item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id)
+        item ? activityLogToForm(item) : createEmptyActivityLogForm()
     );
 
-    useEffect(() => {
-        if (initialOpen) {
-            setOpen(true);
-        }
-    }, [initialOpen]);
+    function handleOpenChange(o: boolean) {
+        setInternalOpen(o);
+        onOpenChange?.(o);
+        if (!o) resetForm();
+    }
 
     function resetForm() {
-        form.reset(item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id));
+        form.reset(item ? activityLogToForm(item) : createEmptyActivityLogForm());
     }
 
     const save = useMutation({
-        mutationFn: async () => {
-            const data = form.getValidated();
-
-            if (!data) return;
+        mutationFn: async (data: ActivityLogForm) => {
 
             const payload = {
                 pet_id: data.pet_id,
@@ -57,7 +57,7 @@ export function ActivityFormDialog({ pets, item, trigger, initialOpen, onClose }
                 weight: data.activity_type === "weight" &&
                     data.weight ? Number(data.weight) : null,
                 notes: data.notes || null,
-                ...(isEdit ? {} : { occurred_at: new Date().toISOString() }),
+                occurred_at: data.occurred_at,
             };
 
             const query = item
@@ -71,7 +71,7 @@ export function ActivityFormDialog({ pets, item, trigger, initialOpen, onClose }
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: activityQuery.queryKey });
             toast.success(isEdit ? "Updated" : "Logged");
-            setOpen(false);
+            handleOpenChange(false);
             if (!isEdit) resetForm();
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -82,27 +82,34 @@ export function ActivityFormDialog({ pets, item, trigger, initialOpen, onClose }
     return (
         <FormDialog
             open={open}
-            onOpenChange={(o) => {
-                setOpen(o);
-                if (!o) {
-                    resetForm();
-                    onClose?.();
-                }
-            }}
+            onOpenChange={handleOpenChange}
             title={isEdit ? "Edit log" : "New log"}
             trigger={trigger}
         >
-            <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    const data = form.getValidated();
+
+                    if (!data) return;
+                    save.mutate(data);
+                }}
+                className="space-y-3"
+            >
                 <div className="grid grid-cols-2 gap-3">
-                    <Field label="Pet">
-                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                    <Field label="Pet" error={form.errors.pet_id}>
+                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
+                            <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
+                            <SelectContent>
+                                {pets.map((p) =>
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                )}
+                            </SelectContent>
                         </Select>
                     </Field>
                     <Field label="Type" error={form.errors.activity_type}>
                         <Select value={form.values.activity_type} onValueChange={(v) => {
-                            form.setField("activity_type", v);
+                            form.setField("activity_type", v as ActivityLogForm["activity_type"]);
 
                             if (v === "weight") {
                                 form.setField("duration_min", "");
@@ -113,8 +120,9 @@ export function ActivityFormDialog({ pets, item, trigger, initialOpen, onClose }
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="walk">Walk</SelectItem>
+                                <SelectItem value="run">Run</SelectItem>
                                 <SelectItem value="play">Play</SelectItem>
-                                <SelectItem value="weight">Weight</SelectItem>
+                                <SelectItem value="weight">Weight Check</SelectItem>
                             </SelectContent>
                         </Select>
                     </Field>
@@ -128,6 +136,21 @@ export function ActivityFormDialog({ pets, item, trigger, initialOpen, onClose }
                         <Input type="number" step="0.1" value={form.values.weight} onChange={(e) => form.setField("weight", e.target.value)} placeholder="e.g. 25.5" required />
                     </Field>
                 )}
+                <Field label="When">
+                    {form.values.activity_type === "weight" ? (
+                        <DatePicker
+                            value={form.values.occurred_at}
+                            onChange={(date) => form.setField("occurred_at", date)}
+                            placeholder="Select date"
+                        />
+                    ) : (
+                        <DateTimePicker
+                            value={form.values.occurred_at}
+                            onChange={(v) => form.setField("occurred_at", v)}
+                            placeholder="Select date and time"
+                        />
+                    )}
+                </Field>
                 <Field label="Notes">
                     <Textarea rows={2} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember about your pet" />
                 </Field>

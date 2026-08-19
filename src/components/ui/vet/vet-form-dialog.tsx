@@ -21,28 +21,29 @@ interface IVaccinationFormDialog {
     pets: Pet[];
     item?: VetAppointment;
     trigger: React.ReactNode;
-    initialOpen?: boolean
-    onClose?: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVaccinationFormDialog) {
+export function VetFormDialog({ pets, item, trigger, open: controlledOpen, onOpenChange }: IVaccinationFormDialog) {
+    const [internalOpen, setInternalOpen] = useState(false);
     const isEdit = !!item;
     const qc = useQueryClient();
-    const [open, setOpen] = useState(false);
+    const open = controlledOpen ?? internalOpen;
     const form = useZodForm(
         vetAppointmentFormSchema,
-        item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm(pets[0]?.id)
+        item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm()
     );
 
-    function resetForm() {
-        form.reset(item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm(pets[0]?.id));
+    function handleOpenChange(o: boolean) {
+        setInternalOpen(o);
+        onOpenChange?.(o);
+        if (!o) resetForm();
     }
 
-    useEffect(() => {
-        if (initialOpen) {
-            setOpen(true);
-        }
-    }, [initialOpen]);
+    function resetForm() {
+        form.reset(item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm());
+    }
 
     const save = useMutation({
         mutationFn: async () => {
@@ -69,7 +70,7 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: vetQuery.queryKey });
             toast.success(isEdit ? "Updated" : "Appointment saved");
-            setOpen(false);
+            handleOpenChange(false);
             if (!isEdit) resetForm();
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -80,21 +81,17 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
     return (
         <FormDialog
             open={open}
-            onOpenChange={(o) => {
-                setOpen(o);
-                if (!o) {
-                    resetForm();
-                    onClose?.();
-                }
-            }}
+            onOpenChange={handleOpenChange}
             title={isEdit ? "Edit appointment" : "New appointment"}
             trigger={trigger}
         >
             <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
                 <Field label="Pet">
-                    <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                    <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
+                        <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
+                        <SelectContent>{pets.map((p) =>
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        </SelectContent>
                     </Select>
                 </Field>
                 <Field label="When" error={form.errors.date}>
@@ -102,6 +99,7 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
                     <DateTimePicker
                         value={form.values.date}
                         onChange={(v) => form.setField("date", v)}
+                        placeholder="Select date and time"
                     />
                 </Field>
                 <Field label="Reason" error={form.errors.reason}>

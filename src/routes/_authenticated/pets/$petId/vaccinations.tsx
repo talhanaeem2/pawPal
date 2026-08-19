@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, ErrorComponentProps, Link } from '@tanstack/react-router'
 import { Pencil, Plus, Syringe } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import z from 'zod';
 
@@ -48,7 +48,15 @@ function VaccinationsPetPage() {
   const { new: openCreate } = Route.useSearch();
   const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
   const [confirmDelete, setConfirmDelete] = useState<{ vaccinationId: string; petId: string; } | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const now = Date.now();
+
+  useEffect(() => {
+    if (openCreate) {
+      setCreateOpen(true);
+      navigate({ search: { new: undefined }, replace: true });
+    }
+  }, [openCreate]);
 
   function getVaccinationStatus(v: Vaccination) {
     if (v.completed_at) return "completed";
@@ -202,13 +210,13 @@ function VaccinationsPetPage() {
           </div>
           <VaccinationsFormDialog
             pets={[pet]}
-            initialOpen={openCreate}
+            defaultPetId={pet.id}
             hidePetSelector
             trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" />Add</Button>}
-            onClose={() => navigate({
-              search: { new: undefined },
-              replace: true,
-            })}
+            open={createOpen}
+            onOpenChange={(o) => {
+              setCreateOpen(o);
+            }}
           />
         </header>
       </Page.Header>

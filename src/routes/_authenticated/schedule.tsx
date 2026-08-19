@@ -6,7 +6,7 @@ import React from "react";
 import { toast } from "sonner";
 import z from "zod";
 
-import { petsQuery, scheduleQuery } from "@/lib/queries";
+import { petsQuery, scheduleQuery, activityQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { formatPetNames } from "@/lib/pet-utils";
@@ -24,7 +24,10 @@ import {
   repeatUnitOptions,
   requiresScheduleStartDate,
   requiresScheduleTime,
-  applyTimeSlotFilter
+  applyTimeSlotFilter,
+  buildOccurredAt,
+  getActivityType,
+  isActivityKind
 } from "@/lib/schedule-utils";
 import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
 
@@ -45,6 +48,7 @@ import { Card, CardContent } from "@/components/ui/common/card";
 import { Progress } from "@/components/ui/common/progress";
 import { Page } from "@/components/layout/page";
 import { Field } from "@/components/ui/common/field";
+import { LogActivityDialog, UndoActivityDialog } from "@/components/ui/schedule/log-activity-dialog";
 import { TimesOfDayField } from "@/components/ui/common/times-of-day-field";
 
 import { createEmptyScheduleForm, ScheduleForm, scheduleFormSchema, scheduleToForm, ScheduleWithPets } from "@/schemas/schedule";
@@ -70,8 +74,62 @@ function SchedulePage() {
   const qc = useQueryClient();
   const { new: openCreate } = Route.useSearch();
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [logDialogState, setLogDialogState] = useState<{
+    open: boolean;
+    schedule: ScheduleWithPets | null;
+    timeSlot: string | null;
+    targetPetId?: string;
+  }>({ open: false, schedule: null, timeSlot: null });
+
+  const [undoDialogState, setUndoDialogState] = useState<{
+    open: boolean;
+    schedule: ScheduleWithPets | null;
+    timeSlots: (string | null)[];
+    targetPetId?: string;
+  }>({ open: false, schedule: null, timeSlots: [] });
+
   const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
   const today = todayDateString();
+
+  function handleToggle({
+    scheduleItemId,
+    scheduleItemPetId,
+    markDone,
+    timeSlots,
+  }: {
+    scheduleItemId: string;
+    scheduleItemPetId?: string;
+    markDone: boolean;
+    timeSlots: (string | null)[];
+  }) {
+    const schedule = items.find((i) => i.id === scheduleItemId);
+    if (!schedule) return;
+
+    if (markDone && isActivityKind(schedule.kind)) {
+      // Show log activity dialog
+      setLogDialogState({
+        open: true,
+        schedule,
+        timeSlot: timeSlots[0] ?? null,
+        targetPetId: scheduleItemPetId
+          ? schedule.schedule_item_pets.find((p) => p.id === scheduleItemPetId)?.pet_id
+          : undefined,
+      });
+    } else if (!markDone && isActivityKind(schedule.kind)) {
+      // Show undo dialog with optional log deletion
+      setUndoDialogState({
+        open: true,
+        schedule,
+        timeSlots,
+        targetPetId: scheduleItemPetId
+          ? schedule.schedule_item_pets.find((p) => p.id === scheduleItemPetId)?.pet_id
+          : undefined,
+      });
+    } else {
+      // Non-activity kinds — toggle directly
+      toggle.mutate({ scheduleItemId, scheduleItemPetId, markDone, timeSlots });
+    }
+  }
 
   const toggle = useMutation({
     mutationFn: async ({
@@ -348,7 +406,7 @@ function SchedulePage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggle.mutate({
+                            handleToggle({
                               scheduleItemId: s.id,
                               markDone: !allDone,
                               timeSlots: times,
@@ -425,7 +483,7 @@ function SchedulePage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           // Toggle each time slot for all pets
-                          toggle.mutate({
+                          handleToggle({
                             scheduleItemId: s.id,
                             markDone: !allDone,
                             timeSlots: times,
@@ -515,7 +573,7 @@ function SchedulePage() {
                                 <button
                                   key={`${pet.id}-${time}`}
                                   onClick={() =>
-                                    toggle.mutate({
+                                    handleToggle({
                                       scheduleItemId: s.id,
                                       scheduleItemPetId: pet.id,
                                       markDone: !isDone,
@@ -578,6 +636,82 @@ function SchedulePage() {
         confirmVariant="destructive"
         onConfirm={() => confirmId && del.mutate(confirmId)}
       />
+      {logDialogState.schedule && (
+        <LogActivityDialog
+          open={logDialogState.open}
+          onOpenChange={(o) => setLogDialogState((prev) => ({ ...prev, open: o }))}
+          schedule={logDialogState.schedule}
+          timeSlot={logDialogState.timeSlot}
+          targetPetId={logDialogState.targetPetId}
+          today={today}
+          pets={pets}
+          onMarkDone={() => {
+            if (!logDialogState.schedule) return;
+            const s = logDialogState.schedule;
+            const targetSip = logDialogState.targetPetId
+              ? s.schedule_item_pets.find(
+                (p) => p.pet_id === logDialogState.targetPetId
+              )
+              : undefined;
+
+            toggle.mutate({
+              scheduleItemId: s.id,
+              scheduleItemPetId: targetSip?.id,
+              markDone: true,
+              timeSlots: logDialogState.timeSlot ? [logDialogState.timeSlot] : [null],
+            });
+          }}
+        />
+      )}
+      {undoDialogState.schedule && (
+        <UndoActivityDialog
+          open={undoDialogState.open}
+          onOpenChange={(o) => setUndoDialogState((prev) => ({ ...prev, open: o }))}
+          schedule={undoDialogState.schedule}
+          onUndo={async (deleteLog) => {
+            const s = undoDialogState.schedule!;
+            const targetSip = undoDialogState.targetPetId
+              ? s.schedule_item_pets.find((p) => p.pet_id === undoDialogState.targetPetId)
+              : undefined;
+
+            // Mark undone first
+            toggle.mutate({
+              scheduleItemId: s.id,
+              scheduleItemPetId: targetSip?.id,
+              markDone: false,
+              timeSlots: undoDialogState.timeSlots,
+            });
+
+            // Optionally delete matching activity logs
+            if (deleteLog) {
+              const occurredAt = buildOccurredAt(today, undoDialogState.timeSlots[0] ?? null);
+              const petIds = targetSip
+                ? [targetSip.pet_id]
+                : s.schedule_item_pets.map((p) => p.pet_id);
+
+              const activityType = getActivityType(s.kind);
+
+              // Find logs created around the same time (within 1 hour either side)
+              const from = new Date(new Date(occurredAt).getTime() - 60 * 60_000).toISOString();
+              const to = new Date(new Date(occurredAt).getTime() + 60 * 60_000).toISOString();
+
+              const { error } = await supabase
+                .from("activity_logs")
+                .delete()
+                .in("pet_id", petIds)
+                .eq("activity_type", activityType)
+                .gte("occurred_at", from)
+                .lte("occurred_at", to);
+
+              if (error) {
+                toast.error("Reminder undone but couldn't delete activity log");
+              } else {
+                qc.invalidateQueries({ queryKey: activityQuery.queryKey });
+              }
+            }
+          }}
+        />
+      )}
     </Page>
   );
 }
@@ -599,7 +733,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
     scheduleFormSchema,
     item
       ? scheduleToForm(item)
-      : createEmptyScheduleForm(pets[0]?.id)
+      : createEmptyScheduleForm()
   );
 
   useEffect(() => {
@@ -640,7 +774,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
     form.reset(
       item
         ? scheduleToForm(item)
-        : createEmptyScheduleForm(pets[0]?.id)
+        : createEmptyScheduleForm()
     );
     setExpandedFields({});
     setIsTitleCustomized(false);
@@ -872,13 +1006,15 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                     <SelectItem value="grooming">Grooming</SelectItem>
                     <SelectItem value="supplements">Supplements</SelectItem>
                     <SelectItem value="flea_tick">Flea & Tick</SelectItem>
-                    <SelectItem value="exercise">Exercise</SelectItem>
+                    <SelectItem value="walk">Walk</SelectItem>
+                    <SelectItem value="play">Play</SelectItem>
+                    <SelectItem value="run">Run</SelectItem>
                     <SelectItem value="training">Training</SelectItem>
                     <SelectItem value="bath">Bath</SelectItem>
                     <SelectItem value="nail_trim">Nail trimming</SelectItem>
                     <SelectItem value="ear_cleaning">Ear cleaning</SelectItem>
                     <SelectItem value="teeth_brushing">Teeth brushing</SelectItem>
-                    <SelectItem value="weight_check">Weight Check</SelectItem>
+                    <SelectItem value="weight">Weight Check</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>

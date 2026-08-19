@@ -2,7 +2,7 @@ import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, Pencil, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import z from "zod";
 
 import { petsQuery, vetQuery } from "@/lib/queries";
@@ -46,8 +46,16 @@ function VetPage() {
   const { new: openCreate } = Route.useSearch();
   const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
   const [confirmId, setConfirmId] = useState<string | null>(null);
-
+  const [createOpen, setCreateOpen] = useState(false);
   const now = Date.now();
+
+  useEffect(() => {
+    if (openCreate) {
+      setCreateOpen(true);
+      navigate({ search: { new: undefined }, replace: true });
+    }
+  }, [openCreate]);
+
   const upcoming = appts
     .filter((a) => !a.completed && new Date(a.date).getTime() >= now - 86_400_000)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -141,12 +149,11 @@ function VetPage() {
           </div>
           <VetFormDialog
             pets={pets}
-            initialOpen={openCreate}
             trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" />Add</Button>}
-            onClose={() => navigate({
-              search: { new: undefined },
-              replace: true,
-            })}
+            open={createOpen}
+            onOpenChange={(o) => {
+              setCreateOpen(o);
+            }}
           />
         </header>
       </Page.Header>
