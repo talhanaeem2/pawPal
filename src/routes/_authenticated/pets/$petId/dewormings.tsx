@@ -1,7 +1,7 @@
 import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, Pencil, ShieldPlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -48,7 +48,15 @@ function DewormingPetPage() {
     const { new: openCreate } = Route.useSearch();
     const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
     const [confirmDelete, setConfirmDelete] = useState<{ dewormingId: string; petId: string; } | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
     const now = Date.now();
+
+    useEffect(() => {
+        if (openCreate) {
+            setCreateOpen(true);
+            navigate({ search: { new: undefined }, replace: true });
+        }
+    }, [openCreate]);
 
     function getDewormingStatus(d: Deworming) {
         if (d.completed_at) return "completed";
@@ -185,13 +193,13 @@ function DewormingPetPage() {
                     </div>
                     <DewormingFormDialog
                         pets={[pet]}
-                        initialOpen={openCreate}
+                        defaultPetId={pet.id}
                         hidePetSelector
                         trigger={<Button className="rounded-full"><Plus className="h-4 w-4 mr-1" />Add</Button>}
-                        onClose={() => navigate({
-                            search: { new: undefined },
-                            replace: true,
-                        })}
+                        open={createOpen}
+                        onOpenChange={(o) => {
+                            setCreateOpen(o);
+                        }}
                     />
                 </header>
             </Page.Header>

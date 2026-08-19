@@ -872,7 +872,9 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
                     <SelectItem value="grooming">Grooming</SelectItem>
                     <SelectItem value="supplements">Supplements</SelectItem>
                     <SelectItem value="flea_tick">Flea & Tick</SelectItem>
-                    <SelectItem value="exercise">Exercise</SelectItem>
+                    <SelectItem value="walk">Walk</SelectItem>
+                    <SelectItem value="play">Play</SelectItem>
+                    <SelectItem value="run">Run</SelectItem>
                     <SelectItem value="training">Training</SelectItem>
                     <SelectItem value="bath">Bath</SelectItem>
                     <SelectItem value="nail_trim">Nail trimming</SelectItem>

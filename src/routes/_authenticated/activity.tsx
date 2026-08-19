@@ -10,6 +10,7 @@ import {
   Scale,
   Flame,
   Clock3,
+  Zap,
 } from "lucide-react";
 import z from "zod";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -17,6 +18,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { petsQuery, activityQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
+import { EXERCISE_TYPES, formatMinutes, getDateFromOffset, getDateKey, getStartOfWeek } from "@/lib/activity-utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
@@ -95,12 +97,6 @@ function ActivityPage() {
 
   const confirmItem = logs.find((l) => l.id === confirmId);
 
-  /*
-   * ------------------------------------------------------------
-   * Filtered + sorted activity
-   * ------------------------------------------------------------
-   */
-
   const filteredLogs = useMemo(() => {
     return [...logs]
       .filter(
@@ -115,41 +111,6 @@ function ActivityPage() {
       );
   }, [logs, selectedPetId]);
 
-  /*
-   * ------------------------------------------------------------
-   * Date helpers
-   * ------------------------------------------------------------
-   */
-
-  const getDateKey = (date: string) => {
-    const d = new Date(date);
-
-    return [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, "0"),
-      String(d.getDate()).padStart(2, "0"),
-    ].join("-");
-  };
-
-  const getStartOfWeek = () => {
-    const date = new Date();
-    const day = date.getDay();
-
-    // Monday = 0
-    const diff = day === 0 ? -6 : 1 - day;
-
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() + diff);
-
-    return date;
-  };
-
-  /*
-   * ------------------------------------------------------------
-   * This week
-   * ------------------------------------------------------------
-   */
-
   const weekStart = getStartOfWeek();
 
   const thisWeekLogs = filteredLogs.filter(
@@ -160,6 +121,10 @@ function ActivityPage() {
 
   const walkCount = thisWeekLogs.filter(
     (log) => log.activity_type === "walk",
+  ).length;
+
+  const runCount = thisWeekLogs.filter(
+    (log) => log.activity_type === "run",
   ).length;
 
   const playCount = thisWeekLogs.filter(
@@ -173,17 +138,11 @@ function ActivityPage() {
   const exerciseMinutes = thisWeekLogs.reduce(
     (total, log) =>
       total +
-      (log.activity_type === "walk"
+      (EXERCISE_TYPES.has(log.activity_type)
         ? Number(log.duration_min ?? 0)
         : 0),
     0,
   );
-
-  /*
-   * ------------------------------------------------------------
-   * Latest weight
-   * ------------------------------------------------------------
-   */
 
   const weightLogs = filteredLogs.filter(
     (log) =>
@@ -192,11 +151,6 @@ function ActivityPage() {
   );
 
   const latestWeight = weightLogs[0];
-
-  /*
-   * Compare latest weight against the previous measurement
-   * for the same pet.
-   */
 
   const previousWeight = latestWeight
     ? weightLogs.find(
@@ -213,47 +167,16 @@ function ActivityPage() {
       Number(previousWeight.weight)
       : null;
 
-  /*
-   * ------------------------------------------------------------
-   * Activity streak
-   * ------------------------------------------------------------
-   *
-   * A streak is based on consecutive days with at least
-   * one activity.
-   */
-
   const activityDates = new Set(
     filteredLogs
       .filter(
         (log) =>
           log.activity_type === "walk" ||
+          log.activity_type === "run" ||
           log.activity_type === "play",
       )
       .map((log) => getDateKey(log.occurred_at)),
   );
-
-  const getDateKeyFromDate = (date: Date) => [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
-
-  const getDateFromOffset = (offset: number) => {
-    const date = new Date();
-
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() - offset);
-
-    return getDateKeyFromDate(date);
-  };
-
-  function formatMinutes(min: number): string {
-    if (min === 0) return "0";
-    if (min < 60) return `${min}`;
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  }
 
   let streak = 0;
 
@@ -265,17 +188,16 @@ function ActivityPage() {
     }
   }
 
-  /*
-   * ------------------------------------------------------------
-   * Activity breakdown
-   * ------------------------------------------------------------
-   */
-
   const breakdown = [
     {
       type: "walk",
       label: "Walks",
       count: walkCount,
+    },
+    {
+      type: "run",
+      label: "Runs",
+      count: runCount,
     },
     {
       type: "play",
@@ -294,29 +216,40 @@ function ActivityPage() {
     1,
   );
 
-  /*
-   * ------------------------------------------------------------
-   * Simple insight
-   * ------------------------------------------------------------
-   */
-
   const insight = useMemo(() => {
     if (thisWeekLogs.length === 0) {
       return null;
     }
 
-    if (exerciseMinutes > 0 && walkCount > 0) {
-      const averageWalk =
-        Math.round(exerciseMinutes / walkCount);
+    const exerciseCount =
+      walkCount +
+      runCount +
+      playCount;
+
+    if (exerciseCount > 0 && exerciseMinutes > 0) {
+
+      const activityParts = [
+        walkCount > 0
+          ? `${walkCount} walk${walkCount === 1 ? "" : "s"}`
+          : null,
+        runCount > 0
+          ? `${runCount} run${runCount === 1 ? "" : "s"}`
+          : null,
+        playCount > 0
+          ? `${playCount} play session${playCount === 1 ? "" : "s"}`
+          : null,
+      ].filter(Boolean);
 
       return {
         title: "Activity insight",
         text:
           selectedPetId === "all"
-            ? `You've logged ${walkCount} walk${walkCount === 1 ? "" : "s"
-            } this week, averaging about ${averageWalk} minutes each.`
-            : `This week has ${walkCount} walk${walkCount === 1 ? "" : "s"
-            }, averaging about ${averageWalk} minutes each.`,
+            ? `You've logged ${activityParts.join(
+              ", ",
+            )} this week, with ${formatMinutes(exerciseMinutes)} of exercise in total.`
+            : `This week has ${activityParts.join(
+              ", ",
+            )}, with ${formatMinutes(exerciseMinutes)} of exercise in total.`,
       };
     }
 
@@ -350,16 +283,12 @@ function ActivityPage() {
     thisWeekLogs.length,
     exerciseMinutes,
     walkCount,
+    runCount,
+    playCount,
     weightChange,
     latestWeight,
     selectedPetId,
   ]);
-
-  /*
-   * ------------------------------------------------------------
-   * Group history by date
-   * ------------------------------------------------------------
-   */
 
   const groupedLogs = useMemo(() => {
     const groups = new Map<string, ActivityLog[]>();
@@ -407,12 +336,6 @@ function ActivityPage() {
     });
   };
 
-  /*
-   * ------------------------------------------------------------
-   * Edit row
-   * ------------------------------------------------------------
-   */
-
   const renderActivityEdit = (item: ActivityLog) => (
     <ActivityFormDialog
       pets={pets}
@@ -438,12 +361,6 @@ function ActivityPage() {
     />
   );
 
-  /*
-   * ------------------------------------------------------------
-   * Empty state
-   * ------------------------------------------------------------
-   */
-
   if (logs.length === 0) {
     return (
       <Page>
@@ -462,7 +379,7 @@ function ActivityPage() {
                 className="overflow-hidden"
               >
                 <p className="text-sm text-muted-foreground">
-                  Walks, play & weight.
+                  Walks, runs, play & weight.
                 </p>
               </div>
             </div>
@@ -490,7 +407,7 @@ function ActivityPage() {
           <FeatureEmptyState
             icon={Footprints}
             title="Track every adventure"
-            description="Log walks, play sessions and weight to build a history of your pet's everyday activity."
+            description="Log walks, runs, play sessions and weight to build a history of your pet's everyday activity."
             cta="Log activity"
             to="/activity"
             search={{ new: true }}
@@ -501,11 +418,18 @@ function ActivityPage() {
               What you can track
             </h2>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="rounded-2xl bg-secondary/60 p-3 text-center">
                 <Footprints className="mx-auto h-5 w-5 text-primary" />
                 <p className="mt-2 text-xs font-medium">
                   Walks
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-secondary/60 p-3 text-center">
+                <Zap className="mx-auto h-5 w-5 text-primary" />
+                <p className="mt-2 text-xs font-medium">
+                  Runs
                 </p>
               </div>
 
@@ -531,12 +455,6 @@ function ActivityPage() {
     );
   }
 
-  /*
-   * ------------------------------------------------------------
-   * Main page
-   * ------------------------------------------------------------
-   */
-
   return (
     <Page>
       <Page.Header
@@ -554,7 +472,7 @@ function ActivityPage() {
               className="overflow-hidden"
             >
               <p className="text-sm text-muted-foreground">
-                Walks, play & weight.
+                Walks, runs, play & weight.
               </p>
             </div>
           </div>
@@ -579,10 +497,6 @@ function ActivityPage() {
         onScroll={handleContentScroll}
         extraScrollRoom={112}
       >
-        {/* -------------------------------------------------- */}
-        {/* Pet filter                                         */}
-        {/* -------------------------------------------------- */}
-
         {pets.length > 1 && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
             <button
@@ -613,11 +527,6 @@ function ActivityPage() {
             ))}
           </div>
         )}
-
-        {/* -------------------------------------------------- */}
-        {/* Summary cards                                      */}
-        {/* -------------------------------------------------- */}
-
         <section className="grid grid-cols-3 gap-2">
           <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
             <ActivityIcon className="h-4 w-4 text-primary" />
@@ -665,10 +574,6 @@ function ActivityPage() {
             </p>
           </div>
         </section>
-
-        {/* -------------------------------------------------- */}
-        {/* This week                                         */}
-        {/* -------------------------------------------------- */}
 
         <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
           <div className="flex items-center justify-between">
@@ -718,13 +623,22 @@ function ActivityPage() {
             ))}
           </div>
 
-          <div className="mt-5 grid grid-cols-3 divide-x divide-border rounded-2xl bg-secondary/50 py-3">
+          <div className="mt-5 grid grid-cols-4 divide-x divide-border rounded-2xl bg-secondary/50 py-3">
             <div className="text-center">
               <div className="text-sm font-semibold">
                 {walkCount}
               </div>
               <div className="text-[11px] text-muted-foreground">
-                Walks
+                {walkCount === 1 ? "Walk" : "Walks"}
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-sm font-semibold">
+                {runCount}
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {runCount === 1 ? "Run" : "Runs"}
               </div>
             </div>
 
@@ -733,7 +647,7 @@ function ActivityPage() {
                 {playCount}
               </div>
               <div className="text-[11px] text-muted-foreground">
-                Play
+                {playCount === 1 ? "Play" : "Plays"}
               </div>
             </div>
 
@@ -742,15 +656,11 @@ function ActivityPage() {
                 {weightCount}
               </div>
               <div className="text-[11px] text-muted-foreground">
-                Weights
+                {weightCount === 1 ? "Weight" : "Weights"}
               </div>
             </div>
           </div>
         </section>
-
-        {/* -------------------------------------------------- */}
-        {/* Weight change                                     */}
-        {/* -------------------------------------------------- */}
 
         {latestWeight && (
           <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
@@ -804,17 +714,15 @@ function ActivityPage() {
                 )?.name ?? "Pet"}
               </p>
             )}
-            {/* Weight trend chart */}
             {(() => {
-              // Get weight logs for the selected pet (or all pets if "all" selected)
               if (selectedPetId === "all") return null;
 
               const chartLogs = weightLogs
                 .filter((log) => log.pet_id === selectedPetId)
-                .slice(0, 10) // last 10 measurements
-                .reverse();   // oldest first
+                .slice(0, 10)
+                .reverse();
 
-              if (chartLogs.length < 2) return null; // need at least 2 points for a line
+              if (chartLogs.length < 2) return null;
 
               const chartData = chartLogs.map((log) => ({
                 date: new Date(log.occurred_at).toLocaleDateString(undefined, {
@@ -888,10 +796,6 @@ function ActivityPage() {
           </section>
         )}
 
-        {/* -------------------------------------------------- */}
-        {/* Insight                                           */}
-        {/* -------------------------------------------------- */}
-
         {insight?.text && (
           <section className="rounded-3xl border border-primary/10 bg-primary/5 p-5">
             <div className="flex items-center gap-2">
@@ -907,10 +811,6 @@ function ActivityPage() {
             </p>
           </section>
         )}
-
-        {/* -------------------------------------------------- */}
-        {/* History                                            */}
-        {/* -------------------------------------------------- */}
 
         <section>
           <div className="mb-3 flex items-center justify-between">

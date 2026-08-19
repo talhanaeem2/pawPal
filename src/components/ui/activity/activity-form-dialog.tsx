@@ -33,7 +33,7 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
     const qc = useQueryClient();
     const form = useZodForm(
         activityLogFormSchema,
-        item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id)
+        item ? activityLogToForm(item) : createEmptyActivityLogForm()
     );
 
     function handleOpenChange(o: boolean) {
@@ -43,7 +43,7 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
     }
 
     function resetForm() {
-        form.reset(item ? activityLogToForm(item) : createEmptyActivityLogForm(pets[0]?.id));
+        form.reset(item ? activityLogToForm(item) : createEmptyActivityLogForm());
     }
 
     const save = useMutation({
@@ -109,7 +109,7 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
                     </Field>
                     <Field label="Type" error={form.errors.activity_type}>
                         <Select value={form.values.activity_type} onValueChange={(v) => {
-                            form.setField("activity_type", v);
+                            form.setField("activity_type", v as ActivityLogForm["activity_type"]);
 
                             if (v === "weight") {
                                 form.setField("duration_min", "");
@@ -120,6 +120,7 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="walk">Walk</SelectItem>
+                                <SelectItem value="run">Run</SelectItem>
                                 <SelectItem value="play">Play</SelectItem>
                                 <SelectItem value="weight">Weight</SelectItem>
                             </SelectContent>

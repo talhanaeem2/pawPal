@@ -21,28 +21,29 @@ interface IVaccinationFormDialog {
     pets: Pet[];
     item?: VetAppointment;
     trigger: React.ReactNode;
-    initialOpen?: boolean
-    onClose?: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVaccinationFormDialog) {
+export function VetFormDialog({ pets, item, trigger, open: controlledOpen, onOpenChange }: IVaccinationFormDialog) {
+    const [internalOpen, setInternalOpen] = useState(false);
     const isEdit = !!item;
     const qc = useQueryClient();
-    const [open, setOpen] = useState(false);
+    const open = controlledOpen ?? internalOpen;
     const form = useZodForm(
         vetAppointmentFormSchema,
         item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm()
     );
 
+    function handleOpenChange(o: boolean) {
+        setInternalOpen(o);
+        onOpenChange?.(o);
+        if (!o) resetForm();
+    }
+
     function resetForm() {
         form.reset(item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm());
     }
-
-    useEffect(() => {
-        if (initialOpen) {
-            setOpen(true);
-        }
-    }, [initialOpen]);
 
     const save = useMutation({
         mutationFn: async () => {
@@ -69,7 +70,7 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: vetQuery.queryKey });
             toast.success(isEdit ? "Updated" : "Appointment saved");
-            setOpen(false);
+            handleOpenChange(false);
             if (!isEdit) resetForm();
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -80,13 +81,7 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
     return (
         <FormDialog
             open={open}
-            onOpenChange={(o) => {
-                setOpen(o);
-                if (!o) {
-                    resetForm();
-                    onClose?.();
-                }
-            }}
+            onOpenChange={handleOpenChange}
             title={isEdit ? "Edit appointment" : "New appointment"}
             trigger={trigger}
         >

@@ -21,29 +21,37 @@ interface IVaccinationFormDialog {
     pets: Pet[];
     item?: Vaccination;
     trigger: React.ReactNode;
-    initialOpen?: boolean
     hidePetSelector?: boolean;
-    onClose?: () => void;
+    defaultPetId?: string;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hidePetSelector = false, onClose }: IVaccinationFormDialog) {
+export function VaccinationsFormDialog({ pets, item, trigger, hidePetSelector = false, defaultPetId, open: controlledOpen, onOpenChange }: IVaccinationFormDialog) {
+    const [internalOpen, setInternalOpen] = useState(false);
     const isEdit = !!item;
     const qc = useQueryClient();
-    const [open, setOpen] = useState(false);
+    const open = controlledOpen ?? internalOpen;
     const form = useZodForm(
         vaccinationFormSchema,
-        item ? vaccinationToForm(item) : createEmptyVaccinationForm()
+        item ? vaccinationToForm(item) : {
+            ...createEmptyVaccinationForm(),
+            pet_id: defaultPetId ?? "",
+        }
     );
 
-    function resetForm() {
-        form.reset(item ? vaccinationToForm(item) : createEmptyVaccinationForm());
+    function handleOpenChange(o: boolean) {
+        setInternalOpen(o);
+        onOpenChange?.(o);
+        if (!o) resetForm();
     }
 
-    useEffect(() => {
-        if (initialOpen) {
-            setOpen(true);
-        }
-    }, [initialOpen]);
+    function resetForm() {
+        form.reset(item ? vaccinationToForm(item) : {
+            ...createEmptyVaccinationForm(),
+            pet_id: defaultPetId ?? "",
+        });
+    }
 
     const save = useMutation({
         mutationFn: async (data: VaccinationForm) => {
@@ -72,7 +80,7 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
                 qc.invalidateQueries({ queryKey: petVaccinationsQuery(data.pet_id).queryKey }),
             ]);
             toast.success(isEdit ? "Updated" : "Vaccination saved");
-            setOpen(false);
+            handleOpenChange(false);
             if (!isEdit) resetForm();
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -85,13 +93,7 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
     return (
         <FormDialog
             open={open}
-            onOpenChange={(o) => {
-                setOpen(o);
-                if (!o) {
-                    resetForm();
-                    onClose?.();
-                }
-            }}
+            onOpenChange={handleOpenChange}
             title={isEdit ? "Edit vaccination" : "New vaccination"}
             trigger={trigger}
         >

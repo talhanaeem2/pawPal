@@ -14,7 +14,9 @@ export const scheduleKindSchema = z.enum([
     "nail_trim",
     "ear_cleaning",
     "teeth_brushing",
-    "exercise",
+    "walk",
+    "play",
+    "run",
     "training",
     "weight_check",
 ]);

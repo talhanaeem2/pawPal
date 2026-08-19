@@ -1,4 +1,4 @@
-import { Dumbbell, Footprints, Scale, Trash2 } from "lucide-react";
+import { Dumbbell, Footprints, Scale, Trash2, Zap } from "lucide-react";
 
 import { formatDateTime } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ type ActivityRowProps = {
     renderEdit: (item: ActivityLog) => React.ReactNode;
 };
 
-const icons: Record<string, typeof Footprints> = { walk: Footprints, play: Dumbbell, weight: Scale };
+const icons: Record<string, typeof Footprints> = { walk: Footprints, run: Zap, play: Dumbbell, weight: Scale };
 
 export function ActivityRow({
     item,

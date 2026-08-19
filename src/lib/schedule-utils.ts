@@ -10,7 +10,9 @@ export const KIND_LABELS: Record<ScheduleKind, string> = {
     nail_trim: "Nail trimming",
     ear_cleaning: "Ear cleaning",
     teeth_brushing: "Teeth brushing",
-    exercise: "Exercise",
+    walk: "Walk",
+    play: "Play",
+    run: "Run",
     training: "Training",
     weight_check: "Weight Check",
 };
@@ -73,8 +75,14 @@ export function getTitlePlaceholder(kind: ScheduleForm["kind"]) {
         case "supplements":
             return "Fish oil";
 
-        case "exercise":
+        case "walk":
             return "Morning walk";
+
+        case "play":
+            return "Morning play";
+
+        case "run":
+            return "Morning run";
 
         case "training":
             return "Recall practice";
@@ -113,8 +121,14 @@ export function getNotesPlaceholder(kind: ScheduleForm["kind"]) {
         case "medication":
             return "Give after breakfast";
 
-        case "exercise":
+        case "walk":
             return "Easy pace";
+
+        case "play":
+            return "Tug of war";
+
+        case "run":
+            return "Jog";
 
         case "training":
             return "Use treats";
@@ -135,8 +149,14 @@ export function getTimeLabel(kind: ScheduleForm["kind"]) {
         case "medication":
             return "Medication time";
 
-        case "exercise":
-            return "Exercise time";
+        case "walk":
+            return "Walk time";
+
+        case "play":
+            return "Play time";
+
+        case "run":
+            return "Run time";
 
         case "training":
             return "Training time";
@@ -216,8 +236,14 @@ export function generateScheduleTitle(
         case "supplements":
             return `${period}Supplements`;
 
-        case "exercise":
-            return "Exercise";
+        case "walk":
+            return "Walk";
+
+        case "play":
+            return "Play";
+
+        case "run":
+            return "Run";
 
         case "training":
             return "Training";
@@ -268,10 +294,22 @@ export function getScheduleDetailField(kind: string) {
                 placeholder: "e.g. 1 chew, 2 pumps, 5 ml",
             };
 
-        case "exercise":
+        case "walk":
             return {
                 label: "Duration",
                 placeholder: "e.g. 30 min walk, 20 min run",
+            };
+
+        case "play":
+            return {
+                label: "Duration",
+                placeholder: "e.g. 20 min play",
+            };
+
+        case "run":
+            return {
+                label: "Duration",
+                placeholder: "e.g. 10 min run",
             };
 
         case "training":
@@ -335,7 +373,9 @@ const TIME_REQUIRED_KINDS = new Set([
     "medication",
     "supplements",
     "training",
-    "exercise",
+    "walk",
+    "play",
+    "run",
 ]);
 
 const START_DATE_REQUIRED_KINDS = new Set([
