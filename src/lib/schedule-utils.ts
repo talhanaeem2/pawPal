@@ -14,7 +14,7 @@ export const KIND_LABELS: Record<ScheduleKind, string> = {
     play: "Play",
     run: "Run",
     training: "Training",
-    weight_check: "Weight Check",
+    weight: "Weight Check",
 };
 
 export const repeatUnitOptions = [
@@ -39,6 +39,33 @@ export const repeatUnitOptions = [
         plural: "Years",
     },
 ];
+
+// Kinds that warrant logging an activity when marked done
+const ACTIVITY_KINDS = ["walk", "run", "play", "weight"] as const;
+type ActivityKind = typeof ACTIVITY_KINDS[number];
+
+export function isActivityKind(kind: string): kind is ActivityKind {
+    return ACTIVITY_KINDS.includes(kind as ActivityKind);
+}
+
+export function getActivityType(kind: string): string {
+    if (kind === "run") return "walk"; // map run → walk activity type
+    return kind; // walk, play, weight map directly
+}
+
+export function buildOccurredAt(today: string, timeSlot: string | null): string {
+    if (timeSlot) {
+        // Combine today's date with the time slot in local time → UTC
+        const [h, m] = timeSlot.split(":").map(Number);
+        const d = new Date(today); // local midnight
+        d.setHours(h, m, 0, 0);
+        return d.toISOString();
+    }
+    // No time slot — use noon today
+    const d = new Date(today);
+    d.setHours(12, 0, 0, 0);
+    return d.toISOString();
+}
 
 export function formatKind(s: ScheduleItem) {
     return KIND_LABELS[s.kind as ScheduleKind] ?? s.kind;
@@ -105,7 +132,7 @@ export function getTitlePlaceholder(kind: ScheduleForm["kind"]) {
         case "nail_trim":
             return "Trim nails";
 
-        case "weight_check":
+        case "weight":
             return "Weekly weigh-in";
 
         default:
@@ -180,7 +207,7 @@ export function getStartDateLabel(kind: ScheduleForm["kind"]) {
         case "flea_tick":
             return "Treatment date";
 
-        case "weight_check":
+        case "weight":
             return "First check";
 
         default:
@@ -199,7 +226,7 @@ export function getStartDateDescription(kind: ScheduleForm["kind"]) {
         case "flea_tick":
             return "The next treatment will be calculated from this date.";
 
-        case "weight_check":
+        case "weight":
             return "The first weight check will be scheduled from this date.";
 
         default:
@@ -263,7 +290,7 @@ export function generateScheduleTitle(
         case "nail_trim":
             return "Nail Trim";
 
-        case "weight_check":
+        case "weight":
             return "Weight Check";
 
         case "flea_tick":

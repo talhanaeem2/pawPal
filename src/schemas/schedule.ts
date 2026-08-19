@@ -18,7 +18,7 @@ export const scheduleKindSchema = z.enum([
     "play",
     "run",
     "training",
-    "weight_check",
+    "weight",
 ]);
 
 export type ScheduleKind = z.infer<typeof scheduleKindSchema>;

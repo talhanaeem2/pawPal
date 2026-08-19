@@ -1,5 +1,12 @@
 export const EXERCISE_TYPES = new Set(["walk", "run", "play"]);
 
+export const ACTIVITY_LABELS: Record<string, string> = {
+    walk: "Walk",
+    run: "Run",
+    play: "Play",
+    weight: "Weight check",
+};
+
 const getDateKeyFromDate = (date: Date) => [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, "0"),
