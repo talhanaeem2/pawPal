@@ -97,7 +97,7 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
                 className="space-y-3"
             >
                 <div className="grid grid-cols-2 gap-3">
-                    <Field label="Pet">
+                    <Field label="Pet" error={form.errors.pet_id}>
                         <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
                             <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
                             <SelectContent>
