@@ -1,5 +1,7 @@
 import { Dumbbell, Footprints, Scale, Trash2 } from "lucide-react";
 
+import { formatDateTime } from "@/lib/utils";
+
 import { Button } from "../common/button";
 
 import { ActivityLog } from "@/schemas/activity";
@@ -31,7 +33,7 @@ export function ActivityRow({
             <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm capitalize">{item.activity_type}{pet ? ` · ${pet.name}` : ""}</div>
                 <div className="text-xs text-muted-foreground">
-                    {new Date(item.occurred_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                    {formatDateTime(item.occurred_at)}
                     {item.duration_min ? ` · ${item.duration_min} min` : ""}
                     {item.weight ? ` · ${item.weight}${item.activity_type === "weight" ? " kg" : ""}` : ""}
                 </div>

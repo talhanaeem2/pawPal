@@ -271,7 +271,7 @@ export function PetFormDialog({ pet, trigger, initialOpen, onClose }: IPetFormDi
                             </div>
                             <Field label="Gender">
                                 <Select value={form.values.gender} onValueChange={(v) => form.setField("gender", v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Choose a gender" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="male">Male</SelectItem>
                                         <SelectItem value="female">Female</SelectItem>

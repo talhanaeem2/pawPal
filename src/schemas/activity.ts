@@ -48,7 +48,6 @@ export function activityLogToForm(
 export function createEmptyActivityLogForm(petId?: string): ActivityLogForm {
     return {
         ...activityLogFormDefaults,
-        pet_id: petId ?? "",
         activity_type: "walk",
         occurred_at: new Date().toISOString(),
     };

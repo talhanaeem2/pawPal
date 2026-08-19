@@ -599,7 +599,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
     scheduleFormSchema,
     item
       ? scheduleToForm(item)
-      : createEmptyScheduleForm(pets[0]?.id)
+      : createEmptyScheduleForm()
   );
 
   useEffect(() => {
@@ -640,7 +640,7 @@ function ScheduleDialog({ pets, item, trigger, initialOpen }: { pets: { id: stri
     form.reset(
       item
         ? scheduleToForm(item)
-        : createEmptyScheduleForm(pets[0]?.id)
+        : createEmptyScheduleForm()
     );
     setExpandedFields({});
     setIsTitleCustomized(false);

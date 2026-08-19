@@ -32,11 +32,11 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
     const [open, setOpen] = useState(false);
     const form = useZodForm(
         vaccinationFormSchema,
-        item ? vaccinationToForm(item) : createEmptyVaccinationForm(pets[0]?.id)
+        item ? vaccinationToForm(item) : createEmptyVaccinationForm()
     );
 
     function resetForm() {
-        form.reset(item ? vaccinationToForm(item) : createEmptyVaccinationForm(pets[0]?.id));
+        form.reset(item ? vaccinationToForm(item) : createEmptyVaccinationForm());
     }
 
     useEffect(() => {
@@ -107,9 +107,13 @@ export function VaccinationsFormDialog({ pets, item, trigger, initialOpen, hideP
             >
                 {!hidePetSelector && (
                     <Field label="Pet" error={form.errors.pet_id}>
-                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
+                            <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
+                            <SelectContent>
+                                {pets.map((p) =>
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                )}
+                            </SelectContent>
                         </Select>
                     </Field>
                 )}

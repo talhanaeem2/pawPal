@@ -31,11 +31,11 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
     const [open, setOpen] = useState(false);
     const form = useZodForm(
         vetAppointmentFormSchema,
-        item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm(pets[0]?.id)
+        item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm()
     );
 
     function resetForm() {
-        form.reset(item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm(pets[0]?.id));
+        form.reset(item ? vetAppointmentToForm(item) : createEmptyVetAppointmentForm());
     }
 
     useEffect(() => {
@@ -92,9 +92,11 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
         >
             <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
                 <Field label="Pet">
-                    <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                    <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
+                        <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
+                        <SelectContent>{pets.map((p) =>
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        </SelectContent>
                     </Select>
                 </Field>
                 <Field label="When" error={form.errors.date}>
@@ -102,6 +104,7 @@ export function VetFormDialog({ pets, item, trigger, initialOpen, onClose }: IVa
                     <DateTimePicker
                         value={form.values.date}
                         onChange={(v) => form.setField("date", v)}
+                        placeholder="Select date and time"
                     />
                 </Field>
                 <Field label="Reason" error={form.errors.reason}>

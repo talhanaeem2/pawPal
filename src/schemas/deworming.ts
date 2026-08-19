@@ -47,9 +47,8 @@ export function dewormingToForm(deworming: Deworming,): DewormingForm {
     };
 }
 
-export function createEmptyDewormingForm(petId?: string,): DewormingForm {
+export function createEmptyDewormingForm(): DewormingForm {
     return {
         ...dewormingFormDefaults,
-        pet_id: petId ?? "",
     };
 }

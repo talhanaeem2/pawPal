@@ -88,6 +88,5 @@ export function petToForm(pet: Pet): PetForm {
 export function createEmptyPetForm(): PetForm {
     return {
         ...petFormDefaults,
-        gender: "male",
     };
 }

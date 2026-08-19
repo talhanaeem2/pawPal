@@ -32,11 +32,11 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
     const [open, setOpen] = useState(false);
     const form = useZodForm(
         dewormingFormSchema,
-        item ? dewormingToForm(item) : createEmptyDewormingForm(pets[0]?.id)
+        item ? dewormingToForm(item) : createEmptyDewormingForm()
     );
 
     function resetForm() {
-        form.reset(item ? dewormingToForm(item) : createEmptyDewormingForm(pets[0]?.id));
+        form.reset(item ? dewormingToForm(item) : createEmptyDewormingForm());
     }
 
     useEffect(() => {
@@ -131,9 +131,13 @@ export function DewormingFormDialog({ pets, item, trigger, initialOpen, hidePetS
             >
                 {!hidePetSelector && (
                     <Field label="Pet">
-                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                        <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
+                            <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
+                            <SelectContent>
+                                {pets.map((p) =>
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                )}
+                            </SelectContent>
                         </Select>
                     </Field>
                 )}

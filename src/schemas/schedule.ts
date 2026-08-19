@@ -97,21 +97,11 @@ export function scheduleToForm(item: ScheduleWithPets): ScheduleForm {
 }
 
 // Empty form
-export function createEmptyScheduleForm(petId?: string): ScheduleForm {
+export function createEmptyScheduleForm(): ScheduleForm {
     const defaults = createScheduleFormDefaults();
 
     return {
         ...defaults,
-        pet_ids: petId ? [petId] : [],
-        pet_details: petId
-            ? [
-                {
-                    pet_id: petId,
-                    dosage: "",
-                    notes: "",
-                },
-            ]
-            : [],
     };
 }
 
