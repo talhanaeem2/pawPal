@@ -37,7 +37,7 @@ export function ActivityRow({
                     {pet ? ` · ${pet.name}` : ""}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                    {item.activity_type !== "grooming" ? formatDateTime(item.occurred_at) : formatDate(item.occurred_at)}
+                    {item.activity_type !== "grooming" && item.activity_type !== "weight" ? formatDateTime(item.occurred_at) : formatDate(item.occurred_at)}
                     {item.duration_min ? ` · ${item.duration_min} min` : ""}
                     {item.weight ? ` · ${item.weight}${item.activity_type === "weight" ? " kg" : ""}` : ""}
                     <br />
