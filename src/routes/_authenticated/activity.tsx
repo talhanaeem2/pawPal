@@ -498,7 +498,7 @@ function ActivityPage() {
         extraScrollRoom={112}
       >
         {pets.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1">
             <button
               type="button"
               onClick={() => setSelectedPetId("all")}
@@ -545,9 +545,6 @@ function ActivityPage() {
 
             <div className="mt-3 text-xl font-semibold">
               {formatMinutes(exerciseMinutes)}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">
-                {exerciseMinutes >= 60 ? "" : "min"}
-              </span>
             </div>
 
             <p className="text-xs text-muted-foreground">
