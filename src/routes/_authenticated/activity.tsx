@@ -498,7 +498,7 @@ function ActivityPage() {
         extraScrollRoom={112}
       >
         {pets.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             <button
               type="button"
               onClick={() => setSelectedPetId("all")}
