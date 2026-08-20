@@ -1,3 +1,5 @@
+import { ActivityIcon, Footprints, Scale, Scissors, Zap } from "lucide-react";
+
 export const EXERCISE_TYPES = new Set(["walk", "run", "play"]);
 
 export const ACTIVITY_LABELS: Record<string, string> = {
@@ -5,7 +7,47 @@ export const ACTIVITY_LABELS: Record<string, string> = {
     run: "Run",
     play: "Play",
     weight: "Weight check",
+    grooming: "Grooming",
 };
+
+export const ACTIVITY_FILTERS = [
+    ["all", "All"],
+    ["walk", "Walks"],
+    ["run", "Runs"],
+    ["play", "Play"],
+    ["weight", "Weight"],
+    ["grooming", "Grooming"],
+];
+
+export const ACTIVITY_TIME_FILTERS = [
+    ["all", "All time"],
+    ["today", "Today"],
+    ["week", "This week"],
+    ["month", "This month"],
+];
+
+export const ACITVITY_CARDS = [
+    {
+        title: "Walks",
+        icon: Footprints,
+    },
+    {
+        title: "Runs",
+        icon: Zap,
+    },
+    {
+        title: "Play",
+        icon: ActivityIcon,
+    },
+    {
+        title: "Weight Checks",
+        icon: Scale,
+    },
+    {
+        title: "Grooming",
+        icon: Scissors,
+    }
+];
 
 const getDateKeyFromDate = (date: Date) => [
     date.getFullYear(),
@@ -50,4 +92,32 @@ export const getStartOfWeek = () => {
     date.setDate(date.getDate() + diff);
 
     return date;
+};
+
+export const formatGroupDate = (dateKey: string) => {
+    const [year, month, day] = dateKey
+        .split("-")
+        .map(Number);
+
+    const date = new Date(year, month - 1, day);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.getTime() === today.getTime()) {
+        return "Today";
+    }
+
+    if (date.getTime() === yesterday.getTime()) {
+        return "Yesterday";
+    }
+
+    return date.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+    });
 };

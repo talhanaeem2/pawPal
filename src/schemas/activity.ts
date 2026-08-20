@@ -5,6 +5,7 @@ export const activity_type = z.enum([
     "play",
     "run",
     "weight",
+    "grooming"
 ]);
 
 export const activityLogSchema = z.object({

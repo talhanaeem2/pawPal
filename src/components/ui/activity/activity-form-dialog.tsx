@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { supabase } from "@/integrations/supabase/client";
 import { activityQuery } from "@/lib/queries";
+import { EXERCISE_TYPES } from "@/lib/activity-utils";
 
 import { Button } from "../common/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../common/select";
@@ -52,10 +53,9 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
             const payload = {
                 pet_id: data.pet_id,
                 activity_type: data.activity_type,
-                duration_min: data.activity_type !== "weight" &&
-                    data.duration_min ? Number(data.duration_min) : null,
-                weight: data.activity_type === "weight" &&
-                    data.weight ? Number(data.weight) : null,
+                duration_min: EXERCISE_TYPES.has(data.activity_type) && data.duration_min ? Number(data.duration_min) : null,
+                weight: data.activity_type === "weight" && data.weight
+                    ? Number(data.weight) : null,
                 notes: data.notes || null,
                 occurred_at: data.occurred_at,
             };
@@ -113,31 +113,36 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
 
                             if (v === "weight") {
                                 form.setField("duration_min", "");
+                            } else if (v === "grooming") {
+                                form.setField("duration_min", "");
+                                form.setField("weight", "");
                             } else {
                                 form.setField("weight", "");
                             }
-                        }}>
+                        }}
+                        >
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="walk">Walk</SelectItem>
                                 <SelectItem value="run">Run</SelectItem>
                                 <SelectItem value="play">Play</SelectItem>
+                                <SelectItem value="grooming">Grooming</SelectItem>
                                 <SelectItem value="weight">Weight Check</SelectItem>
                             </SelectContent>
                         </Select>
                     </Field>
                 </div>
-                {form.values.activity_type !== "weight" ? (
-                    <Field label="Duration (min)">
-                        <Input type="number" value={form.values.duration_min} onChange={(e) => form.setField("duration_min", e.target.value)} placeholder="e.g. 30" required />
-                    </Field>
-                ) : (
+                {form.values.activity_type === "weight" ? (
                     <Field label="Weight (kg)">
-                        <Input type="number" step="0.1" value={form.values.weight} onChange={(e) => form.setField("weight", e.target.value)} placeholder="e.g. 25.5" required />
+                        <Input type="number" step="0.1" value={form.values.weight} onChange={(e) => form.setField("weight", e.target.value)} placeholder="e.g. 25.5" />
+                    </Field>
+                ) : form.values.activity_type === "grooming" ? null : (
+                    <Field label="Duration (min)">
+                        <Input type="number" value={form.values.duration_min} onChange={(e) => form.setField("duration_min", e.target.value)} placeholder="e.g. 30" />
                     </Field>
                 )}
                 <Field label="When">
-                    {form.values.activity_type === "weight" ? (
+                    {form.values.activity_type === "weight" || form.values.activity_type === "grooming" ? (
                         <DatePicker
                             value={form.values.occurred_at}
                             onChange={(date) => form.setField("occurred_at", date)}
