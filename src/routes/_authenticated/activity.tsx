@@ -18,7 +18,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { petsQuery, activityQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
-import { EXERCISE_TYPES, formatMinutes, getDateFromOffset, getDateKey, getStartOfWeek } from "@/lib/activity-utils";
+import { ACITVITY_CARDS, EXERCISE_TYPES, formatMinutes, getDateFromOffset, getDateKey, getStartOfWeek } from "@/lib/activity-utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
@@ -135,6 +135,10 @@ function ActivityPage() {
     (log) => log.activity_type === "weight",
   ).length;
 
+  const groomingCount = thisWeekLogs.filter(
+    (log) => log.activity_type === "grooming",
+  ).length;
+
   const exerciseMinutes = thisWeekLogs.reduce(
     (total, log) =>
       total +
@@ -189,26 +193,11 @@ function ActivityPage() {
   }
 
   const breakdown = [
-    {
-      type: "walk",
-      label: "Walks",
-      count: walkCount,
-    },
-    {
-      type: "run",
-      label: "Runs",
-      count: runCount,
-    },
-    {
-      type: "play",
-      label: "Play",
-      count: playCount,
-    },
-    {
-      type: "weight",
-      label: "Weight",
-      count: weightCount,
-    },
+    { type: "walk", label: "Walks", count: walkCount },
+    { type: "run", label: "Runs", count: runCount },
+    { type: "play", label: "Play", count: playCount },
+    { type: "weight", label: "Weight", count: weightCount },
+    { type: "grooming", label: "Grooming", count: groomingCount },
   ];
 
   const maxBreakdownCount = Math.max(
@@ -379,7 +368,7 @@ function ActivityPage() {
                 className="overflow-hidden"
               >
                 <p className="text-sm text-muted-foreground">
-                  Walks, runs, play & weight.
+                  Walks, runs, play, weight & grooming.
                 </p>
               </div>
             </div>
@@ -407,7 +396,7 @@ function ActivityPage() {
           <FeatureEmptyState
             icon={Footprints}
             title="Track every adventure"
-            description="Log walks, runs, play sessions and weight to build a history of your pet's everyday activity."
+            description="Log walks, runs, play sessions, weight checks and grooming to build a history of your pet's everyday activity."
             cta="Log activity"
             to="/activity"
             search={{ new: true }}
@@ -419,37 +408,16 @@ function ActivityPage() {
             </h2>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="rounded-2xl bg-secondary/60 p-3 text-center">
-                <Footprints className="mx-auto h-5 w-5 text-primary" />
-                <p className="mt-2 text-xs font-medium">
-                  Walks
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-secondary/60 p-3 text-center">
-                <Zap className="mx-auto h-5 w-5 text-primary" />
-                <p className="mt-2 text-xs font-medium">
-                  Runs
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-secondary/60 p-3 text-center">
-                <ActivityIcon className="mx-auto h-5 w-5 text-primary" />
-                <p className="mt-2 text-xs font-medium">
-                  Play
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-secondary/60 p-3 text-center">
-                <Scale className="mx-auto h-5 w-5 text-primary" />
-                <p className="mt-2 text-xs font-medium">
-                  Weight
-                </p>
-              </div>
+              {ACITVITY_CARDS.map((card) => (
+                <div key={card.title} className="rounded-2xl bg-secondary/60 p-3 text-center">
+                  <card.icon className="mx-auto h-5 w-5 text-primary" />
+                  <p className="mt-2 text-xs font-medium">
+                    {card.title}
+                  </p>
+                </div>
+              ))}
             </div>
           </section>
-
-          <div className="h-24" aria-hidden="true" />
         </Page.Content>
       </Page>
     );
@@ -472,7 +440,7 @@ function ActivityPage() {
               className="overflow-hidden"
             >
               <p className="text-sm text-muted-foreground">
-                Walks, runs, play & weight.
+                Walks, runs, play, weight & grooming.
               </p>
             </div>
           </div>
@@ -691,10 +659,10 @@ function ActivityPage() {
               {weightChange !== null && (
                 <span
                   className={`rounded-full px-3 py-1.5 text-xs font-medium ${weightChange > 0
-                    ? "bg-secondary text-foreground"
-                    : weightChange < 0
-                      ? "bg-secondary text-foreground"
-                      : "bg-secondary text-muted-foreground"
+                      ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                      : weightChange < 0
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-secondary text-muted-foreground"
                     }`}
                 >
                   {weightChange > 0 ? "+" : ""}
@@ -712,10 +680,8 @@ function ActivityPage() {
               </p>
             )}
             {(() => {
-              if (selectedPetId === "all") return null;
-
               const chartLogs = weightLogs
-                .filter((log) => log.pet_id === selectedPetId)
+                .filter((log) => selectedPetId === "all" || log.pet_id === selectedPetId)
                 .slice(0, 10)
                 .reverse();
 

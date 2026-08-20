@@ -1,3 +1,5 @@
+import { ActivityIcon, Footprints, Scale, Scissors, Zap } from "lucide-react";
+
 export const EXERCISE_TYPES = new Set(["walk", "run", "play"]);
 
 export const ACTIVITY_LABELS: Record<string, string> = {
@@ -5,7 +7,31 @@ export const ACTIVITY_LABELS: Record<string, string> = {
     run: "Run",
     play: "Play",
     weight: "Weight check",
+    grooming: "Grooming",
 };
+
+export const ACITVITY_CARDS = [
+    {
+        title: "Walks",
+        icon: Footprints,
+    },
+    {
+        title: "Runs",
+        icon: Zap,
+    },
+    {
+        title: "Play",
+        icon: ActivityIcon,
+    },
+    {
+        title: "Weight Checks",
+        icon: Scale,
+    },
+    {
+        title: "Grooming",
+        icon: Scissors,
+    }
+];
 
 const getDateKeyFromDate = (date: Date) => [
     date.getFullYear(),

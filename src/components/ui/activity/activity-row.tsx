@@ -1,6 +1,6 @@
-import { Dumbbell, Footprints, Scale, Trash2, Zap } from "lucide-react";
+import { Dumbbell, Footprints, Scale, Scissors, Trash2, Zap } from "lucide-react";
 
-import { formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import { ACTIVITY_LABELS } from "@/lib/activity-utils";
 
 import { Button } from "../common/button";
@@ -15,7 +15,7 @@ type ActivityRowProps = {
     renderEdit: (item: ActivityLog) => React.ReactNode;
 };
 
-const icons: Record<string, typeof Footprints> = { walk: Footprints, run: Zap, play: Dumbbell, weight: Scale };
+const icons: Record<string, typeof Footprints> = { walk: Footprints, run: Zap, play: Dumbbell, weight: Scale, grooming: Scissors };
 
 export function ActivityRow({
     item,
@@ -37,11 +37,11 @@ export function ActivityRow({
                     {pet ? ` · ${pet.name}` : ""}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                    {formatDateTime(item.occurred_at)}
+                    {item.activity_type !== "grooming" ? formatDateTime(item.occurred_at) : formatDate(item.occurred_at)}
                     {item.duration_min ? ` · ${item.duration_min} min` : ""}
                     {item.weight ? ` · ${item.weight}${item.activity_type === "weight" ? " kg" : ""}` : ""}
                     <br />
-                    {!item.duration_min && !item.weight && !item.notes && (
+                    {!item.duration_min && !item.weight && !item.notes && item.activity_type !== "grooming" && (
                         <span className="opacity-50">No data logged</span>
                     )}
                 </div>
