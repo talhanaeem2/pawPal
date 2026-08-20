@@ -10,7 +10,8 @@ import {
   Scale,
   Flame,
   Clock3,
-  Zap,
+  Scissors,
+  PawPrint,
 } from "lucide-react";
 import z from "zod";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -18,7 +19,18 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { petsQuery, activityQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
-import { ACITVITY_CARDS, EXERCISE_TYPES, formatMinutes, getDateFromOffset, getDateKey, getStartOfWeek } from "@/lib/activity-utils";
+import {
+  ACITVITY_CARDS,
+  ACTIVITY_FILTERS,
+  ACTIVITY_TIME_FILTERS,
+  EXERCISE_TYPES,
+  formatGroupDate,
+  formatMinutes,
+  getDateFromOffset,
+  getDateKey,
+  getStartOfWeek
+} from "@/lib/activity-utils";
+import { cn, formatDate } from "@/lib/utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
@@ -27,6 +39,7 @@ import { Button } from "@/components/ui/common/button";
 import { ConfirmDialog } from "@/components/ui/common/confirm-dialog";
 import { FeatureEmptyState } from "@/components/ui/common/feature-empty-state";
 import { Page } from "@/components/layout/page";
+import { PetAvatar } from "@/components/ui/common/pet-avatar";
 import { ActivityFormDialog } from "@/components/ui/activity/activity-form-dialog";
 import { ActivityRow } from "@/components/ui/activity/activity-row";
 
@@ -59,6 +72,9 @@ function ActivityPage() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [selectedPetId, setSelectedPetId] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"exercise" | "care" | "history">("exercise");
+  const [historyType, setHistoryType] = useState("all");
+  const [historyDate, setHistoryDate] = useState("all");
 
   useEffect(() => {
     if (openCreate) {
@@ -111,12 +127,73 @@ function ActivityPage() {
       );
   }, [logs, selectedPetId]);
 
+  const historyLogs = useMemo(() => {
+    const now = new Date();
+
+    return filteredLogs.filter((log) => {
+      if (
+        historyType !== "all" &&
+        log.activity_type !== historyType
+      ) {
+        return false;
+      }
+
+      if (historyDate !== "all") {
+        const logDate = new Date(log.occurred_at);
+
+        if (historyDate === "today") {
+          if (getDateKey(log.occurred_at) !== getDateKey(now.toISOString())) {
+            return false;
+          }
+        }
+
+        if (historyDate === "week") {
+          const weekStart = getStartOfWeek();
+
+          if (logDate < weekStart) {
+            return false;
+          }
+        }
+
+        if (historyDate === "month") {
+          if (
+            logDate.getMonth() !== now.getMonth() ||
+            logDate.getFullYear() !== now.getFullYear()
+          ) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [filteredLogs, historyType, historyDate]);
+
   const weekStart = getStartOfWeek();
 
-  const thisWeekLogs = filteredLogs.filter(
-    (log) =>
-      new Date(log.occurred_at).getTime() >=
-      weekStart.getTime(),
+  const previousWeekStart = new Date(weekStart);
+  previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+
+  const thisWeekLogs = filteredLogs.filter((log) => {
+    const time = new Date(log.occurred_at).getTime();
+    return time >= weekStart.getTime();
+  });
+
+  const previousWeekLogs = filteredLogs.filter((log) => {
+    const time = new Date(log.occurred_at).getTime();
+
+    return (
+      time >= previousWeekStart.getTime() &&
+      time < weekStart.getTime()
+    );
+  });
+
+  const exerciseLogs = thisWeekLogs.filter(
+    (log) => EXERCISE_TYPES.has(log.activity_type)
+  );
+
+  const previousWeekExerciseLogs = previousWeekLogs.filter((log) =>
+    EXERCISE_TYPES.has(log.activity_type),
   );
 
   const walkCount = thisWeekLogs.filter(
@@ -131,22 +208,35 @@ function ActivityPage() {
     (log) => log.activity_type === "play",
   ).length;
 
-  const weightCount = thisWeekLogs.filter(
-    (log) => log.activity_type === "weight",
-  ).length;
-
-  const groomingCount = thisWeekLogs.filter(
+  const groomingCount = filteredLogs.filter(
     (log) => log.activity_type === "grooming",
   ).length;
 
-  const exerciseMinutes = thisWeekLogs.reduce(
-    (total, log) =>
-      total +
-      (EXERCISE_TYPES.has(log.activity_type)
-        ? Number(log.duration_min ?? 0)
-        : 0),
+  const exerciseMinutes = exerciseLogs.reduce(
+    (total, log) => total + Number(log.duration_min ?? 0),
     0,
   );
+
+  const previousWeekExerciseMinutes = previousWeekExerciseLogs.reduce(
+    (total, log) => total + Number(log.duration_min ?? 0),
+    0,
+  );
+
+  const activeDaysThisWeek = new Set(
+    exerciseLogs.map((log) => getDateKey(log.occurred_at)),
+  ).size;
+
+  const averageExerciseMinutes =
+    activeDaysThisWeek > 0
+      ? exerciseMinutes / activeDaysThisWeek
+      : 0;
+
+  const exerciseChange =
+    previousWeekExerciseMinutes > 0
+      ? ((exerciseMinutes - previousWeekExerciseMinutes) /
+        previousWeekExerciseMinutes) *
+      100
+      : null;
 
   const weightLogs = filteredLogs.filter(
     (log) =>
@@ -154,15 +244,29 @@ function ActivityPage() {
       log.weight != null,
   );
 
-  const latestWeight = weightLogs[0];
+  const getPetWeightLogs = (petId: string) =>
+    weightLogs
+      .filter((log) => log.pet_id === petId)
+      .sort(
+        (a, b) =>
+          new Date(b.occurred_at).getTime() -
+          new Date(a.occurred_at).getTime(),
+      );
 
-  const previousWeight = latestWeight
-    ? weightLogs.find(
-      (log) =>
-        log.pet_id === latestWeight.pet_id &&
-        log.id !== latestWeight.id,
-    )
-    : undefined;
+  const selectedPetWeightLogs =
+    selectedPetId !== "all"
+      ? getPetWeightLogs(selectedPetId)
+      : [];
+
+  const latestWeight =
+    selectedPetId !== "all"
+      ? selectedPetWeightLogs[0]
+      : weightLogs[0];
+
+  const previousWeight =
+    selectedPetId !== "all"
+      ? selectedPetWeightLogs[1]
+      : undefined;
 
   const weightChange =
     latestWeight?.weight != null &&
@@ -171,20 +275,33 @@ function ActivityPage() {
       Number(previousWeight.weight)
       : null;
 
+  const oldestWeight =
+    selectedPetId !== "all"
+      ? selectedPetWeightLogs[selectedPetWeightLogs.length - 1]
+      : undefined;
+
+  const totalWeightChange =
+    latestWeight?.weight != null &&
+      oldestWeight?.weight != null &&
+      latestWeight.id !== oldestWeight.id
+      ? Number(latestWeight.weight) -
+      Number(oldestWeight.weight)
+      : null;
+
+  const weightHistoryCount = selectedPetWeightLogs.length;
+
   const activityDates = new Set(
     filteredLogs
-      .filter(
-        (log) =>
-          log.activity_type === "walk" ||
-          log.activity_type === "run" ||
-          log.activity_type === "play",
-      )
+      .filter((log) => EXERCISE_TYPES.has(log.activity_type))
       .map((log) => getDateKey(log.occurred_at)),
   );
 
+  const todayKey = getDateKey(new Date().toISOString());
   let streak = 0;
 
-  for (let offset = 0; offset < 365; offset++) {
+  const startOffset = activityDates.has(todayKey) ? 0 : 1;
+
+  for (let offset = startOffset; offset < 365; offset++) {
     if (activityDates.has(getDateFromOffset(offset))) {
       streak++;
     } else {
@@ -192,97 +309,79 @@ function ActivityPage() {
     }
   }
 
-  const breakdown = [
-    { type: "walk", label: "Walks", count: walkCount },
-    { type: "run", label: "Runs", count: runCount },
-    { type: "play", label: "Play", count: playCount },
-    { type: "weight", label: "Weight", count: weightCount },
-    { type: "grooming", label: "Grooming", count: groomingCount },
-  ];
-
-  const maxBreakdownCount = Math.max(
-    ...breakdown.map((item) => item.count),
-    1,
-  );
-
   const insight = useMemo(() => {
-    if (thisWeekLogs.length === 0) {
+    if (exerciseLogs.length === 0) {
       return null;
     }
 
-    const exerciseCount =
-      walkCount +
-      runCount +
-      playCount;
+    const activityParts = [
+      walkCount > 0
+        ? `${walkCount} walk${walkCount === 1 ? "" : "s"}`
+        : null,
+      runCount > 0
+        ? `${runCount} run${runCount === 1 ? "" : "s"}`
+        : null,
+      playCount > 0
+        ? `${playCount} play session${playCount === 1 ? "" : "s"
+        }`
+        : null,
+    ].filter(Boolean);
 
-    if (exerciseCount > 0 && exerciseMinutes > 0) {
+    if (exerciseChange !== null) {
+      if (exerciseChange > 0) {
+        return {
+          title: "Great progress",
+          text:
+            selectedPetId === "all"
+              ? `Exercise is up ${exerciseChange.toFixed(
+                0,
+              )}% from last week. You've logged ${activityParts.join(
+                ", ",
+              )} for ${formatMinutes(exerciseMinutes)} total.`
+              : `This week is ${exerciseChange.toFixed(
+                0,
+              )}% more active than last week, with ${formatMinutes(
+                exerciseMinutes,
+              )} of exercise.`,
+        };
+      }
 
-      const activityParts = [
-        walkCount > 0
-          ? `${walkCount} walk${walkCount === 1 ? "" : "s"}`
-          : null,
-        runCount > 0
-          ? `${runCount} run${runCount === 1 ? "" : "s"}`
-          : null,
-        playCount > 0
-          ? `${playCount} play session${playCount === 1 ? "" : "s"}`
-          : null,
-      ].filter(Boolean);
-
-      return {
-        title: "Activity insight",
-        text:
-          selectedPetId === "all"
-            ? `You've logged ${activityParts.join(
-              ", ",
-            )} this week, with ${formatMinutes(exerciseMinutes)} of exercise in total.`
-            : `This week has ${activityParts.join(
-              ", ",
-            )}, with ${formatMinutes(exerciseMinutes)} of exercise in total.`,
-      };
-    }
-
-    if (weightChange !== null) {
-      const direction =
-        weightChange > 0
-          ? "increased"
-          : weightChange < 0
-            ? "decreased"
-            : "stayed the same";
-
-      return {
-        title: "Weight insight",
-        text:
-          latestWeight && latestWeight.weight != null
-            ? `Latest recorded weight is ${Number(
-              latestWeight.weight,
-            ).toFixed(1)} kg and has ${direction} by ${Math.abs(
-              weightChange,
-            ).toFixed(1)} kg since the previous measurement.`
-            : null,
-      };
+      if (exerciseChange < 0) {
+        return {
+          title: "Activity check-in",
+          text: `Exercise is ${Math.abs(
+            exerciseChange,
+          ).toFixed(
+            0,
+          )}% lower than last week. You've logged ${formatMinutes(
+            exerciseMinutes,
+          )} so far this week.`,
+        };
+      }
     }
 
     return {
-      title: "Activity insight",
-      text: `${thisWeekLogs.length} activit${thisWeekLogs.length === 1 ? "y" : "ies"
-        } logged this week.`,
+      title: "Exercise this week",
+      text: `${activityParts.join(
+        ", ",
+      )} across ${activeDaysThisWeek} ${activeDaysThisWeek === 1 ? "day" : "days"
+        }, totaling ${formatMinutes(exerciseMinutes)}.`,
     };
   }, [
-    thisWeekLogs.length,
+    exerciseLogs.length,
     exerciseMinutes,
+    exerciseChange,
+    activeDaysThisWeek,
     walkCount,
     runCount,
     playCount,
-    weightChange,
-    latestWeight,
     selectedPetId,
   ]);
 
   const groupedLogs = useMemo(() => {
     const groups = new Map<string, ActivityLog[]>();
 
-    for (const log of filteredLogs) {
+    for (const log of historyLogs) {
       const key = getDateKey(log.occurred_at);
 
       const existing = groups.get(key);
@@ -295,35 +394,7 @@ function ActivityPage() {
     }
 
     return Array.from(groups.entries());
-  }, [filteredLogs]);
-
-  const formatGroupDate = (dateKey: string) => {
-    const [year, month, day] = dateKey
-      .split("-")
-      .map(Number);
-
-    const date = new Date(year, month - 1, day);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.getTime() === today.getTime()) {
-      return "Today";
-    }
-
-    if (date.getTime() === yesterday.getTime()) {
-      return "Yesterday";
-    }
-
-    return date.toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  }, [historyLogs]);
 
   const renderActivityEdit = (item: ActivityLog) => (
     <ActivityFormDialog
@@ -466,354 +537,515 @@ function ActivityPage() {
         extraScrollRoom={112}
       >
         {pets.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide px-1 pt-1">
             <button
               type="button"
               onClick={() => setSelectedPetId("all")}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${selectedPetId === "all"
-                ? "bg-primary text-primary-foreground"
-                : "bg-card text-muted-foreground shadow-(--shadow-soft)"
-                }`}
+              className="flex shrink-0 flex-col items-center gap-1.5"
             >
-              All pets
+              <div
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-full transition",
+                  selectedPetId === "all"
+                    ? "bg-primary text-primary-foreground ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
+                    : "bg-secondary/60 text-muted-foreground",
+                )}
+              >
+                <PawPrint className="h-5 w-5" />
+              </div>
+
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  selectedPetId === "all"
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                All pets
+              </span>
             </button>
 
-            {pets.map((pet) => (
+            {pets.map((pet) => {
+              const selected = selectedPetId === pet.id;
+
+              return (
+                <button
+                  key={pet.id}
+                  type="button"
+                  onClick={() => setSelectedPetId(pet.id)}
+                  className="flex shrink-0 flex-col items-center gap-1.5"
+                >
+                  <PetAvatar
+                    pet={pet}
+                    className={cn(
+                      "h-12 w-12 transition",
+                      selected &&
+                      "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                    )}
+                    emojiSize="text-2xl"
+                  />
+
+                  <span
+                    className={cn(
+                      "max-w-16 truncate text-xs font-medium",
+                      selected
+                        ? "text-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {pet.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="rounded-2xl bg-secondary/60 p-1">
+          <div className="grid grid-cols-3 gap-1">
+            {(
+              [
+                ["exercise", "Exercise", ActivityIcon],
+                ["care", "Care", Scissors],
+                ["history", "History", Clock3],
+              ] as const
+            ).map(([value, label, Icon]) => (
               <button
-                key={pet.id}
+                key={value}
                 type="button"
-                onClick={() =>
-                  setSelectedPetId(pet.id)
-                }
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition capitalize ${selectedPetId === pet.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground shadow-(--shadow-soft)"
+                onClick={() => setActiveTab(value)}
+                className={`flex items-center justify-center rounded-xl gap-1.5 px-3 py-2 text-sm font-medium transition ${activeTab === value
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
                   }`}
               >
-                {pet.name}
+                <Icon className="h-3.5 w-3.5" />
+                {label}
               </button>
             ))}
           </div>
-        )}
-        <section className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
-            <ActivityIcon className="h-4 w-4 text-primary" />
-
-            <div className="mt-3 text-xl font-semibold">
-              {thisWeekLogs.length}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              This week
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
-            <Clock3 className="h-4 w-4 text-primary" />
-
-            <div className="mt-3 text-xl font-semibold">
-              {formatMinutes(exerciseMinutes)}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Exercise
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
-            <Scale className="h-4 w-4 text-primary" />
-
-            <div className="mt-3 text-xl font-semibold">
-              {latestWeight?.weight != null
-                ? Number(latestWeight.weight).toFixed(1)
-                : "—"}
-              {latestWeight?.weight != null && (
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
-                  kg
-                </span>
-              )}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Latest weight
-            </p>
-          </div>
-        </section>
-
-        <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg">
-                This week
-              </h2>
-
-              <p className="mt-1 text-xs text-muted-foreground">
-                Your activity breakdown
-              </p>
-            </div>
-
-            {streak > 0 && (
-              <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium">
-                <Flame className="h-3.5 w-3.5 text-primary" />
-                {streak} day streak
+        </div>
+        {activeTab === "exercise" && (
+          <div className="space-y-5">
+            <section className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
+                <Clock3 className="h-4 w-4 text-primary" />
+                <div className="mt-3 text-xl font-semibold">
+                  {formatMinutes(Math.round(averageExerciseMinutes))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Avg. per active day
+                </p>
               </div>
+              <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
+                <div className="flex justify-between items-center">
+                  <ActivityIcon className="h-4 w-4 text-primary" />
+                  {streak > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Flame className="h-3.5 w-3.5 text-red-500" />
+                      <span className="text-xs font-semibold">
+                        {streak} {streak === 1 ? "day" : "days"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 text-xl font-semibold">
+                  {activeDaysThisWeek}/7
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Active days
+                </p>
+              </div>
+            </section>
+            {exerciseChange !== null && (
+              <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-display text-lg">
+                      Weekly progress
+                    </h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Compared with last week
+                    </p>
+                  </div>
+
+                  <div
+                    className={cn("rounded-full px-3 py-1.5 text-xs font-semibold ",
+                      exerciseChange > 0 ? "text-green-700 bg-green-100" : exerciseChange < 0 ?
+                        "text-amber-700 bg-amber-100" : "bg-secondary text-muted-foreground"
+                    )}
+                  >
+                    {exerciseChange > 0 ? "+" : ""}
+                    {exerciseChange.toFixed(0)}%
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-end justify-between">
+                  <div>
+                    <p className="text-2xl font-semibold">
+                      {formatMinutes(exerciseMinutes)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      This week
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium">
+                      {formatMinutes(previousWeekExerciseMinutes)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Last week
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {insight?.text && (
+              <section className="rounded-3xl border border-primary/10 bg-primary/5 p-5">
+                <div className="flex items-center gap-2">
+                  <ActivityIcon className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-semibold">
+                    {insight.title}
+                  </h2>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {insight.text}
+                </p>
+              </section>
             )}
           </div>
+        )}
+        {activeTab === "care" && (
+          <div className="space-y-5">
+            <section className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
+                <Scale className="h-4 w-4 text-primary" />
 
-          <div className="mt-5 space-y-4">
-            {breakdown.map((item) => (
-              <div key={item.type}>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-sm">
-                    {item.label}
-                  </span>
-
-                  <span className="text-xs text-muted-foreground">
-                    {item.count}
-                  </span>
+                <div className="mt-3 text-xl font-semibold">
+                  {latestWeight?.weight != null
+                    ? Number(latestWeight.weight).toFixed(1)
+                    : "—"}
+                  {latestWeight?.weight != null && (
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">
+                      kg
+                    </span>
+                  )}
                 </div>
-
-                <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{
-                      width: `${(item.count /
-                        maxBreakdownCount) *
-                        100
-                        }%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 grid grid-cols-4 divide-x divide-border rounded-2xl bg-secondary/50 py-3">
-            <div className="text-center">
-              <div className="text-sm font-semibold">
-                {walkCount}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                {walkCount === 1 ? "Walk" : "Walks"}
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="text-sm font-semibold">
-                {runCount}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                {runCount === 1 ? "Run" : "Runs"}
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="text-sm font-semibold">
-                {playCount}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                {playCount === 1 ? "Play" : "Plays"}
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="text-sm font-semibold">
-                {weightCount}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                {weightCount === 1 ? "Weight" : "Weights"}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {latestWeight && (
-          <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary">
-                <Scale className="h-5 w-5 text-primary" />
-              </div>
-
-              <div>
-                <h2 className="font-medium">
-                  Weight
-                </h2>
-
                 <p className="text-xs text-muted-foreground">
-                  Latest recorded measurement
+                  {selectedPetId !== "all" ? "Current weight" : "Latest weight"}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-card p-4 shadow-(--shadow-soft)">
+                <Scissors className="h-4 w-4 text-primary" />
+                <div className="mt-3 text-xl font-semibold">
+                  {groomingCount}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {selectedPetId !== "all" ? "Grooming this week" : "Grooming logs"}
+                </p>
+              </div>
+            </section>
+
+            {latestWeight && (
+              <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary">
+                      <Scale className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="font-display text-lg">
+                        {selectedPetId !== "all" ? "Weight progress" : "Weight history"}
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedPetId !== "all" ?
+                          `${weightHistoryCount} measurement${weightHistoryCount === 1 ? '' : 's'}` :
+                          "Latest recorded measurement"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <span className="text-3xl font-semibold">
+                        {Number(latestWeight.weight).toFixed(1)}
+                      </span>
+                      <span className="ml-1 text-sm text-muted-foreground">
+                        kg
+                      </span>
+                    </div>
+
+                    {totalWeightChange !== null && (
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">
+                          {totalWeightChange > 0 ? "+" : ""}
+                          {totalWeightChange.toFixed(1)} kg
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Since first measurement
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {weightChange !== null && (
+                  <div className="mt-3 flex items-center justify-between rounded-2xl bg-secondary/60 px-4 py-3">
+                    <span className="text-xs text-muted-foreground">
+                      Since previous measurement
+                    </span>
+                    <span className="text-sm font-medium">
+                      {weightChange > 0 ? "+" : ""}
+                      {weightChange.toFixed(1)} kg
+                    </span>
+                  </div>
+                )}
+                {latestWeight.pet_id && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {pets.find(
+                      (p) => p.id === latestWeight.pet_id,
+                    )?.name ?? "Pet"}
+                  </p>
+                )}
+
+                {selectedPetId !== "all" &&
+                  (() => {
+                    const chartLogs = selectedPetWeightLogs
+                      .slice(0, 12)
+                      .reverse();
+
+                    if (chartLogs.length < 2) return null;
+
+                    const chartData = chartLogs.map((log) => ({
+                      date: new Date(
+                        log.occurred_at,
+                      ).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      }),
+                      weight: Number(log.weight),
+                    }));
+
+                    const weights = chartData.map(
+                      (d) => d.weight,
+                    );
+
+                    const minWeight = Math.min(...weights);
+                    const maxWeight = Math.max(...weights);
+
+                    const padding = Math.max(
+                      (maxWeight - minWeight) * 0.2,
+                      0.5,
+                    );
+
+                    return (
+                      <div className="mt-5">
+                        <p className="mb-3 text-xs text-muted-foreground">
+                          {chartLogs.length} measurements
+                        </p>
+                        <ResponsiveContainer
+                          width="100%"
+                          height={140}
+                        >
+                          <LineChart
+                            data={chartData}
+                            margin={{
+                              top: 4,
+                              right: 4,
+                              left: -24,
+                              bottom: 0,
+                            }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="var(--border)"
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="date"
+                              tick={{
+                                fontSize: 10,
+                                fill: "var(--muted-foreground)",
+                              }}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis
+                              tick={{
+                                fontSize: 10,
+                                fill: "var(--muted-foreground)",
+                              }}
+                              tickLine={false}
+                              axisLine={false}
+                              domain={[
+                                Math.floor(
+                                  minWeight - padding,
+                                ),
+                                Math.ceil(
+                                  maxWeight + padding,
+                                ),
+                              ]}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                borderRadius: "12px",
+                                border: "1px solid var(--border)",
+                                background: "var(--card)",
+                                fontSize: 12,
+                                color: "var(--foreground)",
+                              }}
+                              formatter={(v: number) => [
+                                `${v.toFixed(1)} kg`,
+                                "Weight",
+                              ]}
+                              labelStyle={{
+                                color:
+                                  "var(--muted-foreground)",
+                                marginBottom: 2,
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="weight"
+                              stroke="var(--primary)"
+                              strokeWidth={2}
+                              dot={{
+                                fill: "var(--primary)",
+                                r: 3,
+                                strokeWidth: 0,
+                              }}
+                              activeDot={{
+                                r: 5,
+                                strokeWidth: 0,
+                              }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    );
+                  })()}
+              </section>
+            )}
+
+            <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary">
+                  <Scissors className="h-5 w-5 text-primary" />
+                </div>
+
+                <div>
+                  <h2 className="font-display text-lg">
+                    Grooming
+                  </h2>
+
+                  <p className="text-xs text-muted-foreground">
+                    {selectedPetId !== "all" ? "Recent grooming sessions" : "Grooming logs"}
+                  </p>
+                </div>
+              </div>
+
+              {filteredLogs.filter(
+                (log) => log.activity_type === "grooming",
+              ).length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  No grooming recorded yet.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {filteredLogs
+                    .filter(
+                      (log) =>
+                        log.activity_type === "grooming",
+                    )
+                    .slice(0, 3)
+                    .map((log) => (
+                      <div
+                        key={log.id}
+                        className="flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">
+                            {pets.find(
+                              (p) => p.id === log.pet_id,
+                            )?.name ?? "Pet"}
+                          </p>
+
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(
+                              log.occurred_at,
+                            )}
+                          </p>
+                        </div>
+
+                        {log.notes && (
+                          <p className="max-w-[50%] truncate text-xs text-muted-foreground">
+                            {log.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+        {activeTab === "history" && (
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-lg">
+                  Activity history
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {historyLogs.length}{" "}
+                  {historyLogs.length === 1 ? "entry" : "entries"}
                 </p>
               </div>
             </div>
-
-            <div className="mt-4 flex items-end justify-between">
-              <div>
-                <span className="text-3xl font-semibold">
-                  {Number(latestWeight.weight).toFixed(1)}
-                </span>
-
-                <span className="ml-1 text-sm text-muted-foreground">
-                  kg
-                </span>
-              </div>
-
-              {weightChange !== null && (
-                <span
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${weightChange > 0
-                      ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                      : weightChange < 0
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                >
-                  {weightChange > 0 ? "+" : ""}
-                  {weightChange.toFixed(1)} kg
-                </span>
-              )}
-            </div>
-
-            {latestWeight.pet_id && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                {pets.find(
-                  (p) =>
-                    p.id === latestWeight.pet_id,
-                )?.name ?? "Pet"}
-              </p>
-            )}
-            {(() => {
-              const chartLogs = weightLogs
-                .filter((log) => selectedPetId === "all" || log.pet_id === selectedPetId)
-                .slice(0, 10)
-                .reverse();
-
-              if (chartLogs.length < 2) return null;
-
-              const chartData = chartLogs.map((log) => ({
-                date: new Date(log.occurred_at).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                }),
-                weight: Number(log.weight),
-                pet: pets.find((p) => p.id === log.pet_id)?.name ?? "",
-              }));
-
-              const weights = chartData.map((d) => d.weight);
-              const minWeight = Math.min(...weights);
-              const maxWeight = Math.max(...weights);
-              const padding = Math.max((maxWeight - minWeight) * 0.2, 0.5);
-
-              return (
-                <div className="mt-5">
-                  <p className="mb-3 text-xs text-muted-foreground">
-                    Last {chartLogs.length} measurements
-                  </p>
-                  <ResponsiveContainer width="100%" height={140}>
-                    <LineChart
-                      data={chartData}
-                      margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="var(--border)"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-                        tickLine={false}
-                        axisLine={false}
-                        domain={[
-                          Math.floor(minWeight - padding),
-                          Math.ceil(maxWeight + padding),
-                        ]}
-                        tickFormatter={(v) => `${v}`}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: "12px",
-                          border: "1px solid var(--border)",
-                          background: "var(--card)",
-                          fontSize: 12,
-                          color: "var(--foreground)",
-                        }}
-                        formatter={(v: number) => [`${v.toFixed(1)} kg`, "Weight"]}
-                        labelStyle={{ color: "var(--muted-foreground)", marginBottom: 2 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="weight"
-                        stroke="var(--primary)"
-                        strokeWidth={2}
-                        dot={{ fill: "var(--primary)", r: 3, strokeWidth: 0 }}
-                        activeDot={{ r: 5, strokeWidth: 0 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              );
-            })()}
-          </section>
-        )}
-
-        {insight?.text && (
-          <section className="rounded-3xl border border-primary/10 bg-primary/5 p-5">
-            <div className="flex items-center gap-2">
-              <ActivityIcon className="h-4 w-4 text-primary" />
-
-              <h2 className="text-sm font-semibold">
-                {insight.title}
-              </h2>
-            </div>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              {insight.text}
-            </p>
-          </section>
-        )}
-
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg">
-                Activity history
-              </h2>
-
-              <p className="text-xs text-muted-foreground">
-                {filteredLogs.length}{" "}
-                {filteredLogs.length === 1
-                  ? "entry"
-                  : "entries"}
-              </p>
-            </div>
-          </div>
-
-          {filteredLogs.length === 0 ? (
-            <div className="rounded-3xl bg-card p-6 text-center shadow-(--shadow-soft)">
-              <p className="text-sm text-muted-foreground">
-                No activity recorded for this pet yet.
-              </p>
-
-              <ActivityFormDialog
-                pets={pets}
-                trigger={
-                  <Button
-                    variant="outline"
-                    className="mt-4 rounded-full"
+            <div className="space-y-2 pb-2">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                {ACTIVITY_FILTERS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setHistoryType(value)}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${historyType === value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-muted-foreground shadow-(--shadow-soft)"
+                      }`}
                   >
-                    <Plus className="mr-1 h-4 w-4" />
-                    Log activity
-                  </Button>
-                }
-              />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                {ACTIVITY_TIME_FILTERS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setHistoryDate(value)}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${historyDate === value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-muted-foreground shadow-(--shadow-soft)"
+                      }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="space-y-5">
-              {groupedLogs.map(
-                ([dateKey, dateLogs]) => (
+            {historyLogs.length === 0 ? (
+              <div className="rounded-3xl bg-card p-6 text-center shadow-(--shadow-soft)">
+                <p className="text-sm text-muted-foreground">
+                  No activity matches these filters.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {groupedLogs.map(([dateKey, dateLogs]) => (
                   <div key={dateKey}>
                     <div className="mb-2 px-1">
                       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -822,16 +1054,15 @@ function ActivityPage() {
                     </div>
 
                     <ul className="rounded-3xl bg-card divide-y divide-border/60 shadow-(--shadow-soft)">
-                      {dateLogs.map(
-                        renderActivityRow,
-                      )}
+                      {dateLogs.map(renderActivityRow)}
                     </ul>
                   </div>
                 ),
-              )}
-            </div>
-          )}
-        </section>
+                )}
+              </div>
+            )}
+          </section>
+        )}
       </Page.Content>
 
       <ConfirmDialog

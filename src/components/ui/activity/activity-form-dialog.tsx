@@ -126,8 +126,8 @@ export function ActivityFormDialog({ pets, item, trigger, open: controlledOpen, 
                                 <SelectItem value="walk">Walk</SelectItem>
                                 <SelectItem value="run">Run</SelectItem>
                                 <SelectItem value="play">Play</SelectItem>
-                                <SelectItem value="weight">Weight Check</SelectItem>
                                 <SelectItem value="grooming">Grooming</SelectItem>
+                                <SelectItem value="weight">Weight Check</SelectItem>
                             </SelectContent>
                         </Select>
                     </Field>
