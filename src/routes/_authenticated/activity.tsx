@@ -70,7 +70,9 @@ function ActivityPage() {
   const navigate = Route.useNavigate();
 
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [selectedPetId, setSelectedPetId] = useState<string>("all");
+  const [selectedPetId, setSelectedPetId] = useState<string>(() =>
+    pets.length === 1 ? pets[0].id : "all"
+  );
   const [createOpen, setCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"exercise" | "care" | "history">("exercise");
   const [historyType, setHistoryType] = useState("all");
@@ -208,7 +210,7 @@ function ActivityPage() {
     (log) => log.activity_type === "play",
   ).length;
 
-  const groomingCount = filteredLogs.filter(
+  const groomingCount = thisWeekLogs.filter(
     (log) => log.activity_type === "grooming",
   ).length;
 
