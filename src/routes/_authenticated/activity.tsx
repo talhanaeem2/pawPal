@@ -13,6 +13,7 @@ import {
   Scissors,
   PawPrint,
   type LucideIcon,
+  Ruler,
 } from "lucide-react";
 import z from "zod";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -35,8 +36,9 @@ import {
   getMergedSpeciesConfig,
   getStartOfWeek,
   getTypeFilters,
+  MEASUREMENT_TYPES,
 } from "@/lib/activity-utils";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
@@ -208,7 +210,6 @@ function ActivityPage() {
   const walkCount = thisWeekLogs.filter((log) => log.activity_type === "walk").length;
   const runCount = thisWeekLogs.filter((log) => log.activity_type === "run").length;
   const playCount = thisWeekLogs.filter((log) => log.activity_type === "play").length;
-  const groomingCount = thisWeekLogs.filter((log) => log.activity_type === "grooming").length;
   const trainingCount = thisWeekLogs.filter((l) => l.activity_type === "training").length;
   const freeRoamCount = thisWeekLogs.filter((l) => l.activity_type === "free_roam").length;
   const swimCount = thisWeekLogs.filter((l) => l.activity_type === "swim").length;
@@ -221,16 +222,58 @@ function ActivityPage() {
 
   const activeDaysThisWeek = new Set(exerciseLogs.map((log) => getDateKey(log.occurred_at))).size;
 
-  const averageExerciseMinutes = activeDaysThisWeek > 0 ? exerciseMinutes / activeDaysThisWeek : 0;
   const exerciseChange = previousWeekExerciseMinutes > 0 ? ((exerciseMinutes - previousWeekExerciseMinutes) / previousWeekExerciseMinutes) * 100 : null;
 
   const activityDates = new Set(filteredLogs.filter((log) => EXERCISE_TYPES.has(log.activity_type))
     .map((log) => getDateKey(log.occurred_at)));
 
   const weightLogs = filteredLogs.filter((log) => log.activity_type === "weight" && log.weight != null);
-
   const getPetWeightLogs = (petId: string) => weightLogs.filter((log) => log.pet_id === petId)
     .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
+
+  const measurementLogs = filteredLogs.filter((log) => MEASUREMENT_TYPES.has(log.activity_type) && (log.weight != null || log.length != null));
+  const getPetMeasurementLogs = (petId: string) => measurementLogs.filter((log) => log.pet_id === petId)
+    .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
+
+  const selectedPetMeasurementLogs = selectedPetId !== "all" ? getPetMeasurementLogs(selectedPetId) : [];
+  const latestMeasurement = selectedPetId !== "all" ? selectedPetMeasurementLogs[0] : measurementLogs[0];
+  const previousMeasurement = selectedPetId !== "all" ? selectedPetMeasurementLogs[1] : undefined;
+  const measurementHistoryCount = selectedPetMeasurementLogs.length;
+  const measurementType = latestMeasurement?.activity_type;
+  const selectedTypeMeasurementLogs = selectedPetId !== "all" && measurementType ? selectedPetMeasurementLogs.filter((log) => log.activity_type === measurementType,) : [];
+  const oldestMeasurement = selectedTypeMeasurementLogs[selectedTypeMeasurementLogs.length - 1];
+
+  const getMeasurementUnit = (type: string) => {
+    return type === "weight" ? "kg" : "cm";
+  };
+
+  const getMeasurementLabel = (type: string) => {
+    return type === "weight" ? "Weight" : "Length";
+  };
+
+  const getMeasurementValue = (log: ActivityLog) => {
+    if (log.activity_type === "weight") {
+      return Number(log.weight);
+    }
+
+    if (log.activity_type === "length") {
+      return Number(log.length);
+    }
+
+    return null;
+  };
+
+  const latestMeasurementValue = latestMeasurement ? getMeasurementValue(latestMeasurement) : null;
+  const previousMeasurementValue = previousMeasurement ? getMeasurementValue(previousMeasurement) : null;
+  const oldestMeasurementValue = oldestMeasurement ? getMeasurementValue(oldestMeasurement) : null;
+  const measurementChange =
+    latestMeasurementValue != null &&
+      previousMeasurementValue != null ? latestMeasurementValue - previousMeasurementValue : null;
+
+  const totalMeasurementChange =
+    latestMeasurementValue != null &&
+      oldestMeasurementValue != null &&
+      latestMeasurement.id !== oldestMeasurement.id ? latestMeasurementValue - oldestMeasurementValue : null;
 
   const selectedPetWeightLogs = selectedPetId !== "all" ? getPetWeightLogs(selectedPetId) : [];
   const latestWeight = selectedPetId !== "all" ? selectedPetWeightLogs[0] : weightLogs[0];
@@ -416,12 +459,22 @@ function ActivityPage() {
 
   const healthMetrics: MetricCard[] = [];
 
-  if (latestWeight?.weight != null) {
-    healthMetrics.push({
-      value: `${Number(latestWeight.weight).toFixed(1)} kg`,
-      label: "Current weight",
-      icon: Scale,
-    });
+  if (latestMeasurement) {
+    if (latestMeasurement.activity_type === "weight" && latestMeasurement.weight != null) {
+      healthMetrics.push({
+        value: `${Number(latestMeasurement.weight).toFixed(1)} kg`,
+        label: selectedPetId !== "all" ? "Current weight" : "Latest weight",
+        icon: Scale,
+      });
+    }
+
+    if (latestMeasurement.activity_type === "length" && latestMeasurement.length != null) {
+      healthMetrics.push({
+        value: `${Number(latestMeasurement.length).toFixed(1)} cm`,
+        label: selectedPetId !== "all" ? "Current length" : "Latest length",
+        icon: Ruler,
+      });
+    }
   }
 
   if (weightChange !== null) {
@@ -862,7 +915,7 @@ function ActivityPage() {
                     {streak > 0 && (
                       <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium">
                         <Flame className="h-3.5 w-3.5 text-red-500" />
-                        {streak} day exercise streak
+                        {streak} day streak
                       </div>)}
                   </div>
                   <div className="mt-5 space-y-4">
@@ -902,6 +955,77 @@ function ActivityPage() {
         {activeTab === "care" && (
           <div className="space-y-5">
             <MetricCards metrics={careCards} />
+            {careLogs.length > 0 && (() => {
+              const thisWeekCare = thisWeekLogs.filter((l) =>
+                mergedConfig.care.includes(l.activity_type as ActivityType)
+              );
+
+              const careBreakdown = mergedConfig.care
+                .map((type) => ({
+                  type,
+                  label: ACTIVITY_LABELS[type] ?? type,
+                  count: thisWeekCare.filter((l) => l.activity_type === type).length,
+                  total: careLogs.filter((l) => l.activity_type === type).length,
+                }))
+                .filter((item) => item.total > 0); // only show types that have logs
+
+              const maxCareCount = Math.max(...careBreakdown.map((i) => i.count), 1);
+
+              if (careBreakdown.length === 0) return null;
+
+              return (
+                <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-display text-lg">This week</h2>
+                      <p className="mt-1 text-xs text-muted-foreground">Care activity breakdown</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 space-y-4">
+                    {careBreakdown.map((item) => {
+                      const Icon = ACTIVITY_ICONS[item.type] ?? Scissors;
+                      return (
+                        <div key={item.type}>
+                          <div className="mb-1.5 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-sm">{item.label}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {item.count} this week
+                              </span>
+                              <span className="text-xs text-muted-foreground/50">·</span>
+                              <span className="text-xs text-muted-foreground">
+                                {item.total} total
+                              </span>
+                            </div>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all"
+                              style={{ width: `${(item.count / maxCareCount) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Last session summary */}
+                  <div className="mt-5 rounded-2xl bg-secondary/50 px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Last care session</p>
+                    <p className="mt-0.5 text-sm">
+                      {(() => {
+                        const last = careLogs[0];
+                        if (!last) return "None recorded";
+                        const pet = pets.find((p) => p.id === last.pet_id);
+                        return `${ACTIVITY_LABELS[last.activity_type] ?? last.activity_type}${pet ? ` · ${pet.name}` : ""} · ${formatDate(last.occurred_at)}`;
+                      })()}
+                    </p>
+                  </div>
+                </section>
+              );
+            })()}
             {(() => {
               if (careLogs.length === 0 && mergedConfig.care.length === 0) {
                 return null;
@@ -974,9 +1098,7 @@ function ActivityPage() {
                                   {pets.find((p) => p.id === log.pet_id)?.name ?? "Pet"}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {new Date(log.occurred_at).toLocaleDateString(undefined, {
-                                    dateStyle: "medium",
-                                  })}
+                                  {formatDate(log.occurred_at)}
                                   {log.notes && ` · ${log.notes}`}
                                 </p>
                               </div>
@@ -994,6 +1116,47 @@ function ActivityPage() {
         {activeTab === "health" && (
           <div className="space-y-5">
             <MetricCards metrics={healthCards} />
+            {healthLogs.length > 0 && (
+              <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-display text-lg">Health overview</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {healthLogs.length} total observation{healthLogs.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {healthTypes.map((type) => {
+                    const typeLogs = healthLogs.filter((l) => l.activity_type === type);
+                    if (typeLogs.length === 0) return null;
+                    const Icon = ACTIVITY_ICONS[type] ?? ActivityIcon;
+                    const last = typeLogs[0];
+                    return (
+                      <div
+                        key={type}
+                        className="flex items-center justify-between rounded-2xl bg-secondary/50 px-4 py-3"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-card">
+                            <Icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">
+                              {ACTIVITY_LABELS[type] ?? type}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {typeLogs.length} log{typeLogs.length === 1 ? "" : "s"} · Last{" "}
+                              {formatDate(last.occurred_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
             {latestWeight && (
               <section className="rounded-3xl bg-card p-5 shadow-(--shadow-soft)">
                 <div className="flex items-center justify-between">
@@ -1003,7 +1166,7 @@ function ActivityPage() {
                     </div>
                     <div>
                       <h2 className="font-display text-lg">
-                        {selectedPetId !== "all" ? "Weight progress" : "Weight history"}
+                        Weight history
                       </h2>
                       <p className="text-xs text-muted-foreground">
                         {selectedPetId !== "all" ?
@@ -1273,9 +1436,7 @@ function ActivityPage() {
                                   {pets.find((p) => p.id === log.pet_id)?.name ?? "Pet"}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {new Date(log.occurred_at).toLocaleDateString(undefined, {
-                                    dateStyle: "medium",
-                                  })}
+                                  {formatDate(log.occurred_at)}
                                   {log.notes && ` · ${log.notes}`}
                                 </p>
                               </div>
