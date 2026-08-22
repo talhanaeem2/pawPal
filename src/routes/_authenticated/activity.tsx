@@ -12,8 +12,8 @@ import {
   Clock3,
   Scissors,
   PawPrint,
-  type LucideIcon,
   Ruler,
+  type LucideIcon,
 } from "lucide-react";
 import z from "zod";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -317,28 +317,22 @@ function ActivityPage() {
         return {
           title: "Great progress",
           text: selectedPetId === "all"
-            ? `Exercise is up ${exerciseChange.toFixed(0)}
-            % from last week. You've logged ${activityParts.join(", ")}
-             for ${formatMinutes(exerciseMinutes)} total.`
-            : `This week is ${exerciseChange.toFixed(0)}
-            % more active than last week, with ${formatMinutes(exerciseMinutes)} of exercise.`,
+            ? `Exercise is up ${exerciseChange.toFixed(0)}% from last week. You've logged ${activityParts.join(", ")} for ${formatMinutes(exerciseMinutes)} total.`
+            : `This week is ${exerciseChange.toFixed(0)}% more active than last week, with ${formatMinutes(exerciseMinutes)} of exercise.`,
         };
       }
 
       if (exerciseChange < 0) {
         return {
           title: "Activity check-in",
-          text: `Exercise is ${Math.abs(exerciseChange).toFixed(0)}
-          % lower than last week. You've logged ${formatMinutes(exerciseMinutes)} so far this week.`,
+          text: `Exercise is ${Math.abs(exerciseChange).toFixed(0)}% lower than last week. You've logged ${formatMinutes(exerciseMinutes)} so far this week.`,
         };
       }
     }
 
     return {
       title: "Exercise this week",
-      text: `${activityParts.join(", ")}
-       across ${activeDaysThisWeek} ${activeDaysThisWeek === 1 ? "day" : "days"}
-       , totaling ${formatMinutes(exerciseMinutes)}.`,
+      text: `${activityParts.join(", ")} across ${activeDaysThisWeek} ${activeDaysThisWeek === 1 ? "day" : "days"}, totaling ${formatMinutes(exerciseMinutes)}.`,
     };
   }, [
     exerciseLogs.length,
@@ -440,7 +434,14 @@ function ActivityPage() {
       : null,
   ].filter((metric): metric is MetricCard => metric !== null);
 
-  const careMetrics = Object.entries(careCounts)
+  const thisWeekCareCounts = thisWeekLogs
+    .filter((l) => mergedConfig.care.includes(l.activity_type as ActivityType))
+    .reduce<Record<string, number>>((acc, log) => {
+      acc[log.activity_type] = (acc[log.activity_type] ?? 0) + 1;
+      return acc;
+    }, {});
+
+  const careMetrics = Object.entries(thisWeekCareCounts)
     .sort(([, a], [, b]) => b - a)
     .map(([type, count]) => ({
       value: String(count),
@@ -982,6 +983,17 @@ function ActivityPage() {
                       <h2 className="font-display text-lg">This week</h2>
                       <p className="mt-1 text-xs text-muted-foreground">Care activity breakdown</p>
                     </div>
+                    {careLogs.length > 0 && (() => {
+                      const daysSince = Math.floor(
+                        (Date.now() - new Date(careLogs[0].occurred_at).getTime()) / 86_400_000
+                      );
+                      return (
+                        <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium">
+                          <Scissors className="h-3.5 w-3.5 text-muted-foreground" />
+                          {daysSince === 0 ? "Today" : daysSince === 1 ? "Yesterday" : `${daysSince}d ago`}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="mt-5 space-y-4">
                     {careBreakdown.map((item) => {
@@ -1014,7 +1026,7 @@ function ActivityPage() {
                     })}
                   </div>
                   {/* Last session summary */}
-                  <div className="mt-5 rounded-2xl bg-secondary/50 px-4 py-3">
+                  {/* <div className="mt-5 rounded-2xl bg-secondary/50 px-4 py-3">
                     <p className="text-xs text-muted-foreground">Last care session</p>
                     <p className="mt-0.5 text-sm">
                       {(() => {
@@ -1024,7 +1036,7 @@ function ActivityPage() {
                         return `${ACTIVITY_LABELS[last.activity_type] ?? last.activity_type}${pet ? ` · ${pet.name}` : ""} · ${formatDate(last.occurred_at)}`;
                       })()}
                     </p>
-                  </div>
+                  </div> */}
                 </section>
               );
             })()}
@@ -1467,32 +1479,30 @@ function ActivityPage() {
               </div>
             </div>
             <div className="space-y-2 pb-2">
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                {(() => {
-                  const isAllPets = selectedPetId === "all";
-                  const filters = isAllPets
-                    ? CATEGORY_FILTERS
-                    : getTypeFilters(pets.find((p) => p.id === selectedPetId)?.species ?? "other");
+              {(() => {
+                const isAllPets = selectedPetId === "all";
+                const filters = isAllPets
+                  ? CATEGORY_FILTERS
+                  : getTypeFilters(pets.find((p) => p.id === selectedPetId)?.species ?? "other");
 
-                  return (
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                      {filters.map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setHistoryType(value)}
-                          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${historyType === value
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-card text-muted-foreground shadow-(--shadow-soft)"
-                            }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
+                return (
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                    {filters.map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setHistoryType(value)}
+                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${historyType === value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground shadow-(--shadow-soft)"
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {ACTIVITY_TIME_FILTERS.map(([value, label]) => (
                   <button
