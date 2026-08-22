@@ -42,9 +42,6 @@ type ActivityBreakdown = {
   type: ActivityType;
   label: string;
   count: number;
-};
-
-type CareBreakdown = ActivityBreakdown & {
   total: number;
 };
 
@@ -72,7 +69,7 @@ type DashboardExercise = {
 type DashboardCare = {
   logs: ActivityLog[];
   groupedLogs: [string, ActivityLog[]][];
-  breakdown: CareBreakdown[];
+  breakdown: ActivityBreakdown[];
   maxBreakdownCount: number;
   cards: MetricCard[];
 };
@@ -274,6 +271,7 @@ export function getActivityDashboard({
   }
 
   const activityCounts: Record<string, number> = {};
+  const exerciseTotals: Record<string, number> = {};
   const exerciseLogs: ActivityLog[] = [];
   const thisWeekCareCounts: Record<string, number> = {};
 
@@ -285,6 +283,13 @@ export function getActivityDashboard({
 
     if (mergedConfig.care.includes(log.activity_type as ActivityType)) {
       thisWeekCareCounts[log.activity_type] = (thisWeekCareCounts[log.activity_type] ?? 0) + 1;
+    }
+  }
+
+  for (const log of filteredLogs) {
+    if (EXERCISE_TYPES.has(log.activity_type)) {
+      exerciseTotals[log.activity_type] =
+        (exerciseTotals[log.activity_type] ?? 0) + 1;
     }
   }
 
@@ -323,6 +328,7 @@ export function getActivityDashboard({
       type: type as ActivityType,
       label,
       count: activityCounts[type] ?? 0,
+      total: exerciseTotals[type] ?? 0,
     }));
   const maxBreakdownCount = Math.max(...breakdown.map((item) => item.count), 1);
 

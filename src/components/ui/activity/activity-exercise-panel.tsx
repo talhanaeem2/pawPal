@@ -1,6 +1,6 @@
 import { Activity, Flame, Footprints } from "lucide-react";
 
-import { formatMinutes } from "@/lib/activity-utils";
+import { ACTIVITY_ICONS, formatMinutes } from "@/lib/activity-utils";
 import { cn } from "@/lib/utils";
 
 import { ActivityDashboard } from "./activity-dashboard";
@@ -89,22 +89,33 @@ export function ActivityExercisePanel({ pets, exercise }: ActivityExercisePanelP
         </div>
 
         <div className="mt-5 space-y-4">
-          {exercise.breakdown.map((item) => (
-            <div key={item.type}>
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-sm">{item.label}</span>
-                <span className="text-xs text-muted-foreground">{item.count}</span>
+          {exercise.breakdown.map((item) => {
+            const Icon = ACTIVITY_ICONS[item.type] ?? Activity;
+
+            return (
+              <div key={item.type}>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-sm">{item.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{item.count} this week</span>
+                    <span className="text-xs text-muted-foreground/50">·</span>
+                    <span className="text-xs text-muted-foreground">{item.total} total</span>
+                  </div>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{
+                      width: (item.count / exercise.maxBreakdownCount) * 100 + "%",
+                    }}
+                  />
+                </div>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{
-                    width: (item.count / exercise.maxBreakdownCount) * 100 + "%",
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 
