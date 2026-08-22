@@ -34,14 +34,15 @@ export function ActivityRow({
             <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm">
                     {ACTIVITY_LABELS[item.activity_type] ?? item.activity_type}
-                    {pet ? ` · ${pet.name}` : ""}
+                    <span className="capitalize">{pet ? ` · ${pet.name}` : ""}</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
                     {item.activity_type !== "grooming" && item.activity_type !== "weight" ? formatDateTime(item.occurred_at) : formatDate(item.occurred_at)}
                     {item.duration_min ? ` · ${item.duration_min} min` : ""}
                     {item.weight ? ` · ${item.weight}${item.activity_type === "weight" ? " kg" : ""}` : ""}
+                    {item.length ? ` · ${item.length}${item.activity_type === "length" ? " cm" : ""}` : ""}
                     <br />
-                    {!item.duration_min && !item.weight && !item.notes && item.activity_type !== "grooming" && (
+                    {!item.duration_min && !item.weight && !item.length && !item.notes && item.activity_type !== "grooming" && (
                         <span className="opacity-50">No data logged</span>
                     )}
                 </div>

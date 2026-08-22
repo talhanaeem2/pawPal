@@ -172,26 +172,6 @@ export function LogActivityDialog({
     }
 
     async function handleJustMarkDone() {
-        const occurredAt = buildOccurredAt(today, timeSlot);
-        const activityType = getActivityType(schedule.kind);
-
-        const rows = petsSorted.map((p) => ({
-            pet_id: p.petId,
-            activity_type: activityType,
-            occurred_at: occurredAt,
-            duration_min: null,
-            weight: null,
-            notes: null,
-        }));
-
-        const { error } = await supabase.from("activity_logs").insert(rows);
-
-        if (error) {
-            toast.error("Marked done but couldn't create activity log");
-        } else {
-            qc.invalidateQueries({ queryKey: activityQuery.queryKey });
-        }
-
         onMarkDone();
         onOpenChange(false);
     }
