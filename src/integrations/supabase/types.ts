@@ -45,6 +45,7 @@ export type Database = {
           created_at: string | null
           duration_min: number | null
           id: string
+          length: number | null
           notes: string | null
           occurred_at: string | null
           pet_id: string | null
@@ -56,6 +57,7 @@ export type Database = {
           created_at?: string | null
           duration_min?: number | null
           id?: string
+          length?: number | null
           notes?: string | null
           occurred_at?: string | null
           pet_id?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           created_at?: string | null
           duration_min?: number | null
           id?: string
+          length?: number | null
           notes?: string | null
           occurred_at?: string | null
           pet_id?: string | null

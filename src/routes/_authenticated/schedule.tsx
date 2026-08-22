@@ -91,7 +91,7 @@ function SchedulePage() {
   const { headerRef, descriptionRef, handleContentScroll } = useCollapsiblePageHeader();
   const today = todayDateString();
 
-  function handleToggle({
+  async function handleToggle({
     scheduleItemId,
     scheduleItemPetId,
     markDone,
@@ -104,6 +104,31 @@ function SchedulePage() {
   }) {
     const schedule = items.find((i) => i.id === scheduleItemId);
     if (!schedule) return;
+
+    const targetPetId = scheduleItemPetId
+      ? schedule.schedule_item_pets.find(
+        (p) => p.id === scheduleItemPetId
+      )?.pet_id
+      : undefined;
+
+    if (markDone && schedule.kind === "grooming") {
+      try {
+        await logGrooming.mutateAsync({
+          schedule,
+          timeSlot: timeSlots[0] ?? null,
+          targetPetId,
+        });
+
+        await toggle.mutateAsync({
+          scheduleItemId,
+          scheduleItemPetId,
+          markDone: true,
+          timeSlots,
+        });
+      } catch { }
+
+      return;
+    }
 
     if (markDone && isActivityKind(schedule.kind)) {
       // Show log activity dialog
@@ -130,6 +155,57 @@ function SchedulePage() {
       toggle.mutate({ scheduleItemId, scheduleItemPetId, markDone, timeSlots });
     }
   }
+
+  const logGrooming = useMutation({
+    mutationFn: async ({
+      schedule,
+      timeSlot,
+      targetPetId,
+    }: {
+      schedule: ScheduleWithPets;
+      timeSlot: string | null;
+      targetPetId?: string;
+    }) => {
+      const occurredAt = buildOccurredAt(today, timeSlot);
+
+      const petsToLog = schedule.schedule_item_pets.filter(
+        (p) => !targetPetId || p.pet_id === targetPetId
+      );
+
+      if (petsToLog.length === 0) {
+        throw new Error("No pet found for this grooming schedule");
+      }
+
+      const rows = petsToLog.map((p) => ({
+        pet_id: p.pet_id,
+        activity_type: "grooming",
+        occurred_at: occurredAt,
+        duration_min: null,
+        weight: null,
+        notes: null,
+      }));
+
+      const { error } = await supabase
+        .from("activity_logs")
+        .insert(rows);
+
+      if (error) throw error;
+    },
+
+    onSuccess: async () => {
+      await qc.invalidateQueries({
+        queryKey: activityQuery.queryKey,
+      });
+    },
+
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't log grooming activity"
+      );
+    },
+  });
 
   const toggle = useMutation({
     mutationFn: async ({

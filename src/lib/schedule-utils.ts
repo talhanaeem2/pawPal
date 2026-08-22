@@ -41,7 +41,7 @@ export const repeatUnitOptions = [
 ];
 
 // Kinds that warrant logging an activity when marked done
-const ACTIVITY_KINDS = ["walk", "run", "play", "weight"] as const;
+const ACTIVITY_KINDS = ["walk", "run", "play", "weight", "grooming"] as const;
 type ActivityKind = typeof ACTIVITY_KINDS[number];
 
 export function isActivityKind(kind: string): kind is ActivityKind {
