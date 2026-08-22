@@ -84,7 +84,9 @@ function ActivityPage() {
   const navigate = Route.useNavigate();
 
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [selectedPetId, setSelectedPetId] = useState<string>("all");
+  const [selectedPetId, setSelectedPetId] = useState<string>(() =>
+    pets.length === 1 ? pets[0].id : "all"
+  );
   const [createOpen, setCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"exercise" | "care" | "health" | "history">("exercise");
   const [historyType, setHistoryType] = useState("all");
@@ -224,8 +226,9 @@ function ActivityPage() {
 
   const exerciseChange = previousWeekExerciseMinutes > 0 ? ((exerciseMinutes - previousWeekExerciseMinutes) / previousWeekExerciseMinutes) * 100 : null;
 
-  const activityDates = new Set(filteredLogs.filter((log) => EXERCISE_TYPES.has(log.activity_type))
-    .map((log) => getDateKey(log.occurred_at)));
+  const groomingCount = thisWeekLogs.filter(
+    (log) => log.activity_type === "grooming",
+  ).length;
 
   const weightLogs = filteredLogs.filter((log) => log.activity_type === "weight" && log.weight != null);
   const getPetWeightLogs = (petId: string) => weightLogs.filter((log) => log.pet_id === petId)
