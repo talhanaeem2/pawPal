@@ -2,11 +2,12 @@ import { Activity, Flame, Footprints } from "lucide-react";
 
 import { formatMinutes } from "@/lib/activity-utils";
 import { cn } from "@/lib/utils";
-import { Pet } from "@/schemas/pets";
 
 import { ActivityDashboard } from "./activity-dashboard";
 import { ActivityLogButton } from "./activity-log-button";
 import { ActivityMetricCards } from "./activity-metric-cards";
+
+import { Pet } from "@/schemas/pets";
 
 type ActivityExercisePanelProps = {
   pets: Pet[];

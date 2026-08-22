@@ -4,9 +4,11 @@ import { ActivityDashboard } from "./activity-dashboard";
 import { ActivityLogButton } from "./activity-log-button";
 import { ActivityMetricCards } from "./activity-metric-cards";
 import { ActivityTypeLogGroups } from "./activity-type-log-groups";
-import { Pet } from "@/schemas/pets";
-import { ActivityType } from "@/schemas/activity";
+
 import { ACTIVITY_ICONS } from "@/lib/activity-utils";
+
+import { ActivityType } from "@/schemas/activity";
+import { Pet } from "@/schemas/pets";
 
 type ActivityCarePanelProps = {
   pets: Pet[];

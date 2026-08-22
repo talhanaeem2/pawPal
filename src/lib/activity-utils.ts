@@ -317,3 +317,11 @@ export const formatGroupDate = (dateKey: string) => {
         day: "numeric",
     });
 };
+
+export const icons: Record<string, typeof Footprints> = {
+    walk: Footprints,
+    run: Zap,
+    play: Dumbbell,
+    weight: Scale,
+    grooming: Scissors,
+};

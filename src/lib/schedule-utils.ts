@@ -1,3 +1,5 @@
+import { formatTime } from "./utils";
+
 import { ScheduleForm, ScheduleItem, ScheduleKind } from "@/schemas/schedule";
 
 export const KIND_LABELS: Record<ScheduleKind, string> = {
@@ -443,4 +445,8 @@ export function applyTimeSlotFilter<T extends {
     }
 
     return query.is("time_slot", null);
+}
+
+export function formatScheduleTime(time: string | null) {
+    return time ? formatTime(time) : "";
 }

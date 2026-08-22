@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/common/button";
 import { ScheduleListItem } from "./schedule-dashboard";
 import { ScheduleDialog } from "./schedule-dialog";
 
-import { formatKind } from "@/lib/schedule-utils";
+import { formatKind, formatScheduleTime } from "@/lib/schedule-utils";
 
-import { cn, formatTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+
 import { Pet } from "@/schemas/pets";
 
 
@@ -344,8 +345,4 @@ function CompletionButton({
       <Check className="h-4 w-4" />
     </button>
   );
-}
-
-function formatScheduleTime(time: string | null) {
-  return time ? formatTime(time) : "";
 }

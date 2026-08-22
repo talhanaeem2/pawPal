@@ -2,6 +2,7 @@ import { Activity as ActivityIcon, type LucideIcon } from "lucide-react";
 
 import { ACTIVITY_ICONS, ACTIVITY_LABELS } from "@/lib/activity-utils";
 import { formatDate } from "@/lib/utils";
+
 import { ActivityLog } from "@/schemas/activity";
 
 type ActivityTypeLogGroupsProps = {

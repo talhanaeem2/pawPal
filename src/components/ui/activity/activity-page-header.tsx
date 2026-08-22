@@ -1,9 +1,9 @@
 import type { RefObject } from "react";
 
 import { Page } from "@/components/layout/page";
-import { Pet } from "@/schemas/pets";
-
 import { ActivityLogButton } from "./activity-log-button";
+
+import { Pet } from "@/schemas/pets";
 
 type ActivityPageHeaderProps = {
   pets: Pet[];

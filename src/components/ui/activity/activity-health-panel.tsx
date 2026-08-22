@@ -2,13 +2,14 @@ import { Activity, Scale } from "lucide-react";
 
 import { ACTIVITY_ICONS, ACTIVITY_LABELS } from "@/lib/activity-utils";
 import { formatDate } from "@/lib/utils";
-import { Pet } from "@/schemas/pets";
 
 import { ActivityDashboard } from "./activity-dashboard";
 import { ActivityLogButton } from "./activity-log-button";
 import { ActivityMetricCards } from "./activity-metric-cards";
 import { ActivityTypeLogGroups } from "./activity-type-log-groups";
 import { ActivityWeightHistory } from "./activity-weight-history";
+
+import { Pet } from "@/schemas/pets";
 
 type ActivityHealthPanelProps = {
   pets: Pet[];

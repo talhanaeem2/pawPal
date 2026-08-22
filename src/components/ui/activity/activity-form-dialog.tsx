@@ -12,7 +12,6 @@ import {
   EXERCISE_TYPES,
   MEASUREMENT_TYPES,
   OBSERVATION_TYPES,
-  TIMED_TYPES,
   getSpeciesAllowedTypes,
   getMergedSpeciesConfig,
 } from "@/lib/activity-utils";

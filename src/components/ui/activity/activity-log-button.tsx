@@ -1,9 +1,9 @@
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/common/button";
-import { Pet } from "@/schemas/pets";
-
 import { ActivityFormDialog } from "./activity-form-dialog";
+
+import { Pet } from "@/schemas/pets";
 
 type ActivityLogButtonProps = {
   pets: Pet[];

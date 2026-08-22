@@ -3,9 +3,10 @@ import { Footprints } from "lucide-react";
 
 import { Page } from "@/components/layout/page";
 import { FeatureEmptyState } from "@/components/ui/common/feature-empty-state";
+import { ActivityPageHeader } from "./activity-page-header";
+
 import { Pet } from "@/schemas/pets";
 
-import { ActivityPageHeader } from "./activity-page-header";
 
 type ActivityCard = {
   title: string;

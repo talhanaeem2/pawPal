@@ -1,7 +1,7 @@
-import { Dumbbell, Footprints, Scale, Scissors, Trash2, Zap } from "lucide-react";
+import { Footprints, Trash2 } from "lucide-react";
 
 import { formatDate, formatDateTime } from "@/lib/utils";
-import { ACTIVITY_LABELS } from "@/lib/activity-utils";
+import { ACTIVITY_LABELS, icons } from "@/lib/activity-utils";
 
 import { Button } from "../common/button";
 
@@ -13,14 +13,6 @@ type ActivityRowProps = {
   pets: Pet[];
   onDelete: (id: string) => void;
   renderEdit: (item: ActivityLog) => React.ReactNode;
-};
-
-const icons: Record<string, typeof Footprints> = {
-  walk: Footprints,
-  run: Zap,
-  play: Dumbbell,
-  weight: Scale,
-  grooming: Scissors,
 };
 
 export function ActivityRow({ item, pets, onDelete, renderEdit }: ActivityRowProps) {

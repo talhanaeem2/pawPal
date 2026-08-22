@@ -8,12 +8,13 @@ import {
   getTypeFilters,
 } from "@/lib/activity-utils";
 import { cn } from "@/lib/utils";
-import { ActivityLog } from "@/schemas/activity";
-import { Pet } from "@/schemas/pets";
 
 import { ActivityEditButton } from "./activity-edit-button";
 import { ActivityLogButton } from "./activity-log-button";
 import { ActivityRow } from "./activity-row";
+
+import { Pet } from "@/schemas/pets";
+import { ActivityLog } from "@/schemas/activity";
 
 type ActivityHistoryPanelProps = {
   pets: Pet[];
