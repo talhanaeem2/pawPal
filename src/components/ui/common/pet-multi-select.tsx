@@ -87,7 +87,7 @@ export function PetMultiSelect({
                     role="combobox"
                     className="w-full justify-between font-normal"
                 >
-                    <span className="truncate">{summary}</span>
+                    <span className="truncate capitalize">{summary}</span>
 
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -96,58 +96,55 @@ export function PetMultiSelect({
             <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                 <Command>
                     <CommandInput placeholder="Search pets..." />
+                    {/* {selectedPets.length > 0 && (
+                        <div className="border-b p-3">
+                            <p className="mb-2 text-xs font-medium text-muted-foreground">
+                                {selectedPets.length} selected
+                            </p>
 
+                            <div className="flex flex-wrap gap-2">
+                                {selectedPets.map((pet) => (
+                                    <Badge
+                                        key={pet.id}
+                                        variant="secondary"
+                                        className="gap-1 pr-1 cursor-pointer capitalize"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            remove(pet.id);
+                                        }}
+                                    >
+                                        {pet.name}
+
+                                        <X className="h-3 w-3 opacity-70" />
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )} */}
+
+                    <div className="flex justify-between border-b p-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={selectAll}
+                            disabled={value.length === pets.length}
+                        >
+                            Select all
+                        </Button>
+
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearAll}
+                            disabled={value.length === 0}
+                        >
+                            Clear all
+                        </Button>
+                    </div>
                     <CommandList>
                         <CommandEmpty>No pets found.</CommandEmpty>
-
-                        {selectedPets.length > 0 && (
-                            <div className="border-b p-3">
-                                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                                    {selectedPets.length} selected
-                                </p>
-
-                                <div className="flex flex-wrap gap-2">
-                                    {selectedPets.map((pet) => (
-                                        <Badge
-                                            key={pet.id}
-                                            variant="secondary"
-                                            className="gap-1 pr-1 cursor-pointer"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                remove(pet.id);
-                                            }}
-                                        >
-                                            {pet.name}
-
-                                            <X className="h-3 w-3 opacity-70" />
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex justify-between border-b p-2">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={selectAll}
-                                disabled={value.length === pets.length}
-                            >
-                                Select all
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={clearAll}
-                                disabled={value.length === 0}
-                            >
-                                Clear all
-                            </Button>
-                        </div>
-
                         <CommandGroup>
                             {pets.map((pet) => {
                                 const selected = value.includes(pet.id);
@@ -157,6 +154,7 @@ export function PetMultiSelect({
                                         key={pet.id}
                                         value={pet.name}
                                         onSelect={() => toggle(pet.id)}
+                                        className="capitalize"
                                     >
                                         <Check
                                             className={cn(

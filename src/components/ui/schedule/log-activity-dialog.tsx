@@ -112,7 +112,8 @@ export function LogActivityDialog({
 }: LogActivityDialogProps) {
     const qc = useQueryClient();
     const isWeight = schedule.kind === "weight";
-    const label = isWeight ? "Weight (kg)" : "Duration (min)";
+    const isLength = schedule.kind === "length";
+    const label = isWeight ? "Weight (kg)" : isLength ? "Length (cm)" : "Duration (min)";
     const placeholder = isWeight ? "e.g. 25.5" : "e.g. 30";
     const inputType = "number";
     const inputStep = isWeight ? "0.1" : "1";
@@ -149,7 +150,9 @@ export function LogActivityDialog({
                     occurred_at: occurredAt,
                     ...(isWeight
                         ? { weight: Number(inputs[p.petId]) }
-                        : { duration_min: Number(inputs[p.petId]) }
+                        : isLength
+                            ? { length: Number(inputs[p.petId]) }
+                            : { duration_min: Number(inputs[p.petId]) }
                     ),
                     notes: null,
                 }));

@@ -21,7 +21,6 @@ import {
   getStartOfWeek,
   type SpeciesActivityConfig,
 } from "@/lib/activity-utils";
-
 import { ActivityLog, ActivityType } from "@/schemas/activity";
 import { Pet } from "@/schemas/pets";
 
@@ -235,7 +234,7 @@ export function getActivityDashboard({
       ? [...new Set(pets.map((pet) => pet.species))]
       : [selectedPet?.species ?? "other"];
   const mergedConfig = getMergedSpeciesConfig(selectedSpecies);
-  const healthTypes = [...mergedConfig.measurements, ...mergedConfig.observations];
+  const healthTypes = [...mergedConfig.measurements, ...mergedConfig.medical, ...mergedConfig.observations];
   const petNames = new Map(pets.map((pet) => [pet.id, pet.name]));
   const filteredLogs = logs
     .filter((log) => selectedPetId === "all" || log.pet_id === selectedPetId)

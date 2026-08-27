@@ -7,13 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { activityQuery } from "@/lib/queries";
 import {
   ACTIVITY_LABELS,
-  CARE_TYPES,
   DATE_ONLY_TYPES,
   EXERCISE_TYPES,
-  MEASUREMENT_TYPES,
-  OBSERVATION_TYPES,
-  getSpeciesAllowedTypes,
-  getMergedSpeciesConfig,
+  getGroupedTypesForPets,
 } from "@/lib/activity-utils";
 
 import { Button } from "../common/button";
@@ -49,28 +45,6 @@ interface IActivityFormDialog {
   trigger: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-}
-
-// Get grouped types for a set of pets
-// If petId is specified, use that pet's species config
-// Otherwise merge all pets' species configs
-function getGroupedTypes(pets: Pet[], petId: string) {
-  if (!petId) {
-    const allSpecies = [...new Set(pets.map((p) => p.species))];
-    const merged = getMergedSpeciesConfig(allSpecies);
-    return merged;
-  }
-  const pet = pets.find((p) => p.id === petId);
-  if (!pet) return getMergedSpeciesConfig([]);
-  const species = pet.species ?? "other";
-  const allowed = getSpeciesAllowedTypes(species);
-
-  return {
-    exercise: allowed.filter((t) => EXERCISE_TYPES.has(t)),
-    care: allowed.filter((t) => CARE_TYPES.has(t)),
-    measurements: allowed.filter((t) => MEASUREMENT_TYPES.has(t)),
-    observations: allowed.filter((t) => OBSERVATION_TYPES.has(t)),
-  };
 }
 
 export function ActivityFormDialog({
@@ -113,10 +87,11 @@ export function ActivityFormDialog({
     form.setField("pet_id", petId);
     // If current activity type isn't valid for the new pet's species,
     // reset to the first available type for that species
-    const grouped = getGroupedTypes(pets, petId);
+    const grouped = getGroupedTypesForPets(pets, [petId]);
     const allAllowed = [
       ...grouped.exercise,
       ...grouped.care,
+      ...grouped.medical,
       ...grouped.measurements,
       ...grouped.observations,
     ];
@@ -170,7 +145,10 @@ export function ActivityFormDialog({
     );
   }
 
-  const grouped = getGroupedTypes(pets, form.values.pet_id);
+  const grouped = getGroupedTypesForPets(
+    pets,
+    form.values.pet_id ? [form.values.pet_id] : [],
+  );
   const currentType = form.values.activity_type;
   const useDateOnly = DATE_ONLY_TYPES.has(currentType);
   const showDuration = EXERCISE_TYPES.has(currentType);
@@ -182,15 +160,27 @@ export function ActivityFormDialog({
   const notesPlaceholder =
     currentType === "grooming"
       ? "Product used, any observations…"
-      : currentType === "feeding_observation"
-        ? "Did they eat? How much? Any concerns…"
-        : currentType === "shedding"
-          ? "Shedding started, completed, any issues…"
-          : currentType === "uv_check"
-            ? "Lamp condition, any issues…"
-            : currentType === "tank_cleaning"
-              ? "What was cleaned, water parameters…"
-              : "Anything you'd like to remember";
+      : currentType === "feeding"
+        ? "What and how much…"
+        : currentType === "medication"
+          ? "Dose, reaction, anything to note…"
+          : currentType === "supplements"
+            ? "Dose, brand, anything to note…"
+            : currentType === "flea_tick"
+              ? "Product used, any reaction…"
+              : currentType === "ear_cleaning"
+                ? "Cleaner used, condition of ears…"
+                : currentType === "teeth_brushing"
+                  ? "Toothpaste used, any resistance…"
+                  : currentType === "feeding_observation"
+                    ? "Did they eat? How much? Any concerns…"
+                    : currentType === "shedding"
+                      ? "Shedding started, completed, any issues…"
+                      : currentType === "uv_check"
+                        ? "Lamp condition, any issues…"
+                        : currentType === "tank_cleaning"
+                          ? "What was cleaned, water parameters…"
+                          : "Anything you'd like to remember";
 
   return (
     <FormDialog
@@ -245,6 +235,16 @@ export function ActivityFormDialog({
                 <SelectGroup>
                   <SelectLabel>Care</SelectLabel>
                   {grouped.care.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {ACTIVITY_LABELS[type]}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+              {grouped.medical.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Medical</SelectLabel>
+                  {grouped.medical.map((type) => (
                     <SelectItem key={type} value={type}>
                       {ACTIVITY_LABELS[type]}
                     </SelectItem>

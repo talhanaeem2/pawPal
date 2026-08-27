@@ -9,13 +9,20 @@ export const activity_type = z.enum([
     "free_roam",
     "swim",
     // Care — date only, no duration
+    "feeding",
     "grooming",
     "nail_trim",
     "bath",
+    "ear_cleaning",
+    "teeth_brushing",
     "wing_clip",
     "beak_trim",
     "tank_cleaning",
     "water_change",
+    // Medical — routine treatments
+    "medication",
+    "supplements",
+    "flea_tick",
     // Measurements — specific fields
     "weight",
     "length",

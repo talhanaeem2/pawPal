@@ -160,7 +160,10 @@ function ActivityPage() {
         />
 
         {activeTab === "exercise" && (
-          <ActivityExercisePanel pets={pets} exercise={dashboard.exercise} />
+          <ActivityExercisePanel
+            pets={pets}
+            exercise={dashboard.exercise}
+          />
         )}
 
         {activeTab === "care" && (
@@ -170,6 +173,7 @@ function ActivityPage() {
             careTypes={dashboard.mergedConfig.care}
             petNames={dashboard.petNames}
             selectedPetId={selectedPetId}
+            onDelete={setConfirmId}
           />
         )}
 
@@ -179,6 +183,7 @@ function ActivityPage() {
             health={dashboard.health}
             petNames={dashboard.petNames}
             selectedPetId={selectedPetId}
+            onDelete={setConfirmId}
           />
         )}
 

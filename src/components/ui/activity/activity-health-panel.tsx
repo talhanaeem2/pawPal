@@ -16,6 +16,7 @@ type ActivityHealthPanelProps = {
   health: ActivityDashboard["health"];
   petNames: Map<string, string>;
   selectedPetId: string;
+  onDelete: (id: string) => void;
 };
 
 export function ActivityHealthPanel({
@@ -23,6 +24,7 @@ export function ActivityHealthPanel({
   health,
   petNames,
   selectedPetId,
+  onDelete,
 }: ActivityHealthPanelProps) {
   const healthLogsByType = new Map(health.groupedLogs);
   const hasHealthOptions = health.types.length > 0;
@@ -109,6 +111,8 @@ export function ActivityHealthPanel({
           groups={health.groupedLogs}
           petNames={petNames}
           selectedPetId={selectedPetId}
+          onDelete={onDelete}
+          pets={pets}
         />
       ) : (
         hasHealthOptions && (

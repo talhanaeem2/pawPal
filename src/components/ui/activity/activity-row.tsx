@@ -1,7 +1,7 @@
 import { Footprints, Trash2 } from "lucide-react";
 
 import { formatDate, formatDateTime } from "@/lib/utils";
-import { ACTIVITY_LABELS, icons } from "@/lib/activity-utils";
+import { ACTIVITY_ICONS, ACTIVITY_LABELS, DATE_ONLY_TYPES, EXERCISE_TYPES, MEASUREMENT_TYPES } from "@/lib/activity-utils";
 
 import { Button } from "../common/button";
 
@@ -17,7 +17,12 @@ type ActivityRowProps = {
 
 export function ActivityRow({ item, pets, onDelete, renderEdit }: ActivityRowProps) {
   const pet = pets.find((p) => p.id === item.pet_id);
-  const Icon = icons[item.activity_type] ?? Footprints;
+  const Icon = ACTIVITY_ICONS[item.activity_type] ?? Footprints;
+  // "No data logged" is only meaningful for types that actually carry a
+  // duration or measurement — everything else (care/medical event types)
+  // is inherently just "it happened", with notes as an optional extra.
+  const canHaveMissingData =
+    EXERCISE_TYPES.has(item.activity_type) || MEASUREMENT_TYPES.has(item.activity_type);
 
   return (
     <li key={item.id} className="p-4 flex items-center gap-3">
@@ -30,9 +35,9 @@ export function ActivityRow({ item, pets, onDelete, renderEdit }: ActivityRowPro
           <span className="capitalize">{pet ? ` · ${pet.name}` : ""}</span>
         </div>
         <div className="text-xs text-muted-foreground">
-          {item.activity_type !== "grooming" && item.activity_type !== "weight"
-            ? formatDateTime(item.occurred_at)
-            : formatDate(item.occurred_at)}
+          {DATE_ONLY_TYPES.has(item.activity_type)
+            ? formatDate(item.occurred_at)
+            : formatDateTime(item.occurred_at)}
           {item.duration_min ? ` · ${item.duration_min} min` : ""}
           {item.weight ? ` · ${item.weight}${item.activity_type === "weight" ? " kg" : ""}` : ""}
           {item.length ? ` · ${item.length}${item.activity_type === "length" ? " cm" : ""}` : ""}
@@ -41,7 +46,7 @@ export function ActivityRow({ item, pets, onDelete, renderEdit }: ActivityRowPro
             !item.weight &&
             !item.length &&
             !item.notes &&
-            item.activity_type !== "grooming" && <span className="opacity-50">No data logged</span>}
+            canHaveMissingData && <span className="opacity-50">No data logged</span>}
         </div>
         {item.notes && <p className="text-xs text-muted-foreground mt-1 truncate">{item.notes}</p>}
       </div>

@@ -16,6 +16,7 @@ type ActivityCarePanelProps = {
   careTypes: ActivityType[];
   petNames: Map<string, string>;
   selectedPetId: string;
+  onDelete: (id: string) => void;
 };
 
 export function ActivityCarePanel({
@@ -24,6 +25,7 @@ export function ActivityCarePanel({
   careTypes,
   petNames,
   selectedPetId,
+  onDelete,
 }: ActivityCarePanelProps) {
   const hasCareOptions = careTypes.length > 0;
   const lastCareLog = care.logs[0];
@@ -93,6 +95,8 @@ export function ActivityCarePanel({
           petNames={petNames}
           selectedPetId={selectedPetId}
           fallbackIcon={Scissors}
+          onDelete={onDelete}
+          pets={pets}
         />
       ) : (
         hasCareOptions && (
