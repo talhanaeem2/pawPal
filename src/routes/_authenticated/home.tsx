@@ -8,12 +8,7 @@ import {
   Plus,
   PawPrint,
   Syringe,
-  ShieldPlus,
-  Sunrise,
-  Sun,
-  Sunset,
-  Moon,
-  Clock3,
+  ShieldPlus
 } from "lucide-react";
 
 import {
@@ -39,6 +34,7 @@ import {
   sectionOrder,
   formatDateTime,
 } from "@/lib/utils";
+import { ACTIVITY_LABELS } from "@/lib/activity-utils";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineErrorState from "@/components/ui/common/inline-error-state";
@@ -423,20 +419,24 @@ function Home() {
         {recentActivityData.visible.length > 0 && (
           <Section title="Recent activity" icon={Activity} href="/activity">
             <ul className="divide-y divide-border/60">
-              {recentActivityData.visible.map((a) => (
-                <li key={a.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-sm capitalize">{a.activity_type}</div>
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {petNameById.get(a.pet_id) ?? "Pet"} ·{" "}
-                      {formatDateTime(a.occurred_at)}
+              {recentActivityData.visible.map((a) => {
+                const isDuration = a.activity_type === "play" || a.activity_type === "walk" || a.activity_type == "run" ||
+                  a.activity_type == "free_roam" || a.activity_type == "training" || a.activity_type == "swim";
+                return (
+                  <li key={a.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm capitalize">{ACTIVITY_LABELS[a.activity_type]}</div>
+                      <div className="text-xs text-muted-foreground capitalize">
+                        {petNameById.get(a.pet_id) ?? "Pet"} ·{" "}
+                        {formatDateTime(a.occurred_at)}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {a.activity_type === "weight" ? `${a.weight} kg` : `${a.duration_min} min`}
-                  </div>
-                </li>
-              ))}
+                    <div className="text-xs text-muted-foreground">
+                      {a.activity_type === "weight" ? `${a.weight} kg` : a.activity_type === "length" ? `${a.length} cm` : isDuration ? `${a.duration_min} min` : ""}
+                    </div>
+                  </li>
+                )
+              })}
               {recentActivityData.remaining > 0 && (
                 <Link to="/activity" className="block py-2 text-xs text-primary hover:underline">
                   +{recentActivityData.remaining} more activities →
