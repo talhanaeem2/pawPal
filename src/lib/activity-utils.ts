@@ -1,13 +1,18 @@
 import { ActivityType } from "@/schemas/activity";
-import { ActivityIcon, Bird, Dumbbell, Eye, Fish, Footprints, type LucideIcon, Ruler, Scale, Scissors, Sun, Waves, Zap } from "lucide-react";
+import { Pet } from "@/schemas/pets";
+import { ActivityIcon, Bird, Bug, Dumbbell, Ear, Eye, Fish, Footprints, Leaf, type LucideIcon, Pill, Ruler, Scale, Scissors, Sparkles, Sun, Utensils, Waves, Zap } from "lucide-react";
 
 export const EXERCISE_TYPES = new Set<string>([
     "walk", "run", "play", "training", "free_roam", "swim",
 ]);
 
 export const CARE_TYPES = new Set<string>([
-    "grooming", "nail_trim", "bath", "wing_clip", "beak_trim",
-    "tank_cleaning", "water_change",
+    "feeding", "grooming", "nail_trim", "bath", "ear_cleaning", "teeth_brushing",
+    "wing_clip", "beak_trim", "tank_cleaning", "water_change",
+]);
+
+export const MEDICAL_TYPES = new Set<string>([
+    "medication", "supplements", "flea_tick",
 ]);
 
 export const MEASUREMENT_TYPES = new Set<string>([
@@ -23,17 +28,19 @@ export const TIMED_TYPES = new Set<string>([
 ]);
 
 export const DATE_ONLY_TYPES = new Set<string>([
-    "grooming", "nail_trim", "bath", "wing_clip", "beak_trim",
-    "tank_cleaning", "water_change",
+    "feeding", "grooming", "nail_trim", "bath", "ear_cleaning", "teeth_brushing",
+    "wing_clip", "beak_trim", "tank_cleaning", "water_change",
+    "medication", "supplements", "flea_tick",
     "weight", "length",
     "shedding", "feeding_observation", "uv_check",
 ]);
 
-export type ActivityCategory = "exercise" | "care" | "measurements" | "observations";
+export type ActivityCategory = "exercise" | "care" | "medical" | "measurements" | "observations";
 
 export interface SpeciesActivityConfig {
     exercise: ActivityType[];
     care: ActivityType[];
+    medical: ActivityType[];
     measurements: ActivityType[];
     observations: ActivityType[];
 }
@@ -41,49 +48,57 @@ export interface SpeciesActivityConfig {
 export const SPECIES_ACTIVITIES: Record<string, SpeciesActivityConfig> = {
     dog: {
         exercise: ["walk", "run", "play", "training", "swim"],
-        care: ["grooming", "nail_trim", "bath"],
+        care: ["feeding", "grooming", "nail_trim", "bath", "ear_cleaning", "teeth_brushing"],
+        medical: ["medication", "supplements", "flea_tick"],
         measurements: ["weight"],
         observations: [],
     },
     cat: {
         exercise: ["play", "training"],
-        care: ["grooming", "nail_trim", "bath"],
+        care: ["feeding", "grooming", "nail_trim", "bath", "ear_cleaning", "teeth_brushing"],
+        medical: ["medication", "supplements", "flea_tick"],
         measurements: ["weight"],
         observations: [],
     },
     bird: {
         exercise: ["free_roam", "play"],
-        care: ["grooming", "wing_clip", "beak_trim"],
+        care: ["feeding", "grooming", "wing_clip", "beak_trim"],
+        medical: ["medication", "supplements"],
         measurements: ["weight"],
         observations: [],
     },
     fish: {
         exercise: [],
-        care: ["tank_cleaning", "water_change"],
+        care: ["feeding", "tank_cleaning", "water_change"],
+        medical: ["medication", "supplements"],
         measurements: ["weight", "length"],
         observations: ["feeding_observation", "uv_check"],
     },
     reptile: {
         exercise: [],
-        care: ["grooming"],
+        care: ["feeding", "grooming"],
+        medical: ["medication", "supplements"],
         measurements: ["weight", "length"],
         observations: ["shedding", "feeding_observation", "uv_check"],
     },
     hamster: {
         exercise: ["free_roam", "play"],
-        care: ["grooming", "nail_trim"],
+        care: ["feeding", "grooming", "nail_trim"],
+        medical: ["medication", "supplements"],
         measurements: ["weight"],
         observations: [],
     },
     rabbit: {
         exercise: ["free_roam", "play"],
-        care: ["grooming", "nail_trim", "bath"],
+        care: ["feeding", "grooming", "nail_trim", "bath", "ear_cleaning"],
+        medical: ["medication", "supplements", "flea_tick"],
         measurements: ["weight"],
         observations: [],
     },
     other: {
         exercise: ["walk", "play", "training", "free_roam", "swim"],
-        care: ["grooming", "nail_trim", "bath"],
+        care: ["feeding", "grooming", "nail_trim", "bath", "ear_cleaning", "teeth_brushing"],
+        medical: ["medication", "supplements", "flea_tick"],
         measurements: ["weight", "length"],
         observations: ["shedding", "feeding_observation"],
     },
@@ -93,6 +108,7 @@ export function getMergedSpeciesConfig(species: string[]): SpeciesActivityConfig
     const merged: SpeciesActivityConfig = {
         exercise: [],
         care: [],
+        medical: [],
         measurements: [],
         observations: [],
     };
@@ -100,13 +116,14 @@ export function getMergedSpeciesConfig(species: string[]): SpeciesActivityConfig
     const seen = {
         exercise: new Set<string>(),
         care: new Set<string>(),
+        medical: new Set<string>(),
         measurements: new Set<string>(),
         observations: new Set<string>(),
     };
 
     for (const s of species) {
         const config = SPECIES_ACTIVITIES[s] ?? SPECIES_ACTIVITIES.other;
-        for (const cat of ["exercise", "care", "measurements", "observations"] as ActivityCategory[]) {
+        for (const cat of ["exercise", "care", "medical", "measurements", "observations"] as ActivityCategory[]) {
             for (const type of config[cat]) {
                 if (!seen[cat].has(type)) {
                     seen[cat].add(type);
@@ -124,9 +141,29 @@ export function getSpeciesAllowedTypes(species: string): ActivityType[] {
     return [
         ...config.exercise,
         ...config.care,
+        ...config.medical,
         ...config.measurements,
         ...config.observations,
     ];
+}
+
+// Shared species-aware grouping, keyed off actual Pet records rather than a
+// species string — used by both ActivityFormDialog and ScheduleDialog so the
+// two forms always agree on what's relevant for the pet(s) currently selected.
+// With no pets selected yet, this merges across every pet the user owns so
+// the form isn't empty before a pet is picked.
+export function getGroupedTypesForPets(
+    pets: Pet[],
+    selectedPetIds: string[],
+): SpeciesActivityConfig {
+    const species =
+        selectedPetIds.length > 0
+            ? selectedPetIds.map(
+                (id) => pets.find((pet) => pet.id === id)?.species ?? "other",
+            )
+            : pets.map((pet) => pet.species);
+
+    return getMergedSpeciesConfig(species);
 }
 
 export const ACTIVITY_LABELS: Record<string, string> = {
@@ -136,13 +173,19 @@ export const ACTIVITY_LABELS: Record<string, string> = {
     training: "Training",
     free_roam: "Free roam",
     swim: "Swim",
+    feeding: "Feeding",
     grooming: "Grooming",
     nail_trim: "Nail trim",
     bath: "Bath",
+    ear_cleaning: "Ear cleaning",
+    teeth_brushing: "Teeth brushing",
     wing_clip: "Wing clip",
     beak_trim: "Beak trim",
     tank_cleaning: "Tank cleaning",
     water_change: "Water change",
+    medication: "Medication",
+    supplements: "Supplements",
+    flea_tick: "Flea & tick",
     weight: "Weight check",
     length: "Length check",
     shedding: "Shedding",
@@ -157,13 +200,19 @@ export const ACTIVITY_ICONS: Record<string, LucideIcon> = {
     training: Dumbbell,
     free_roam: Bird,
     swim: Waves,
+    feeding: Utensils,
     grooming: Scissors,
     nail_trim: Scissors,
     bath: Waves,
+    ear_cleaning: Ear,
+    teeth_brushing: Sparkles,
     wing_clip: Bird,
     beak_trim: Bird,
     tank_cleaning: Fish,
     water_change: Fish,
+    medication: Pill,
+    supplements: Leaf,
+    flea_tick: Bug,
     weight: Scale,
     length: Ruler,
     shedding: Eye,
@@ -183,13 +232,15 @@ export const CATEGORY_FILTERS: [string, string][] = [
     ["all", "All"],
     ["exercise", "Exercise"],
     ["care", "Care"],
-    ["measurements", "Measurements"],
-    ["observations", "Observations"],
+    ["medical", "Health"],
+    ["measurements", "Growth"],
+    ["observations", "Notes"],
 ];
 
 export const ACTIVITY_CATEGORY_TYPES: Record<string, Set<string>> = {
     exercise: EXERCISE_TYPES,
     care: CARE_TYPES,
+    medical: MEDICAL_TYPES,
     measurements: MEASUREMENT_TYPES,
     observations: OBSERVATION_TYPES,
 };
@@ -205,6 +256,7 @@ export function getActivityCards(species: string[]) {
     const config = getMergedSpeciesConfig(species);
 
     const priority: ActivityType[] = [
+        "feeding",
         "walk",
         "play",
         "run",
@@ -215,10 +267,16 @@ export function getActivityCards(species: string[]) {
         "grooming",
         "nail_trim",
         "bath",
+        "ear_cleaning",
+        "teeth_brushing",
         "wing_clip",
         "beak_trim",
         "tank_cleaning",
         "water_change",
+
+        "medication",
+        "supplements",
+        "flea_tick",
 
         "weight",
         "length",
@@ -231,6 +289,7 @@ export function getActivityCards(species: string[]) {
     const available = new Set<ActivityType>([
         ...config.exercise,
         ...config.care,
+        ...config.medical,
         ...config.measurements,
         ...config.observations,
     ]);
@@ -316,12 +375,4 @@ export const formatGroupDate = (dateKey: string) => {
         month: "short",
         day: "numeric",
     });
-};
-
-export const icons: Record<string, typeof Footprints> = {
-    walk: Footprints,
-    run: Zap,
-    play: Dumbbell,
-    weight: Scale,
-    grooming: Scissors,
 };

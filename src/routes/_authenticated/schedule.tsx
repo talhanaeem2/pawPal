@@ -7,7 +7,6 @@ import z from "zod";
 import { petsQuery, scheduleQuery } from "@/lib/queries";
 import { todayDateString } from "@/lib/utils";
 import { useCollapsiblePageHeader } from "@/hooks/use-collapsible-page-header";
-import { useScheduleActions } from "@/hooks/use-schedule-actions";
 
 import NotFoundState from "@/components/ui/common/not-found-state";
 import InlineLoader from "@/components/ui/common/inline-loader";
@@ -16,10 +15,12 @@ import { ConfirmDialog } from "@/components/ui/common/confirm-dialog";
 import { FeatureEmptyState } from "@/components/ui/common/feature-empty-state";
 import { Page } from "@/components/layout/page";
 import { LogActivityDialog, UndoActivityDialog } from "@/components/ui/schedule/log-activity-dialog";
+
 import { getScheduleDashboard } from "@/components/ui/schedule/schedule-dashboard";
 import { ScheduleHeader } from "@/components/ui/schedule/schedule-header";
-import { ScheduleProgress } from "@/components/ui/schedule/schedule-progress";
 import { ScheduleList } from "@/components/ui/schedule/schedule-list";
+import { ScheduleProgress } from "@/components/ui/schedule/schedule-progress";
+import { useScheduleActions } from "@/hooks/use-schedule-actions";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   validateSearch: z.object({

@@ -5,20 +5,32 @@ import { todayDateString } from "@/lib/utils";
 import { scheduleItemPetSchema, schedulePetFormSchema } from "./schedule-item-pets";
 
 export const scheduleKindSchema = z.enum([
+    // Exercise
+    "walk",
+    "play",
+    "run",
+    "training",
+    "free_roam",
+    "swim",
+    // Care & maintenance
     "feeding",
-    "medication",
-    "supplements",
-    "flea_tick",
     "grooming",
     "bath",
     "nail_trim",
     "ear_cleaning",
     "teeth_brushing",
-    "walk",
-    "play",
-    "run",
-    "training",
+    "wing_clip",
+    "beak_trim",
+    "tank_cleaning",
+    "water_change",
+    "uv_check",
+    // Medical
+    "medication",
+    "supplements",
+    "flea_tick",
+    // Measurements
     "weight",
+    "length",
 ]);
 
 export type ScheduleKind = z.infer<typeof scheduleKindSchema>;

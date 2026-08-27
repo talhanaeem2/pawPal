@@ -17,31 +17,33 @@ import { PetMultiSelect } from "@/components/ui/common/pet-multi-select";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/common/select";
 import { Textarea } from "@/components/ui/common/textarea";
 import { TimesOfDayField } from "@/components/ui/common/times-of-day-field";
-
 import { useZodForm } from "@/hooks/use-zod-form";
 import { supabase } from "@/integrations/supabase/client";
 import { scheduleQuery } from "@/lib/queries";
 import {
   formatFrequency,
   generateScheduleTitle,
+  getGroupedScheduleKinds,
   getNotesPlaceholder,
   getScheduleDetailField,
   getStartDateDescription,
   getStartDateLabel,
   getTimeLabel,
   getTitlePlaceholder,
+  KIND_LABELS,
   repeatUnitOptions,
   requiresScheduleStartDate,
   requiresScheduleTime,
 } from "@/lib/schedule-utils";
 import { cn, todayDateString } from "@/lib/utils";
-
 import {
   createEmptyScheduleForm,
   ScheduleForm,
@@ -301,6 +303,7 @@ export function ScheduleDialog({
   const detailField = getScheduleDetailField(form.values.kind);
   const needsTime = requiresScheduleTime(form.values.kind);
   const needsStartDate = requiresScheduleStartDate(form.values.kind);
+  const groupedKinds = getGroupedScheduleKinds(pets, form.values.pet_ids);
 
   return (
     <Dialog
@@ -355,6 +358,25 @@ export function ScheduleDialog({
                         },
                     ),
                   );
+
+                  const grouped = getGroupedScheduleKinds(pets, petIds);
+                  const allowedKinds = [
+                    ...grouped.exercise,
+                    ...grouped.care,
+                    ...grouped.medical,
+                    ...grouped.measurements,
+                  ];
+
+                  if (
+                    allowedKinds.length > 0 &&
+                    !allowedKinds.includes(form.values.kind)
+                  ) {
+                    form.setField("kind", allowedKinds[0]);
+
+                    if (isEdit) {
+                      setKindHasChanged(true);
+                    }
+                  }
                 }}
               />
             </Field>
@@ -387,22 +409,46 @@ export function ScheduleDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="feeding">Feeding</SelectItem>
-                    <SelectItem value="medication">Medication</SelectItem>
-                    <SelectItem value="grooming">Grooming</SelectItem>
-                    <SelectItem value="supplements">Supplements</SelectItem>
-                    <SelectItem value="flea_tick">Flea &amp; Tick</SelectItem>
-                    <SelectItem value="walk">Walk</SelectItem>
-                    <SelectItem value="play">Play</SelectItem>
-                    <SelectItem value="run">Run</SelectItem>
-                    <SelectItem value="training">Training</SelectItem>
-                    <SelectItem value="bath">Bath</SelectItem>
-                    <SelectItem value="nail_trim">Nail trimming</SelectItem>
-                    <SelectItem value="ear_cleaning">Ear cleaning</SelectItem>
-                    <SelectItem value="teeth_brushing">
-                      Teeth brushing
-                    </SelectItem>
-                    <SelectItem value="weight">Weight Check</SelectItem>
+                    {groupedKinds.exercise.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Exercise</SelectLabel>
+                        {groupedKinds.exercise.map((kind) => (
+                          <SelectItem key={kind} value={kind}>
+                            {KIND_LABELS[kind]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {groupedKinds.care.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Care</SelectLabel>
+                        {groupedKinds.care.map((kind) => (
+                          <SelectItem key={kind} value={kind}>
+                            {KIND_LABELS[kind]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {groupedKinds.medical.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Medical</SelectLabel>
+                        {groupedKinds.medical.map((kind) => (
+                          <SelectItem key={kind} value={kind}>
+                            {KIND_LABELS[kind]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {groupedKinds.measurements.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Measurements</SelectLabel>
+                        {groupedKinds.measurements.map((kind) => (
+                          <SelectItem key={kind} value={kind}>
+                            {KIND_LABELS[kind]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </Field>

@@ -1,22 +1,29 @@
-import { Activity as ActivityIcon, type LucideIcon } from "lucide-react";
+import { Activity as ActivityIcon, Trash2, type LucideIcon } from "lucide-react";
 
 import { ACTIVITY_ICONS, ACTIVITY_LABELS } from "@/lib/activity-utils";
 import { formatDate } from "@/lib/utils";
 
 import { ActivityLog } from "@/schemas/activity";
+import { Pet } from "@/schemas/pets";
+import { ActivityEditButton } from "./activity-edit-button";
+import { Button } from "../common/button";
 
 type ActivityTypeLogGroupsProps = {
   groups: [string, ActivityLog[]][];
   petNames: Map<string, string>;
+  pets: Pet[];
   selectedPetId: string;
   fallbackIcon?: LucideIcon;
+  onDelete: (id: string) => void;
 };
 
 export function ActivityTypeLogGroups({
   groups,
   petNames,
+  pets,
   selectedPetId,
   fallbackIcon = ActivityIcon,
+  onDelete,
 }: ActivityTypeLogGroupsProps) {
   return (
     <div className="space-y-4">
@@ -33,7 +40,6 @@ export function ActivityTypeLogGroups({
                 </div>
                 <div>
                   <h2 className="font-display text-lg">{label}</h2>
-
                   <p className="text-xs text-muted-foreground">
                     {selectedPetId !== "all" ? "Recent " + label + " sessions" : label + " logs"}
                   </p>
@@ -55,6 +61,18 @@ export function ActivityTypeLogGroups({
                       {formatDate(log.occurred_at)}
                       {log.notes && " · " + log.notes}
                     </p>
+                  </div>
+                  <div className="flex shrink-0 items-center">
+                    <ActivityEditButton pets={pets} item={log} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDelete(log.id)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Delete log"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </li>
               ))}

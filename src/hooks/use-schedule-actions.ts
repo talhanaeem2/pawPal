@@ -9,8 +9,8 @@ import {
   buildOccurredAt,
   getActivityType,
   isActivityKind,
+  isAutoLogKind,
 } from "@/lib/schedule-utils";
-
 import { ScheduleWithPets } from "@/schemas/schedule";
 
 type ScheduleToggleInput = {
@@ -55,7 +55,7 @@ export function useScheduleActions({
     timeSlots: [],
   });
 
-  const logGrooming = useMutation({
+  const logActivity = useMutation({
     mutationFn: async ({
       schedule,
       timeSlot,
@@ -70,13 +70,13 @@ export function useScheduleActions({
       );
 
       if (petsToLog.length === 0) {
-        throw new Error("No pet found for this grooming schedule");
+        throw new Error("No pet found for this schedule item");
       }
 
       const { error } = await supabase.from("activity_logs").insert(
         petsToLog.map((pet) => ({
           pet_id: pet.pet_id,
-          activity_type: "grooming",
+          activity_type: getActivityType(schedule.kind),
           occurred_at: buildOccurredAt(today, timeSlot),
           duration_min: null,
           weight: null,
@@ -97,7 +97,7 @@ export function useScheduleActions({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Couldn't log grooming activity",
+          : "Couldn't log activity",
       );
     },
   });
@@ -232,9 +232,9 @@ export function useScheduleActions({
           ?.pet_id
         : undefined;
 
-      if (markDone && schedule.kind === "grooming") {
+      if (markDone && isAutoLogKind(schedule.kind)) {
         try {
-          await logGrooming.mutateAsync({
+          await logActivity.mutateAsync({
             schedule,
             timeSlot: timeSlots[0] ?? null,
             targetPetId,
@@ -262,7 +262,10 @@ export function useScheduleActions({
         return;
       }
 
-      if (!markDone && isActivityKind(schedule.kind)) {
+      if (
+        !markDone &&
+        (isActivityKind(schedule.kind) || isAutoLogKind(schedule.kind))
+      ) {
         setUndoDialogState({
           open: true,
           schedule,
@@ -279,7 +282,7 @@ export function useScheduleActions({
         timeSlots,
       });
     },
-    [items, logGrooming, toggle],
+    [items, logActivity, toggle],
   );
 
   const markLoggedActivityDone = useCallback(() => {
