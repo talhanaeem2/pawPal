@@ -162,6 +162,12 @@ function Home() {
             label.style.width = `${64 * (1 - progress)}px`;
             label.style.opacity = String(1 - progress);
           }
+
+          const badge = item.querySelector<HTMLElement>("[data-pet-avatar-badge]");
+
+          if (badge) {
+            badge.style.opacity = String(1 - progress);
+          }
         });
       }
 
@@ -226,7 +232,7 @@ function Home() {
               params={{ petId: p.id }}
               aria-label={`Open ${p.name}'s profile`}
               data-pet-dock-item
-              className="flex h-14 w-32 shrink-0 items-center gap-2.5 overflow-hidden rounded-full bg-card px-2.5 shadow-(--shadow-soft) hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary will-change-[width,height,padding,gap]"
+              className="flex h-14 w-32 shrink-0 items-center gap-2.5 rounded-full bg-card px-2.5 shadow-(--shadow-soft) hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary will-change-[width,height,padding,gap]"
             >
               <PetAvatar
                 pet={p}

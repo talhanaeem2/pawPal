@@ -7,6 +7,7 @@ import { PetAvatar } from "@/components/ui/common/pet-avatar";
 import { Pet } from "@/schemas/pets";
 
 export function PetCard({ pet }: { pet: Pet }) {
+    const isGroup = pet.pet_type === "group";
     const ageLabel = getPetAgeLabel(pet.birthdate);
     const genderLabel = getPetGenderLabel(pet.gender, pet.neutered);
 
@@ -23,10 +24,19 @@ export function PetCard({ pet }: { pet: Pet }) {
                         <div>
                             <div className="font-display text-xl leading-tight capitalize">{pet.name}</div>
                             <div className="text-xs text-muted-foreground capitalize">
-                                {pet.breed ?? pet.species}
-                                {ageLabel ? ` · ${ageLabel}` : ""}
-                                {pet.weight_kg ? ` · ${pet.weight_kg}kg` : ""}
-                                {genderLabel ? ` · ${genderLabel}` : ""}
+                                {isGroup ? (
+                                    <>
+                                        {pet.species}
+                                        {pet.group_size ? ` · ${pet.group_size} animals` : ""}
+                                    </>
+                                ) : (
+                                    <>
+                                        {pet.breed ?? pet.species}
+                                        {ageLabel ? ` · ${ageLabel}` : ""}
+                                        {pet.weight_kg ? ` · ${pet.weight_kg}kg` : ""}
+                                        {genderLabel ? ` · ${genderLabel}` : ""}
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

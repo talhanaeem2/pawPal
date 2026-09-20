@@ -23,6 +23,7 @@ export function PetHeroCard({
     metaRef,
     emojiRef,
 }: PetHeroCardProps) {
+    const isGroup = pet.pet_type === "group";
     const ageLabel = getPetAgeLabel(pet.birthdate);
     const genderLabel = getPetGenderLabel(
         pet.gender,
@@ -66,22 +67,32 @@ export function PetHeroCard({
                         ref={metaRef}
                         className="flex flex-wrap justify-center gap-2 overflow-hidden"
                     >
-                        {ageLabel && (
-                            <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-                                {ageLabel}
-                            </span>
-                        )}
+                        {isGroup ? (
+                            pet.group_size && (
+                                <span className="rounded-full bg-secondary px-3 py-1 text-xs">
+                                    {pet.group_size} animals
+                                </span>
+                            )
+                        ) : (
+                            <>
+                                {ageLabel && (
+                                    <span className="rounded-full bg-secondary px-3 py-1 text-xs">
+                                        {ageLabel}
+                                    </span>
+                                )}
 
-                        {genderLabel && (
-                            <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-                                {genderLabel}
-                            </span>
-                        )}
+                                {genderLabel && (
+                                    <span className="rounded-full bg-secondary px-3 py-1 text-xs">
+                                        {genderLabel}
+                                    </span>
+                                )}
 
-                        {pet.weight_kg && (
-                            <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-                                {pet.weight_kg} kg
-                            </span>
+                                {pet.weight_kg && (
+                                    <span className="rounded-full bg-secondary px-3 py-1 text-xs">
+                                        {pet.weight_kg} kg
+                                    </span>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

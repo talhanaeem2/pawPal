@@ -6,7 +6,7 @@ import { ACTIVITY_ICONS, ACTIVITY_LABELS, DATE_ONLY_TYPES, EXERCISE_TYPES, MEASU
 import { Button } from "../common/button";
 
 import { ActivityLog } from "@/schemas/activity";
-import { Pet } from "@/schemas/pets";
+import { getPetDisplayName, Pet } from "@/schemas/pets";
 
 type ActivityRowProps = {
   item: ActivityLog;
@@ -18,9 +18,6 @@ type ActivityRowProps = {
 export function ActivityRow({ item, pets, onDelete, renderEdit }: ActivityRowProps) {
   const pet = pets.find((p) => p.id === item.pet_id);
   const Icon = ACTIVITY_ICONS[item.activity_type] ?? Footprints;
-  // "No data logged" is only meaningful for types that actually carry a
-  // duration or measurement — everything else (care/medical event types)
-  // is inherently just "it happened", with notes as an optional extra.
   const canHaveMissingData =
     EXERCISE_TYPES.has(item.activity_type) || MEASUREMENT_TYPES.has(item.activity_type);
 
@@ -32,7 +29,7 @@ export function ActivityRow({ item, pets, onDelete, renderEdit }: ActivityRowPro
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm">
           {ACTIVITY_LABELS[item.activity_type] ?? item.activity_type}
-          <span className="capitalize">{pet ? ` · ${pet.name}` : ""}</span>
+          <span className="capitalize">{pet ? ` · ${getPetDisplayName(pet)}` : ""}</span>
         </div>
         <div className="text-xs text-muted-foreground">
           {DATE_ONLY_TYPES.has(item.activity_type)
