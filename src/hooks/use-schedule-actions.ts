@@ -23,7 +23,7 @@ type ScheduleToggleInput = {
 type LogDialogState = {
   open: boolean;
   schedule: ScheduleWithPets | null;
-  timeSlot: string | null;
+  timeSlots: (string | null)[];
   targetPetId?: string;
 };
 
@@ -47,7 +47,7 @@ export function useScheduleActions({
   const [logDialogState, setLogDialogState] = useState<LogDialogState>({
     open: false,
     schedule: null,
-    timeSlot: null,
+    timeSlots: [],
   });
   const [undoDialogState, setUndoDialogState] = useState<UndoDialogState>({
     open: false,
@@ -73,6 +73,8 @@ export function useScheduleActions({
         throw new Error("No pet found for this schedule item");
       }
 
+      const sessionId = petsToLog.length > 1 ? crypto.randomUUID() : null;
+
       const { error } = await supabase.from("activity_logs").insert(
         petsToLog.map((pet) => ({
           pet_id: pet.pet_id,
@@ -80,6 +82,7 @@ export function useScheduleActions({
           occurred_at: buildOccurredAt(today, timeSlot),
           duration_min: null,
           weight: null,
+          session_id: sessionId,
           notes: null,
         })),
       );
@@ -256,7 +259,7 @@ export function useScheduleActions({
         setLogDialogState({
           open: true,
           schedule,
-          timeSlot: timeSlots[0] ?? null,
+          timeSlots,
           targetPetId,
         });
         return;
@@ -302,8 +305,8 @@ export function useScheduleActions({
       scheduleItemId: schedule.id,
       scheduleItemPetId: targetScheduleItemPet?.id,
       markDone: true,
-      timeSlots: logDialogState.timeSlot
-        ? [logDialogState.timeSlot]
+      timeSlots: logDialogState.timeSlots.length > 0
+        ? logDialogState.timeSlots
         : [null],
     });
   }, [logDialogState, toggle]);
@@ -333,30 +336,32 @@ export function useScheduleActions({
         return;
       }
 
-      const occurredAt = buildOccurredAt(
-        today,
-        undoDialogState.timeSlots[0] ?? null,
-      );
       const petIds = targetScheduleItemPet
         ? [targetScheduleItemPet.pet_id]
         : schedule.schedule_item_pets.map((pet) => pet.pet_id);
       const activityType = getActivityType(schedule.kind);
-      const from = new Date(
-        new Date(occurredAt).getTime() - 60 * 60_000,
-      ).toISOString();
-      const to = new Date(
-        new Date(occurredAt).getTime() + 60 * 60_000,
-      ).toISOString();
-      const { error } = await supabase
-        .from("activity_logs")
-        .delete()
-        .in("pet_id", petIds)
-        .eq("activity_type", activityType)
-        .gte("occurred_at", from)
-        .lte("occurred_at", to);
+      const deleteErrors: string[] = [];
 
-      if (error) {
-        toast.error("Reminder undone but couldn't delete activity log");
+      for (const slot of undoDialogState.timeSlots) {
+        const occurredAt = buildOccurredAt(today, slot);
+        const from = new Date(new Date(occurredAt).getTime() - 60 * 60_000).toISOString();
+        const to = new Date(new Date(occurredAt).getTime() + 60 * 60_000).toISOString();
+
+        const { error } = await supabase
+          .from("activity_logs")
+          .delete()
+          .in("pet_id", petIds)
+          .eq("activity_type", activityType)
+          .gte("occurred_at", from)
+          .lte("occurred_at", to);
+
+        if (error) {
+          deleteErrors.push(slot ?? "no-time");
+        }
+      }
+
+      if (deleteErrors.length > 0) {
+        toast.error("Reminder undone but couldn't delete some activity logs");
       } else {
         queryClient.invalidateQueries({ queryKey: activityQuery.queryKey });
       }

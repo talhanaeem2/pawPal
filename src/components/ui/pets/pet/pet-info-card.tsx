@@ -1,4 +1,4 @@
-import { CalendarDays, Dog, Scale, ScanLine, Mars, Venus, Cat, Info } from "lucide-react";
+import { CalendarDays, Dog, Scale, ScanLine, Mars, Venus, Cat, Info, Users } from "lucide-react";
 
 import { formatDate } from "@/lib/utils";
 
@@ -31,6 +31,33 @@ function InfoRow({
 }
 
 export function PetInfoCard({ pet }: { pet: Pet }) {
+    if (pet.pet_type === "group") {
+        return (
+            <Section
+                title="Information"
+                icon={Info}
+            >
+                <div className="grid gap-4">
+                    <InfoRow
+                        icon={Cat}
+                        label="Animal"
+                        value={pet.species}
+                    />
+
+                    <InfoRow
+                        icon={Users}
+                        label="Group size"
+                        value={
+                            pet.group_size
+                                ? `${pet.group_size} animals`
+                                : <span className="normal-case">Not recorded</span>
+                        }
+                    />
+                </div>
+            </Section>
+        );
+    }
+
     return (
         <Section
             title="Information"

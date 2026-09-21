@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronsUpDown, Users, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { getPetDisplayName } from "@/schemas/pets";
 
 import { Button } from "@/components/ui/common/button";
 import { Badge } from "@/components/ui/common/badge";
@@ -22,6 +23,8 @@ import {
 type Pet = {
     id: string;
     name: string;
+    pet_type?: "individual" | "group";
+    group_size?: number | null;
 };
 
 type PetMultiSelectProps = {
@@ -50,7 +53,7 @@ export function PetMultiSelect({
             return placeholder;
         }
 
-        const names = selectedPets.map((p) => p.name);
+        const names = selectedPets.map((p) => getPetDisplayName(p));
 
         if (names.length <= 3) {
             return names.join(", ");
@@ -87,7 +90,7 @@ export function PetMultiSelect({
                     role="combobox"
                     className="w-full justify-between font-normal"
                 >
-                    <span className="truncate capitalize">{summary}</span>
+                    <span className="truncate">{summary}</span>
 
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -96,55 +99,58 @@ export function PetMultiSelect({
             <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                 <Command>
                     <CommandInput placeholder="Search pets..." />
-                    {/* {selectedPets.length > 0 && (
-                        <div className="border-b p-3">
-                            <p className="mb-2 text-xs font-medium text-muted-foreground">
-                                {selectedPets.length} selected
-                            </p>
 
-                            <div className="flex flex-wrap gap-2">
-                                {selectedPets.map((pet) => (
-                                    <Badge
-                                        key={pet.id}
-                                        variant="secondary"
-                                        className="gap-1 pr-1 cursor-pointer capitalize"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            remove(pet.id);
-                                        }}
-                                    >
-                                        {pet.name}
-
-                                        <X className="h-3 w-3 opacity-70" />
-                                    </Badge>
-                                ))}
-                            </div>
-                        </div>
-                    )} */}
-
-                    <div className="flex justify-between border-b p-2">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={selectAll}
-                            disabled={value.length === pets.length}
-                        >
-                            Select all
-                        </Button>
-
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearAll}
-                            disabled={value.length === 0}
-                        >
-                            Clear all
-                        </Button>
-                    </div>
                     <CommandList>
                         <CommandEmpty>No pets found.</CommandEmpty>
+
+                        {selectedPets.length > 0 && (
+                            <div className="border-b p-3">
+                                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                                    {selectedPets.length} selected
+                                </p>
+
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedPets.map((pet) => (
+                                        <Badge
+                                            key={pet.id}
+                                            variant="secondary"
+                                            className="gap-1 pr-1 cursor-pointer"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                remove(pet.id);
+                                            }}
+                                        >
+                                            {getPetDisplayName(pet)}
+
+                                            <X className="h-3 w-3 opacity-70" />
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between border-b p-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={selectAll}
+                                disabled={value.length === pets.length}
+                            >
+                                Select all
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearAll}
+                                disabled={value.length === 0}
+                            >
+                                Clear all
+                            </Button>
+                        </div>
+
                         <CommandGroup>
                             {pets.map((pet) => {
                                 const selected = value.includes(pet.id);
@@ -154,7 +160,6 @@ export function PetMultiSelect({
                                         key={pet.id}
                                         value={pet.name}
                                         onSelect={() => toggle(pet.id)}
-                                        className="capitalize"
                                     >
                                         <Check
                                             className={cn(
@@ -163,7 +168,11 @@ export function PetMultiSelect({
                                             )}
                                         />
 
-                                        {pet.name}
+                                        {pet.pet_type === "group" && (
+                                            <Users className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                        )}
+
+                                        {getPetDisplayName(pet)}
                                     </CommandItem>
                                 );
                             })}

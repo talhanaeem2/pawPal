@@ -15,6 +15,8 @@ export const petSchema = z.object({
     gender: z.enum(["male", "female"]).nullable(),
     neutered: z.boolean(),
     microchip: z.string().nullable(),
+    pet_type: z.enum(["individual", "group"]).default("individual"),
+    group_size: z.number().int().positive().nullable().default(null),
 });
 
 export type Pet = z.infer<typeof petSchema>;
@@ -33,6 +35,8 @@ export const petFormSchema = z.object({
     gender: z.enum(["male", "female"]).nullable(),
     neutered: z.boolean().default(false),
     microchip: z.string().default(""),
+    pet_type: z.enum(["individual", "group"]).default("individual"),
+    group_size: z.string().default(""),
 }).superRefine((data, ctx) => {
     if (
         data.species === "other" &&
@@ -42,6 +46,17 @@ export const petFormSchema = z.object({
             code: "custom",
             path: ["other_species"],
             message: "Please enter the animal.",
+        });
+    }
+
+    if (
+        data.pet_type === "group" &&
+        (!data.group_size.trim() || Number(data.group_size) < 1)
+    ) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["group_size"],
+            message: "Enter how many animals are in this group.",
         });
     }
 });;
@@ -62,6 +77,8 @@ export const petFormDefaults: PetForm = {
     gender: null,
     neutered: false,
     microchip: "",
+    pet_type: "individual",
+    group_size: "",
 };
 
 export function petToForm(pet: Pet): PetForm {
@@ -82,6 +99,8 @@ export function petToForm(pet: Pet): PetForm {
         gender: pet.gender,
         neutered: pet.neutered,
         microchip: pet.microchip ?? "",
+        pet_type: pet.pet_type,
+        group_size: pet.group_size !== null ? pet.group_size.toString() : "",
     };
 }
 
@@ -89,4 +108,17 @@ export function createEmptyPetForm(): PetForm {
     return {
         ...petFormDefaults,
     };
+}
+
+export function getPetDisplayName(
+    pet: Pick<Pet, "name"> & {
+        pet_type?: Pet["pet_type"];
+        group_size?: Pet["group_size"];
+    },
+): string {
+    if (pet.pet_type === "group" && pet.group_size) {
+        return `${pet.name} · ${pet.group_size} ${pet.group_size === 1 ? "animal" : "animals"}`;
+    }
+
+    return pet.name;
 }

@@ -1,9 +1,7 @@
 import { PawPrint } from "lucide-react";
 
 import { PetAvatar } from "@/components/ui/common/pet-avatar";
-
 import { cn } from "@/lib/utils";
-
 import { Pet } from "@/schemas/pets";
 
 type ActivityPetSelectorProps = {

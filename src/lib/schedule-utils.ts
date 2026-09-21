@@ -62,7 +62,7 @@ const PROMPT_LOG_KINDS = [
     "free_roam",
     "swim",
     "weight",
-    "length"
+    "length",
 ] as const;
 type PromptLogKind = typeof PROMPT_LOG_KINDS[number];
 
@@ -95,26 +95,21 @@ export function isAutoLogKind(kind: string): kind is AutoLogKind {
     return AUTO_LOG_KINDS.includes(kind as AutoLogKind);
 }
 
-// Every schedule kind now has a matching activity_type value, so this is a
-// straight identity map. (Previously "run" was mapped to the "walk" activity
-// type as a workaround from before "run" existed as its own activity type —
-// that's no longer needed and was mis-tagging runs as walks in the exercise
-// breakdown.)
 export function getActivityType(kind: string): string {
     return kind;
 }
 
 export function buildOccurredAt(today: string, timeSlot: string | null): string {
+    const [year, month, day] = today.split("-").map(Number);
+    const d = new Date(year, month - 1, day); // local midnight
+
     if (timeSlot) {
-        // Combine today's date with the time slot in local time → UTC
         const [h, m] = timeSlot.split(":").map(Number);
-        const d = new Date(today); // local midnight
         d.setHours(h, m, 0, 0);
-        return d.toISOString();
+    } else {
+        d.setHours(12, 0, 0, 0);
     }
-    // No time slot — use noon today
-    const d = new Date(today);
-    d.setHours(12, 0, 0, 0);
+
     return d.toISOString();
 }
 
@@ -184,7 +179,7 @@ export function getTitlePlaceholder(kind: ScheduleForm["kind"]) {
             return "Trim nails";
 
         case "weight":
-            return "Weekly weigh-in";
+            return "Monthly weigh-in";
 
         case "length":
             return "Monthly length check";

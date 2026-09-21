@@ -7,15 +7,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/common/accordion";
 import { Button } from "@/components/ui/common/button";
+import { formatKind } from "@/lib/schedule-utils";
+import { cn, formatTime } from "@/lib/utils";
+import { getPetDisplayName, Pet } from "@/schemas/pets";
+
 import { ScheduleListItem } from "./schedule-dashboard";
 import { ScheduleDialog } from "./schedule-dialog";
-
-import { formatKind, formatScheduleTime } from "@/lib/schedule-utils";
-
-import { cn } from "@/lib/utils";
-
-import { Pet } from "@/schemas/pets";
-
 
 type ScheduleToggleInput = {
   scheduleItemId: string;
@@ -183,7 +180,7 @@ function ScheduleExpandableItem({
             <div key={pet.id} className="flex flex-col gap-1">
               {item.multiplePets && (
                 <div className="text-sm font-medium capitalize">
-                  {pet.pet?.name}
+                  {pet.pet ? getPetDisplayName(pet.pet) : ""}
                 </div>
               )}
 
@@ -345,4 +342,8 @@ function CompletionButton({
       <Check className="h-4 w-4" />
     </button>
   );
+}
+
+function formatScheduleTime(time: string | null) {
+  return time ? formatTime(time) : "";
 }

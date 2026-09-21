@@ -128,7 +128,7 @@ function SchedulePage() {
             setLogDialogState((prev) => ({ ...prev, open }))
           }
           schedule={logDialogState.schedule}
-          timeSlot={logDialogState.timeSlot}
+          timeSlots={logDialogState.timeSlots}
           targetPetId={logDialogState.targetPetId}
           today={today}
           pets={pets}

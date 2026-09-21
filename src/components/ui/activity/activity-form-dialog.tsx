@@ -37,7 +37,7 @@ import {
   activityLogToForm,
   createEmptyActivityLogForm,
 } from "@/schemas/activity";
-import { Pet } from "@/schemas/pets";
+import { getPetDisplayName, Pet } from "@/schemas/pets";
 
 interface IActivityFormDialog {
   pets: Pet[];
@@ -207,7 +207,7 @@ export function ActivityFormDialog({
             <SelectContent>
               {pets.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
-                  {p.name}
+                  {getPetDisplayName(p)}
                 </SelectItem>
               ))}
             </SelectContent>

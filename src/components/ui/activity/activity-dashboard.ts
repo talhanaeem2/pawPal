@@ -22,7 +22,7 @@ import {
   type SpeciesActivityConfig,
 } from "@/lib/activity-utils";
 import { ActivityLog, ActivityType } from "@/schemas/activity";
-import { Pet } from "@/schemas/pets";
+import { getPetDisplayName, Pet } from "@/schemas/pets";
 
 export type ActivityTab = "exercise" | "care" | "health" | "history";
 
@@ -41,6 +41,9 @@ type ActivityBreakdown = {
   type: ActivityType;
   label: string;
   count: number;
+};
+
+type CareBreakdown = ActivityBreakdown & {
   total: number;
 };
 
@@ -68,7 +71,7 @@ type DashboardExercise = {
 type DashboardCare = {
   logs: ActivityLog[];
   groupedLogs: [string, ActivityLog[]][];
-  breakdown: ActivityBreakdown[];
+  breakdown: CareBreakdown[];
   maxBreakdownCount: number;
   cards: MetricCard[];
 };
@@ -140,11 +143,46 @@ function groupLogsByDate(logs: ActivityLog[]) {
   return Array.from(logsByDate.entries());
 }
 
+function dedupeBySessionId(logs: ActivityLog[]): ActivityLog[] {
+  const seenSessions = new Set<string>();
+  const seenTimestamps = new Set<string>();
+  const result: ActivityLog[] = [];
+
+  for (const log of logs) {
+    const minuteKey = log.activity_type + "|" + log.occurred_at.slice(0, 16);
+
+    if (log.session_id) {
+      if (seenSessions.has(log.session_id)) {
+        continue;
+      }
+
+      if (seenTimestamps.has(minuteKey)) {
+        continue;
+      }
+
+      seenSessions.add(log.session_id);
+      seenTimestamps.add(minuteKey);
+      result.push(log);
+      continue;
+    }
+
+    if (seenTimestamps.has(minuteKey)) {
+      continue;
+    }
+
+    seenTimestamps.add(minuteKey);
+    result.push(log);
+  }
+
+  return result;
+}
+
 function getActivityInsight({
   activityCounts,
   activeDays,
   change,
   exerciseMinutes,
+  previousWeekMinutes,
   hasExercise,
   selectedPetId,
 }: {
@@ -152,6 +190,7 @@ function getActivityInsight({
   activeDays: number;
   change: number | null;
   exerciseMinutes: number;
+  previousWeekMinutes: number;
   hasExercise: boolean;
   selectedPetId: string;
 }): ActivityInsight | null {
@@ -172,37 +211,38 @@ function getActivityInsight({
   ].filter((part): part is string => part !== null);
 
   if (change !== null) {
-    if (change > 0) {
-      const percentage = change.toFixed(0);
+    const diffMinutes = Math.abs(exerciseMinutes - previousWeekMinutes);
+    const diffLabel = formatMinutes(diffMinutes);
 
+    if (change > 0) {
       return {
-        title: "Great progress",
+        title: "Good week so far",
         text:
           selectedPetId === "all"
-            ? "Exercise is up " +
-            percentage +
-            "% from last week. You've logged " +
+            ? "You've logged " +
             activityParts.join(", ") +
-            " for " +
+            " this week — " +
             formatMinutes(exerciseMinutes) +
-            " total."
-            : "This week is " +
-            percentage +
-            "% more active than last week, with " +
-            formatMinutes(exerciseMinutes) +
-            " of exercise.",
+            " total, " +
+            diffLabel +
+            " more than last week."
+            : formatMinutes(exerciseMinutes) +
+            " of exercise this week, " +
+            diffLabel +
+            " more than last week's " +
+            formatMinutes(previousWeekMinutes) +
+            ".",
       };
     }
 
     if (change < 0) {
       return {
-        title: "Activity check-in",
+        title: "A quieter week",
         text:
-          "Exercise is " +
-          Math.abs(change).toFixed(0) +
-          "% lower than last week. You've logged " +
           formatMinutes(exerciseMinutes) +
-          " so far this week.",
+          " logged so far this week, " +
+          diffLabel +
+          " less than last week. Still time to catch up!",
       };
     }
   }
@@ -235,7 +275,7 @@ export function getActivityDashboard({
       : [selectedPet?.species ?? "other"];
   const mergedConfig = getMergedSpeciesConfig(selectedSpecies);
   const healthTypes = [...mergedConfig.measurements, ...mergedConfig.medical, ...mergedConfig.observations];
-  const petNames = new Map(pets.map((pet) => [pet.id, pet.name]));
+  const petNames = new Map(pets.map((pet) => [pet.id, getPetDisplayName(pet)]));
   const filteredLogs = logs
     .filter((log) => selectedPetId === "all" || log.pet_id === selectedPetId)
     .sort(
@@ -270,11 +310,13 @@ export function getActivityDashboard({
   }
 
   const activityCounts: Record<string, number> = {};
-  const exerciseTotals: Record<string, number> = {};
   const exerciseLogs: ActivityLog[] = [];
   const thisWeekCareCounts: Record<string, number> = {};
 
-  for (const log of thisWeekLogs) {
+  const dedupedThisWeekLogs = dedupeBySessionId(thisWeekLogs);
+  const dedupedPreviousWeekLogs = dedupeBySessionId(previousWeekLogs);
+
+  for (const log of dedupedThisWeekLogs) {
     if (EXERCISE_TYPES.has(log.activity_type)) {
       exerciseLogs.push(log);
       activityCounts[log.activity_type] = (activityCounts[log.activity_type] ?? 0) + 1;
@@ -285,14 +327,7 @@ export function getActivityDashboard({
     }
   }
 
-  for (const log of filteredLogs) {
-    if (EXERCISE_TYPES.has(log.activity_type)) {
-      exerciseTotals[log.activity_type] =
-        (exerciseTotals[log.activity_type] ?? 0) + 1;
-    }
-  }
-
-  const previousWeekExerciseLogs = previousWeekLogs.filter((log) =>
+  const previousWeekExerciseLogs = dedupedPreviousWeekLogs.filter((log) =>
     EXERCISE_TYPES.has(log.activity_type),
   );
   const exerciseMinutes = exerciseLogs.reduce(
@@ -327,7 +362,6 @@ export function getActivityDashboard({
       type: type as ActivityType,
       label,
       count: activityCounts[type] ?? 0,
-      total: exerciseTotals[type] ?? 0,
     }));
   const maxBreakdownCount = Math.max(...breakdown.map((item) => item.count), 1);
 
@@ -336,7 +370,7 @@ export function getActivityDashboard({
   );
   const careTotals: Record<string, number> = {};
 
-  for (const log of careLogs) {
+  for (const log of dedupeBySessionId(careLogs)) {
     careTotals[log.activity_type] = (careTotals[log.activity_type] ?? 0) + 1;
   }
 
@@ -360,7 +394,7 @@ export function getActivityDashboard({
     careLogs.length > 0
       ? [
         {
-          value: String(careLogs.length),
+          value: String(dedupeBySessionId(careLogs).length),
           label: "Care sessions",
           icon: Scissors,
         },
@@ -483,6 +517,7 @@ export function getActivityDashboard({
         activeDays,
         change: exerciseChange,
         exerciseMinutes,
+        previousWeekMinutes,
         hasExercise: exerciseLogs.length > 0,
         selectedPetId,
       }),

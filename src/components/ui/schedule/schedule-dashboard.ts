@@ -5,8 +5,7 @@ import {
   requiresScheduleTime,
 } from "@/lib/schedule-utils";
 import { formatTime } from "@/lib/utils";
-
-import { Pet } from "@/schemas/pets";
+import { getPetDisplayName, Pet } from "@/schemas/pets";
 import { ScheduleItemPet } from "@/schemas/schedule-item-pets";
 import { ScheduleWithPets } from "@/schemas/schedule";
 
@@ -99,7 +98,7 @@ export function getScheduleDashboard(
       allDone,
       petLabel: formatPetNames(
         petsForSchedule
-          .map((pet) => pet.pet?.name)
+          .map((pet) => (pet.pet ? getPetDisplayName(pet.pet) : undefined))
           .filter((name): name is string => Boolean(name)),
       ),
       preview: timeSummary
