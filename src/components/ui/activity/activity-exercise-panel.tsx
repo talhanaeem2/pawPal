@@ -1,13 +1,12 @@
 import { Activity, Flame, Footprints } from "lucide-react";
 
-import { ACTIVITY_ICONS, formatMinutes } from "@/lib/activity-utils";
+import { formatMinutes } from "@/lib/activity-utils";
 import { cn } from "@/lib/utils";
+import { Pet } from "@/schemas/pets";
 
 import { ActivityDashboard } from "./activity-dashboard";
 import { ActivityLogButton } from "./activity-log-button";
 import { ActivityMetricCards } from "./activity-metric-cards";
-
-import { Pet } from "@/schemas/pets";
 
 type ActivityExercisePanelProps = {
   pets: Pet[];
@@ -56,8 +55,11 @@ export function ActivityExercisePanel({ pets, exercise }: ActivityExercisePanelP
                     : "bg-secondary text-muted-foreground",
               )}
             >
-              {exercise.change > 0 ? "+" : ""}
-              {exercise.change.toFixed(0)}%
+              {exercise.change > 0
+                ? "↑ More active"
+                : exercise.change < 0
+                  ? "↓ Less active"
+                  : "Same as last week"}
             </div>
           </div>
 
@@ -89,33 +91,22 @@ export function ActivityExercisePanel({ pets, exercise }: ActivityExercisePanelP
         </div>
 
         <div className="mt-5 space-y-4">
-          {exercise.breakdown.map((item) => {
-            const Icon = ACTIVITY_ICONS[item.type] ?? Activity;
-
-            return (
-              <div key={item.type}>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm">{item.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{item.count} this week</span>
-                    <span className="text-xs text-muted-foreground/50">·</span>
-                    <span className="text-xs text-muted-foreground">{item.total} total</span>
-                  </div>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{
-                      width: (item.count / exercise.maxBreakdownCount) * 100 + "%",
-                    }}
-                  />
-                </div>
+          {exercise.breakdown.map((item) => (
+            <div key={item.type}>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-sm">{item.label}</span>
+                <span className="text-xs text-muted-foreground">{item.count}</span>
               </div>
-            )
-          })}
+              <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{
+                    width: (item.count / exercise.maxBreakdownCount) * 100 + "%",
+                  }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

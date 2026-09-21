@@ -182,6 +182,7 @@ function getActivityInsight({
   activeDays,
   change,
   exerciseMinutes,
+  previousWeekMinutes,
   hasExercise,
   selectedPetId,
 }: {
@@ -189,6 +190,7 @@ function getActivityInsight({
   activeDays: number;
   change: number | null;
   exerciseMinutes: number;
+  previousWeekMinutes: number;
   hasExercise: boolean;
   selectedPetId: string;
 }): ActivityInsight | null {
@@ -209,37 +211,38 @@ function getActivityInsight({
   ].filter((part): part is string => part !== null);
 
   if (change !== null) {
-    if (change > 0) {
-      const percentage = change.toFixed(0);
+    const diffMinutes = Math.abs(exerciseMinutes - previousWeekMinutes);
+    const diffLabel = formatMinutes(diffMinutes);
 
+    if (change > 0) {
       return {
-        title: "Great progress",
+        title: "Good week so far",
         text:
           selectedPetId === "all"
-            ? "Exercise is up " +
-            percentage +
-            "% from last week. You've logged " +
+            ? "You've logged " +
             activityParts.join(", ") +
-            " for " +
+            " this week — " +
             formatMinutes(exerciseMinutes) +
-            " total."
-            : "This week is " +
-            percentage +
-            "% more active than last week, with " +
-            formatMinutes(exerciseMinutes) +
-            " of exercise.",
+            " total, " +
+            diffLabel +
+            " more than last week."
+            : formatMinutes(exerciseMinutes) +
+            " of exercise this week, " +
+            diffLabel +
+            " more than last week's " +
+            formatMinutes(previousWeekMinutes) +
+            ".",
       };
     }
 
     if (change < 0) {
       return {
-        title: "Activity check-in",
+        title: "A quieter week",
         text:
-          "Exercise is " +
-          Math.abs(change).toFixed(0) +
-          "% lower than last week. You've logged " +
           formatMinutes(exerciseMinutes) +
-          " so far this week.",
+          " logged so far this week, " +
+          diffLabel +
+          " less than last week. Still time to catch up!",
       };
     }
   }
@@ -514,6 +517,7 @@ export function getActivityDashboard({
         activeDays,
         change: exerciseChange,
         exerciseMinutes,
+        previousWeekMinutes,
         hasExercise: exerciseLogs.length > 0,
         selectedPetId,
       }),

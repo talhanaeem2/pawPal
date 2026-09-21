@@ -30,7 +30,7 @@ export function ActivityCarePanel({
   const hasCareOptions = careTypes.length > 0;
   const lastCareLog = care.logs[0];
   const daysSinceLastCare = lastCareLog
-    ? Math.floor((Date.now() - new Date(lastCareLog.occurred_at).getTime()) / 86_400_000)
+    ? Math.max(0, Math.floor((Date.now() - new Date(lastCareLog.occurred_at).getTime()) / 86_400_000))
     : null;
 
   return (
