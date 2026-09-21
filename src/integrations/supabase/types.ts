@@ -49,6 +49,7 @@ export type Database = {
           notes: string | null
           occurred_at: string | null
           pet_id: string | null
+          session_id: string | null
           user_id: string
           weight: number | null
         }
@@ -61,6 +62,7 @@ export type Database = {
           notes?: string | null
           occurred_at?: string | null
           pet_id?: string | null
+          session_id?: string | null
           user_id?: string
           weight?: number | null
         }
@@ -73,6 +75,7 @@ export type Database = {
           notes?: string | null
           occurred_at?: string | null
           pet_id?: string | null
+          session_id?: string | null
           user_id?: string
           weight?: number | null
         }

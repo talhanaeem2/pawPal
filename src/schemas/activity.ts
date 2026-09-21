@@ -43,6 +43,7 @@ export const activityLogSchema = z.object({
     length: z.number().nullable(),
     notes: z.string().nullable(),
     occurred_at: z.string(),
+    session_id: z.string().nullable().default(null),
 });
 
 export type ActivityLog = z.infer<typeof activityLogSchema>;

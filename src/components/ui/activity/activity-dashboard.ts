@@ -143,6 +143,40 @@ function groupLogsByDate(logs: ActivityLog[]) {
   return Array.from(logsByDate.entries());
 }
 
+function dedupeBySessionId(logs: ActivityLog[]): ActivityLog[] {
+  const seenSessions = new Set<string>();
+  const seenTimestamps = new Set<string>();
+  const result: ActivityLog[] = [];
+
+  for (const log of logs) {
+    const minuteKey = log.activity_type + "|" + log.occurred_at.slice(0, 16);
+
+    if (log.session_id) {
+      if (seenSessions.has(log.session_id)) {
+        continue;
+      }
+
+      if (seenTimestamps.has(minuteKey)) {
+        continue;
+      }
+
+      seenSessions.add(log.session_id);
+      seenTimestamps.add(minuteKey);
+      result.push(log);
+      continue;
+    }
+
+    if (seenTimestamps.has(minuteKey)) {
+      continue;
+    }
+
+    seenTimestamps.add(minuteKey);
+    result.push(log);
+  }
+
+  return result;
+}
+
 function getActivityInsight({
   activityCounts,
   activeDays,
@@ -183,17 +217,17 @@ function getActivityInsight({
         text:
           selectedPetId === "all"
             ? "Exercise is up " +
-              percentage +
-              "% from last week. You've logged " +
-              activityParts.join(", ") +
-              " for " +
-              formatMinutes(exerciseMinutes) +
-              " total."
+            percentage +
+            "% from last week. You've logged " +
+            activityParts.join(", ") +
+            " for " +
+            formatMinutes(exerciseMinutes) +
+            " total."
             : "This week is " +
-              percentage +
-              "% more active than last week, with " +
-              formatMinutes(exerciseMinutes) +
-              " of exercise.",
+            percentage +
+            "% more active than last week, with " +
+            formatMinutes(exerciseMinutes) +
+            " of exercise.",
       };
     }
 
@@ -276,7 +310,10 @@ export function getActivityDashboard({
   const exerciseLogs: ActivityLog[] = [];
   const thisWeekCareCounts: Record<string, number> = {};
 
-  for (const log of thisWeekLogs) {
+  const dedupedThisWeekLogs = dedupeBySessionId(thisWeekLogs);
+  const dedupedPreviousWeekLogs = dedupeBySessionId(previousWeekLogs);
+
+  for (const log of dedupedThisWeekLogs) {
     if (EXERCISE_TYPES.has(log.activity_type)) {
       exerciseLogs.push(log);
       activityCounts[log.activity_type] = (activityCounts[log.activity_type] ?? 0) + 1;
@@ -287,7 +324,7 @@ export function getActivityDashboard({
     }
   }
 
-  const previousWeekExerciseLogs = previousWeekLogs.filter((log) =>
+  const previousWeekExerciseLogs = dedupedPreviousWeekLogs.filter((log) =>
     EXERCISE_TYPES.has(log.activity_type),
   );
   const exerciseMinutes = exerciseLogs.reduce(
@@ -330,7 +367,7 @@ export function getActivityDashboard({
   );
   const careTotals: Record<string, number> = {};
 
-  for (const log of careLogs) {
+  for (const log of dedupeBySessionId(careLogs)) {
     careTotals[log.activity_type] = (careTotals[log.activity_type] ?? 0) + 1;
   }
 
@@ -353,12 +390,12 @@ export function getActivityDashboard({
   const careFallback =
     careLogs.length > 0
       ? [
-          {
-            value: String(careLogs.length),
-            label: "Care sessions",
-            icon: Scissors,
-          },
-        ]
+        {
+          value: String(dedupeBySessionId(careLogs).length),
+          label: "Care sessions",
+          icon: Scissors,
+        },
+      ]
       : [];
 
   const healthLogs = filteredLogs.filter((log) =>
@@ -379,17 +416,17 @@ export function getActivityDashboard({
     selectedPetId === "all" ? undefined : selectedPetWeightLogs[selectedPetWeightLogs.length - 1];
   const weightChange =
     latestWeight?.weight !== null &&
-    latestWeight?.weight !== undefined &&
-    previousWeight?.weight !== null &&
-    previousWeight?.weight !== undefined
+      latestWeight?.weight !== undefined &&
+      previousWeight?.weight !== null &&
+      previousWeight?.weight !== undefined
       ? Number(latestWeight.weight) - Number(previousWeight.weight)
       : null;
   const totalWeightChange =
     latestWeight?.weight !== null &&
-    latestWeight?.weight !== undefined &&
-    oldestWeight?.weight !== null &&
-    oldestWeight?.weight !== undefined &&
-    latestWeight.id !== oldestWeight.id
+      latestWeight?.weight !== undefined &&
+      oldestWeight?.weight !== null &&
+      oldestWeight?.weight !== undefined &&
+      latestWeight.id !== oldestWeight.id
       ? Number(latestWeight.weight) - Number(oldestWeight.weight)
       : null;
   const healthMetrics: MetricCard[] = [];
@@ -483,24 +520,24 @@ export function getActivityDashboard({
       cards: [
         exerciseMinutes > 0
           ? {
-              value: formatMinutes(exerciseMinutes),
-              label: "Exercise this week",
-              icon: Clock3,
-            }
+            value: formatMinutes(exerciseMinutes),
+            label: "Exercise this week",
+            icon: Clock3,
+          }
           : null,
         activeDays > 0
           ? {
-              value: String(activeDays) + "/7",
-              label: "Active days",
-              icon: ActivityIcon,
-            }
+            value: String(activeDays) + "/7",
+            label: "Active days",
+            icon: ActivityIcon,
+          }
           : null,
         exerciseLogs.length > 0
           ? {
-              value: String(exerciseLogs.length),
-              label: "Sessions this week",
-              icon: Footprints,
-            }
+            value: String(exerciseLogs.length),
+            label: "Sessions this week",
+            icon: Footprints,
+          }
           : null,
       ]
         .filter((metric): metric is MetricCard => metric !== null)

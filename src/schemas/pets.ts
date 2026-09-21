@@ -36,7 +36,7 @@ export const petFormSchema = z.object({
     neutered: z.boolean().default(false),
     microchip: z.string().default(""),
     pet_type: z.enum(["individual", "group"]).default("individual"),
-    group_size: z.string().trim().min(1, "Group size is required"),
+    group_size: z.string().default(""),
 }).superRefine((data, ctx) => {
     if (
         data.species === "other" &&

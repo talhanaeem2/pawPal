@@ -19,7 +19,7 @@ interface LogActivityDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     schedule: ScheduleWithPets;
-    timeSlot: string | null;
+    timeSlots: (string | null)[];
     targetPetId?: string; // undefined = all pets
     today: string;
     pets: { id: string; name: string; pet_type?: "individual" | "group"; group_size?: number | null }[];
@@ -41,7 +41,6 @@ export function UndoActivityDialog({
 }: UndoActivityDialogProps) {
     const [deleteLog, setDeleteLog] = useState(false);
 
-    // Reset checkbox when dialog opens
     useEffect(() => {
         if (open) setDeleteLog(false);
     }, [open]);
@@ -105,7 +104,7 @@ export function LogActivityDialog({
     open,
     onOpenChange,
     schedule,
-    timeSlot,
+    timeSlots,
     targetPetId,
     today,
     pets,
@@ -133,7 +132,6 @@ export function LogActivityDialog({
         () => Object.fromEntries(petsSorted.map((p) => [p.petId, ""]))
     );
 
-    // Reset inputs when dialog opens
     useEffect(() => {
         if (open) {
             setInputs(Object.fromEntries(petsSorted.map((p) => [p.petId, ""])));
@@ -142,21 +140,41 @@ export function LogActivityDialog({
 
     const logActivity = useMutation({
         mutationFn: async () => {
-            const occurredAt = buildOccurredAt(today, timeSlot);
             const activityType = getActivityType(schedule.kind);
 
-            const rows = petsSorted
-                .filter((p) => inputs[p.petId]?.trim())
-                .map((p) => ({
-                    pet_id: p.petId,
-                    activity_type: activityType,
-                    occurred_at: occurredAt,
-                    ...(isWeight
-                        ? { weight: Number(inputs[p.petId]) }
-                        : { duration_min: Number(inputs[p.petId]) }
-                    ),
-                    notes: null,
-                }));
+            const sessionIdBySlot = new Map<string | null, string | null>(
+                timeSlots.map((slot) => [
+                    slot,
+                    petsSorted.length > 1 ? crypto.randomUUID() : null,
+                ])
+            );
+
+            const scheduleItemPetsByPetId = new Map(
+                schedule.schedule_item_pets.map((sip) => [sip.pet_id, sip])
+            );
+
+            const rows = timeSlots.flatMap((slot) =>
+                petsSorted
+                    .filter((p) => {
+                        if (!inputs[p.petId]?.trim()) return false;
+                        const sip = scheduleItemPetsByPetId.get(p.petId);
+                        if (!sip) return true;
+                        return !sip.schedule_completions.some(
+                            (c) => c.completed_on === today && c.time_slot === slot
+                        );
+                    })
+                    .map((p) => ({
+                        pet_id: p.petId,
+                        activity_type: activityType,
+                        occurred_at: buildOccurredAt(today, slot),
+                        session_id: sessionIdBySlot.get(slot) ?? null,
+                        ...(isWeight
+                            ? { weight: Number(inputs[p.petId]) }
+                            : { duration_min: Number(inputs[p.petId]) }
+                        ),
+                        notes: null,
+                    }))
+            );
 
             if (rows.length > 0) {
                 const { error } = await supabase.from("activity_logs").insert(rows);
