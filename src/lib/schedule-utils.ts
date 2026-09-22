@@ -52,8 +52,6 @@ export const repeatUnitOptions = [
     },
 ];
 
-// Kinds where we ask for a duration or weight value before logging an
-// activity — these show the LogActivityDialog prompt when marked done.
 const PROMPT_LOG_KINDS = [
     "walk",
     "run",
@@ -70,11 +68,7 @@ export function isActivityKind(kind: string): kind is PromptLogKind {
     return PROMPT_LOG_KINDS.includes(kind as PromptLogKind);
 }
 
-// Kinds that log an activity automatically when marked done — there's no
-// extra numeric value to capture, so we skip the dialog (same treatment
-// "grooming" always got, now extended to every other event-style kind).
 const AUTO_LOG_KINDS = [
-    "feeding",
     "grooming",
     "bath",
     "nail_trim",
