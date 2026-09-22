@@ -313,6 +313,7 @@ export function getActivityDashboard({
   const exerciseLogs: ActivityLog[] = [];
   const thisWeekCareCounts: Record<string, number> = {};
 
+  // Collapse shared-occurrence rows before summing/counting anything.
   const dedupedThisWeekLogs = dedupeBySessionId(thisWeekLogs);
   const dedupedPreviousWeekLogs = dedupeBySessionId(previousWeekLogs);
 
@@ -458,7 +459,7 @@ export function getActivityDashboard({
     });
   }
 
-  if (healthLogs.length > 0) {
+  if (healthLogs.length > 0 && healthMetrics.length === 0) {
     healthMetrics.push({
       value: String(healthLogs.length),
       label: "Health logs",
@@ -552,7 +553,8 @@ export function getActivityDashboard({
       groupedLogs: groupLogsByType(careLogs),
       breakdown: careBreakdown,
       maxBreakdownCount: maxCareBreakdownCount,
-      cards: [...careMetrics, ...careFallback].slice(0, 2),
+      // cards: [...careMetrics, ...careFallback].slice(0, 2),
+      cards: [],
     },
     health: {
       logs: healthLogs,
@@ -563,7 +565,8 @@ export function getActivityDashboard({
       weightChange,
       totalWeightChange,
       weightHistoryCount: selectedPetWeightLogs.length,
-      cards: healthMetrics.slice(0, 2),
+      // cards: healthMetrics.slice(0, 2),
+      cards: [],
     },
   };
 }
