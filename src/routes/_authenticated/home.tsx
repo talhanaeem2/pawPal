@@ -80,6 +80,29 @@ function Home() {
 
   const petNameById = new Map(pets.map((p) => [p.id, p.name]));
   const today = todayDateString();
+  const now = new Date();
+  const nextSchedule = schedule
+    .flatMap((item) =>
+      item.times_of_day.map((time) => ({
+        item,
+        time,
+        when: toTodayTime(time),
+      })),
+    )
+    .filter(({ item, time, when }) => {
+      if (when < now) {
+        return false;
+      }
+
+      return item.schedule_item_pets.some(
+        (pet) =>
+          !pet.schedule_completions.some(
+            (completion) =>
+              completion.completed_on === today && completion.time_slot === time,
+          ),
+      );
+    })
+    .sort((left, right) => left.when.getTime() - right.when.getTime())[0];
 
   const upcomingVetSorted = vet
     .filter((v) => {
@@ -252,6 +275,28 @@ function Home() {
       </Page.Header>
 
       <Page.Content extraScrollRoom={112} onScroll={handleContentScroll}>
+        {nextSchedule && (
+          <Link
+            to="/schedule"
+            className="block rounded-3xl border border-primary/20 bg-primary/5 p-4 transition hover:bg-primary/10"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+              Coming up next
+            </p>
+            <div className="mt-2 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="truncate font-display text-lg capitalize">{nextSchedule.item.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatTime(nextSchedule.time)} · {formatTimeUntil(nextSchedule.when)}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+                View schedule
+              </span>
+            </div>
+          </Link>
+        )}
+
         <Section title="Today's care" icon={Calendar} href="/schedule">
           {schedule.length === 0 ? (
             <Empty
@@ -566,4 +611,23 @@ function Home() {
       </Page.Content>
     </Page>
   );
+}
+
+function toTodayTime(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  const value = new Date();
+  value.setHours(hours, minutes, 0, 0);
+  return value;
+}
+
+function formatTimeUntil(when: Date) {
+  const minutes = Math.max(1, Math.round((when.getTime() - Date.now()) / 60_000));
+
+  if (minutes < 60) {
+    return `in ${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `in ${hours}h ${remainingMinutes}m` : `in ${hours}h`;
 }

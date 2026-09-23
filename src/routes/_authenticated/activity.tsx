@@ -56,6 +56,7 @@ function ActivityPage() {
   const [activeTab, setActiveTab] = useState<ActivityTab>("exercise");
   const [historyType, setHistoryType] = useState("all");
   const [historyDate, setHistoryDate] = useState("all");
+  const [historySearch, setHistorySearch] = useState("");
 
   useEffect(() => {
     if (openCreate) {
@@ -76,8 +77,9 @@ function ActivityPage() {
         selectedPetId,
         historyType,
         historyDate,
+        historySearch,
       }),
-    [historyDate, historyType, logs, pets, selectedPetId],
+    [historyDate, historySearch, historyType, logs, pets, selectedPetId],
   );
 
   useEffect(() => {
@@ -160,10 +162,7 @@ function ActivityPage() {
         />
 
         {activeTab === "exercise" && (
-          <ActivityExercisePanel
-            pets={pets}
-            exercise={dashboard.exercise}
-          />
+          <ActivityExercisePanel pets={pets} exercise={dashboard.exercise} />
         )}
 
         {activeTab === "care" && (
@@ -193,11 +192,13 @@ function ActivityPage() {
             selectedPetId={selectedPetId}
             historyType={historyType}
             historyDate={historyDate}
+            historySearch={historySearch}
             historyLogs={dashboard.historyLogs}
             filteredLogs={dashboard.filteredLogs}
             groupedLogs={dashboard.groupedHistoryLogs}
             onHistoryTypeChange={setHistoryType}
             onHistoryDateChange={setHistoryDate}
+            onHistorySearchChange={setHistorySearch}
             onDelete={setConfirmId}
           />
         )}

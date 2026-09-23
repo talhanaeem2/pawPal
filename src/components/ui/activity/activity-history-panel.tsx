@@ -1,6 +1,7 @@
-import { Clock3 } from "lucide-react";
+import { Clock3, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/common/button";
+import { Input } from "@/components/ui/common/input";
 import {
   ACTIVITY_TIME_FILTERS,
   CATEGORY_FILTERS,
@@ -9,7 +10,6 @@ import {
 } from "@/lib/activity-utils";
 import { cn } from "@/lib/utils";
 
-import { ActivityEditButton } from "./activity-edit-button";
 import { ActivityLogButton } from "./activity-log-button";
 import { ActivityRow } from "./activity-row";
 
@@ -21,11 +21,13 @@ type ActivityHistoryPanelProps = {
   selectedPetId: string;
   historyType: string;
   historyDate: string;
+  historySearch: string;
   historyLogs: ActivityLog[];
   filteredLogs: ActivityLog[];
   groupedLogs: [string, ActivityLog[]][];
   onHistoryTypeChange: (value: string) => void;
   onHistoryDateChange: (value: string) => void;
+  onHistorySearchChange: (value: string) => void;
   onDelete: (id: string) => void;
 };
 
@@ -34,18 +36,18 @@ export function ActivityHistoryPanel({
   selectedPetId,
   historyType,
   historyDate,
+  historySearch,
   historyLogs,
   filteredLogs,
   groupedLogs,
   onHistoryTypeChange,
   onHistoryDateChange,
+  onHistorySearchChange,
   onDelete,
 }: ActivityHistoryPanelProps) {
   const selectedPet = pets.find((pet) => pet.id === selectedPetId);
   const typeFilters =
     selectedPetId === "all" ? CATEGORY_FILTERS : getTypeFilters(selectedPet?.species ?? "other");
-
-  const renderEdit = (item: ActivityLog) => <ActivityEditButton pets={pets} item={item} />;
 
   return (
     <section>
@@ -59,6 +61,20 @@ export function ActivityHistoryPanel({
       </div>
 
       <div className="space-y-2 pb-2">
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <Input
+            value={historySearch}
+            onChange={(event) => onHistorySearchChange(event.target.value)}
+            placeholder="Search activity"
+            className="pl-9"
+            aria-label="Search activity history"
+          />
+        </div>
+
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
           {typeFilters.map(([value, label]) => (
             <button
@@ -121,6 +137,7 @@ export function ActivityHistoryPanel({
               onClick={() => {
                 onHistoryTypeChange("all");
                 onHistoryDateChange("all");
+                onHistorySearchChange("");
               }}
             >
               Clear filters
@@ -144,7 +161,6 @@ export function ActivityHistoryPanel({
                     item={log}
                     pets={pets}
                     onDelete={onDelete}
-                    renderEdit={renderEdit}
                   />
                 ))}
               </ul>

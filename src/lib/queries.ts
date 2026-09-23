@@ -63,7 +63,9 @@ export const scheduleQuery = queryOptions({
           schedule_completions (
             id,
             completed_on,
-            time_slot
+            time_slot,
+            status,
+            note
           )
         )
       `);
@@ -195,6 +197,28 @@ export const activityQuery = queryOptions({
     return parsed.data;
   },
 });
+
+export const petActivityQuery = (petId: string) =>
+  queryOptions({
+    queryKey: ["pets", petId, "activity"],
+    queryFn: async (): Promise<ActivityLog[]> => {
+      const { data, error } = await supabase
+        .from("activity_logs")
+        .select("*")
+        .eq("pet_id", petId)
+        .order("occurred_at", { ascending: false });
+
+      if (error) throw error;
+      const parsed = z.array(activityLogSchema).safeParse(data ?? []);
+
+      if (!parsed.success) {
+        console.error(parsed.error);
+        return [];
+      }
+
+      return parsed.data;
+    },
+  });
 
 export const profileQuery = (userId: string) =>
   queryOptions({

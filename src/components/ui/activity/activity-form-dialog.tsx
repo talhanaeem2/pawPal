@@ -33,11 +33,19 @@ import {
   ActivityLog,
   ActivityLogForm,
   ActivityType,
+  activity_type,
   activityLogFormSchema,
   activityLogToForm,
   createEmptyActivityLogForm,
 } from "@/schemas/activity";
 import { getPetDisplayName, Pet } from "@/schemas/pets";
+
+const LAST_ACTIVITY_SELECTION_KEY = "pawpal:last-activity-selection";
+
+type LastActivitySelection = {
+  petId: string;
+  activityType: ActivityType;
+};
 
 interface IActivityFormDialog {
   pets: Pet[];
@@ -61,7 +69,7 @@ export function ActivityFormDialog({
 
   const form = useZodForm(
     activityLogFormSchema,
-    item ? activityLogToForm(item) : createEmptyActivityLogForm(),
+    item ? activityLogToForm(item) : createNewActivityForm(pets),
   );
 
   function handleOpenChange(o: boolean) {
@@ -71,7 +79,7 @@ export function ActivityFormDialog({
   }
 
   function resetForm() {
-    form.reset(item ? activityLogToForm(item) : createEmptyActivityLogForm());
+    form.reset(item ? activityLogToForm(item) : createNewActivityForm(pets));
   }
 
   function handleTypeChange(v: string) {
@@ -127,8 +135,16 @@ export function ActivityFormDialog({
 
       const { error } = await query;
       if (error) throw error;
+
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (!isEdit) {
+        saveLastActivitySelection({
+          petId: data.pet_id,
+          activityType: data.activity_type,
+        });
+      }
       qc.invalidateQueries({ queryKey: activityQuery.queryKey });
       toast.success(isEdit ? "Updated" : "Logged");
       handleOpenChange(false);
@@ -145,10 +161,7 @@ export function ActivityFormDialog({
     );
   }
 
-  const grouped = getGroupedTypesForPets(
-    pets,
-    form.values.pet_id ? [form.values.pet_id] : [],
-  );
+  const grouped = getGroupedTypesForPets(pets, form.values.pet_id ? [form.values.pet_id] : []);
   const currentType = form.values.activity_type;
   const useDateOnly = DATE_ONLY_TYPES.has(currentType);
   const showDuration = EXERCISE_TYPES.has(currentType);
@@ -353,4 +366,70 @@ export function ActivityFormDialog({
       </form>
     </FormDialog>
   );
+}
+
+function createNewActivityForm(pets: Pet[]): ActivityLogForm {
+  const defaults = createEmptyActivityLogForm();
+  const selection = getLastActivitySelection();
+
+  if (!selection || !pets.some((pet) => pet.id === selection.petId)) {
+    return defaults;
+  }
+
+  const grouped = getGroupedTypesForPets(pets, [selection.petId]);
+  const allowedTypes = [
+    ...grouped.exercise,
+    ...grouped.care,
+    ...grouped.medical,
+    ...grouped.measurements,
+    ...grouped.observations,
+  ];
+  const activityType = allowedTypes.includes(selection.activityType)
+    ? selection.activityType
+    : (allowedTypes[0] ?? defaults.activity_type);
+
+  return {
+    ...defaults,
+    pet_id: selection.petId,
+    activity_type: activityType,
+  };
+}
+
+function getLastActivitySelection(): LastActivitySelection | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw: unknown = JSON.parse(
+      window.localStorage.getItem(LAST_ACTIVITY_SELECTION_KEY) ?? "null",
+    );
+
+    if (
+      !raw ||
+      typeof raw !== "object" ||
+      !("petId" in raw) ||
+      !("activityType" in raw) ||
+      typeof raw.petId !== "string" ||
+      typeof raw.activityType !== "string" ||
+      !activity_type.options.includes(raw.activityType as ActivityType)
+    ) {
+      return null;
+    }
+
+    return {
+      petId: raw.petId,
+      activityType: raw.activityType as ActivityType,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveLastActivitySelection(selection: LastActivitySelection) {
+  try {
+    window.localStorage.setItem(LAST_ACTIVITY_SELECTION_KEY, JSON.stringify(selection));
+  } catch {
+    // The log has already been saved; private browsing storage can be unavailable.
+  }
 }
