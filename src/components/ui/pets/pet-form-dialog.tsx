@@ -1,13 +1,13 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Camera, X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 
 import { petQuery, petsQuery } from "@/lib/queries";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { supabase } from "@/integrations/supabase/client";
 import { ageToBirthdate, PET_SPECIES } from "@/lib/pet-utils";
-import { capitalize, cn, extractStoragePath } from "@/lib/utils";
+import { capitalize, cn, extractStoragePath, MAX_SOURCE_PHOTO_BYTES, revokeObjectUrl } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/common/select";
@@ -17,9 +17,9 @@ import { Textarea } from "@/components/ui/common/textarea";
 import { DatePicker } from "../common/date-picker";
 import { Button } from "@/components/ui/common/button";
 import { Field } from "../common/field";
-import { PetPhotoCropDialog } from "./pet-photo-crop-dialog";
 
 import { createEmptyPetForm, Pet, petFormSchema, petToForm } from "@/schemas/pets";
+import { PhotoCropDialog } from "../common/photo-crop-dialog";
 
 interface IPetFormDialog {
     pet?: Pet;
@@ -27,8 +27,6 @@ interface IPetFormDialog {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
 }
-
-const MAX_SOURCE_PHOTO_BYTES = 15 * 1024 * 1024;
 
 type PendingPhoto = {
     url: string;
@@ -123,7 +121,7 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
     const save = useMutation({
         mutationFn: async () => {
             const data = form.getValidated();
-            console.log(data)
+
             if (!data) return;
 
             setUploading(true);
@@ -190,7 +188,7 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
 
     return (
         <>
-            <PetPhotoCropDialog
+            <PhotoCropDialog
                 open={pendingPhoto !== null}
                 imageUrl={pendingPhoto?.url ?? ""}
                 onCancel={discardPendingPhoto}
@@ -210,7 +208,7 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
                             <button type="button" onClick={() => fileInputRef.current?.click()}
                                 className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center overflow-hidden group">
                                 {photoPreview
-                                    ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
+                                    ? <img src={photoPreview} alt={pet?.name} className="h-full w-full object-cover" />
                                     : <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />}
                                 <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition flex items-center justify-center">
                                     <Camera className="h-5 w-5 text-card opacity-0 group-hover:opacity-100 transition" strokeWidth={1.75} />
@@ -439,10 +437,4 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
             </FormDialog>
         </>
     );
-}
-
-function revokeObjectUrl(url: string | null) {
-    if (url?.startsWith("blob:")) {
-        URL.revokeObjectURL(url);
-    }
 }
