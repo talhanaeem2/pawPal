@@ -278,22 +278,24 @@ function Home() {
         {nextSchedule && (
           <Link
             to="/schedule"
-            className="block rounded-3xl border border-primary/20 bg-primary/5 p-4 transition hover:bg-primary/10"
+            className="flex justify-between items-center rounded-3xl border border-primary/20 bg-primary/5 py-3 px-4 transition"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-              Coming up next
-            </p>
-            <div className="mt-2 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="truncate font-display text-lg capitalize">{nextSchedule.item.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatTime(nextSchedule.time)} · {formatTimeUntil(nextSchedule.when)}
-                </p>
+            <div className="flex gap-1.5 flex-col">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                Coming up next
+              </p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="truncate capitalize text-sm">{nextSchedule.item.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatTime(nextSchedule.time)} {formatTimeUntil(nextSchedule.when)}
+                  </p>
+                </div>
               </div>
-              <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
-                View schedule
-              </span>
             </div>
+            <span className="shrink-0 text-xs font-medium text-primary">
+              View
+            </span>
           </Link>
         )}
 

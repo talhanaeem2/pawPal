@@ -123,10 +123,10 @@ function SchedulePage() {
         {nextVetAppointment && (
           <Link
             to="/health/vet"
-            className="flex items-center justify-between gap-3 rounded-3xl border border-primary/15 bg-primary/5 px-4 py-3 transition hover:bg-primary/10"
+            className="flex items-center justify-between gap-3 rounded-3xl border border-primary/20 bg-primary/5 py-3 px-4 transition"
           >
             <div>
-              <p className="text-sm font-medium">Vet appointment {formatRelativeDays(nextVetAppointment.date)}</p>
+              <p className="text-sm truncate">Vet appointment {formatRelativeDays(nextVetAppointment.date)}</p>
               <p className="text-xs text-muted-foreground">
                 {nextVetPet?.name ?? "Your pet"} · {nextVetAppointment.reason}
               </p>
