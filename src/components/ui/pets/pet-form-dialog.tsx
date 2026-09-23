@@ -190,255 +190,253 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
 
     return (
         <>
-          <PetPhotoCropDialog
-            open={pendingPhoto !== null}
-            imageUrl={pendingPhoto?.url ?? ""}
-            onCancel={discardPendingPhoto}
-            onComplete={useCroppedPhoto}
-          />
+            <PetPhotoCropDialog
+                open={pendingPhoto !== null}
+                imageUrl={pendingPhoto?.url ?? ""}
+                onCancel={discardPendingPhoto}
+                onComplete={useCroppedPhoto}
+            />
 
-        <FormDialog
-            open={open}
-            onOpenChange={handleOpenChange}
-            title={isEdit ? `Edit ${pet!.name}` : form.values.pet_type === "group" ? "New group" : "New pet"}
-            trigger={trigger}
-        >
-            <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
-                {/* Photo */}
-                <div className="flex justify-center">
-                    <div className="relative h-20 w-20">
-                        <button type="button" onClick={() => fileInputRef.current?.click()}
-                            className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center overflow-hidden group">
-                            {photoPreview
-                                ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
-                                : <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />}
-                            <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition flex items-center justify-center">
-                                <Camera className="h-5 w-5 text-card opacity-0 group-hover:opacity-100 transition" strokeWidth={1.75} />
-                            </div>
-                        </button>
-                        {photoPreview && (
-                            <button type="button" onClick={onRemovePhoto} aria-label="Remove photo"
-                                className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-(--shadow-soft)">
-                                <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <FormDialog
+                open={open}
+                onOpenChange={handleOpenChange}
+                title={isEdit ? `Edit ${pet!.name}` : form.values.pet_type === "group" ? "New group" : "New pet"}
+                trigger={trigger}
+            >
+                <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
+                    {/* Photo */}
+                    <div className="flex justify-center">
+                        <div className="relative h-20 w-20">
+                            <button type="button" onClick={() => fileInputRef.current?.click()}
+                                className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center overflow-hidden group">
+                                {photoPreview
+                                    ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
+                                    : <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />}
+                                <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition flex items-center justify-center">
+                                    <Camera className="h-5 w-5 text-card opacity-0 group-hover:opacity-100 transition" strokeWidth={1.75} />
+                                </div>
                             </button>
-                        )}
-                    </div>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        capture="environment"
-                        onChange={onPickPhoto}
-                        className="hidden"
-                    />
-                </div>
-                <p className="-mt-1 text-center text-xs text-muted-foreground">
-                    Choose a photo, then crop and zoom it to fit.
-                </p>
-
-                {/* Individual / Group toggle */}
-                {!isEdit && (
-                    <div className="flex rounded-full bg-secondary/60 p-1">
-                        <button
-                            type="button"
-                            onClick={() => form.setField("pet_type", "individual")}
-                            className={cn(
-                                "flex-1 rounded-full py-1.5 text-sm font-medium transition",
-                                form.values.pet_type === "individual"
-                                    ? "bg-card shadow-sm"
-                                    : "text-muted-foreground",
+                            {photoPreview && (
+                                <button type="button" onClick={onRemovePhoto} aria-label="Remove photo"
+                                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-(--shadow-soft)">
+                                    <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                </button>
                             )}
-                        >
-                            Individual
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => form.setField("pet_type", "group")}
-                            className={cn(
-                                "flex-1 rounded-full py-1.5 text-sm font-medium transition",
-                                form.values.pet_type === "group"
-                                    ? "bg-card shadow-sm"
-                                    : "text-muted-foreground",
-                            )}
-                        >
-                            Group
-                        </button>
-                    </div>
-                )}
-
-                {/* Basic info */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Field
-                        label={form.values.pet_type === "group" ? "Group name" : "Name"}
-                        error={form.errors.name}
-                    >
-                        <Input
-                            value={form.values.name}
-                            onChange={(e) => form.setField("name", e.target.value)}
-                            placeholder={form.values.pet_type === "group" ? "e.g. Backyard Aviary" : "e.g. Bruno"}
-                            required
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={onPickPhoto}
+                            className="hidden"
                         />
-                    </Field>
-                    <Field label="Animal" error={form.errors.species}>
-                        <Select
-                            value={form.values.species}
-                            onValueChange={(v) => form.setField("species", v)}
-                            required
+                    </div>
+                    <p className="-mt-1 text-center text-xs text-muted-foreground">
+                        Choose a photo, then crop and zoom it to fit.
+                    </p>
+
+                    {/* Individual / Group toggle */}
+                    {!isEdit && (
+                        <div className="flex rounded-full bg-secondary/60 p-1">
+                            <button
+                                type="button"
+                                onClick={() => form.setField("pet_type", "individual")}
+                                className={cn(
+                                    "flex-1 rounded-full py-1.5 text-sm font-medium transition",
+                                    form.values.pet_type === "individual"
+                                        ? "bg-card shadow-sm"
+                                        : "text-muted-foreground",
+                                )}
+                            >
+                                Individual
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => form.setField("pet_type", "group")}
+                                className={cn(
+                                    "flex-1 rounded-full py-1.5 text-sm font-medium transition",
+                                    form.values.pet_type === "group"
+                                        ? "bg-card shadow-sm"
+                                        : "text-muted-foreground",
+                                )}
+                            >
+                                Group
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Basic info */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field
+                            label={form.values.pet_type === "group" ? "Group name" : "Name"}
+                            error={form.errors.name}
                         >
-                            <SelectTrigger><SelectValue placeholder="Choose an animal" /></SelectTrigger>
-                            <SelectContent>
-                                {PET_SPECIES.map((s) =>
-                                    <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)
-                                }
-                            </SelectContent>
-                        </Select>
-                    </Field>
-                    {form.values.pet_type === "group" && (
-                        <Field label="How many?" error={form.errors.group_size} className="col-span-2">
                             <Input
-                                type="number"
-                                min={1}
-                                step={1}
-                                value={form.values.group_size}
-                                onChange={(e) => form.setField("group_size", e.target.value)}
-                                placeholder="e.g. 42"
+                                value={form.values.name}
+                                onChange={(e) => form.setField("name", e.target.value)}
+                                placeholder={form.values.pet_type === "group" ? "e.g. Backyard Aviary" : "e.g. Bruno"}
                                 required
                             />
                         </Field>
-                    )}
-                    {form.values.species === "other" && (
-                        <Field label="What animal is it?" className="col-span-2">
-                            <Input
-                                value={form.values.other_species}
-                                onChange={(e) => form.setField("other_species", e.target.value)}
-                                placeholder="e.g. Turtle"
-                                required={form.values.species === "other"}
-                            />
-                        </Field>
-                    )}
-                    {showMore && (
-                        <>
-                            {form.values.pet_type === "individual" && (
-                                <>
-                                    <Field label="Type / Breed">
-                                        <Input value={form.values.breed} onChange={(e) => form.setField("breed", e.target.value)} placeholder="e.g. Labrador, Persian, Mixed" />
-                                    </Field>
-                                    <Field label="Weight (kg)">
-                                        <Input type="number" step="0.1" value={form.values.weight_kg} onChange={(e) => form.setField("weight_kg", e.target.value)} placeholder="e.g. 25.5" />
-                                    </Field>
-                                    <div className="col-span-2">
-                                        {useBirthday ? (
-                                            <Field label="Birthdate" className="col-span-2">
-                                                {/* <Input type="date" value={form.values.birthdate} onChange={(e) => form.setField("birthdate", e.target.value)} /> */}
-                                                <DatePicker
-                                                    value={form.values.birthdate}
-                                                    onChange={(date) => form.setField("birthdate", date)}
-                                                    placeholder="Select date"
-                                                />
-                                            </Field>
-                                        ) : (
-                                            <Field label="Age" className="col-span-2">
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <Input
-                                                            type="number"
-                                                            min={0}
-                                                            max={50}
-                                                            placeholder="Years (e.g. 3)"
-                                                            value={form.values.age_years}
-                                                            onChange={(e) =>
-                                                                form.setField("age_years", e.target.value)
-                                                            }
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Input
-                                                            type="number"
-                                                            min={0}
-                                                            max={11}
-                                                            placeholder="Months (e.g. 6)"
-                                                            value={form.values.age_months}
-                                                            onChange={(e) =>
-                                                                form.setField("age_months", e.target.value)
-                                                            }
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </Field>
-                                        )}
-                                        <Button
-                                            type="button"
-                                            variant="link"
-                                            className="col-span-2 justify-start"
-                                            onClick={() => setUseBirthday(!useBirthday)}
-                                        >
-                                            {useBirthday
-                                                ? "Use age instead"
-                                                : "Enter birthday instead"}
-                                        </Button>
-                                    </div>
-                                    <Field label="Gender">
-                                        <Select value={form.values.gender ?? ""} onValueChange={(v) => form.setField("gender", v as "male" | "female")}>
-                                            <SelectTrigger><SelectValue placeholder="Choose a gender" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="male">Male</SelectItem>
-                                                <SelectItem value="female">Female</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-                                    <Field label={form.values.gender === "female" ? "Spayed" : "Neutered"}>
-                                        <div className="flex items-center h-10 gap-2">
-                                            <button
-                                                type="button"
-                                                role="switch"
-                                                aria-checked={form.values.neutered}
-                                                onClick={() => form.setField("neutered", !form.values.neutered)}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.neutered ? "bg-primary" : "bg-input"}`}
-                                            >
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.neutered ? "translate-x-6" : "translate-x-1"}`} />
-                                            </button>
-                                            <span className="text-sm text-muted-foreground">{form.values.neutered ? "Yes" : "No"}</span>
-                                        </div>
-                                    </Field>
-                                    <Field label="Microchip ID" className="col-span-2">
-                                        <Input value={form.values.microchip} onChange={(e) => form.setField("microchip", e.target.value)} placeholder="e.g. 981000123456789" />
-                                    </Field>
-                                </>
-                            )}
-                            <Field className="col-span-2" label="Notes">
-                                <Textarea
-                                    rows={3}
-                                    value={form.values.notes}
-                                    onChange={(e) => form.setField("notes", e.target.value)}
-                                    placeholder={
-                                        form.values.pet_type === "group"
-                                            ? "Enclosure details, feeding routine, anything you'd like to remember"
-                                            : "Anything you'd like to remember about your pet"
+                        <Field label="Animal" error={form.errors.species}>
+                            <Select
+                                value={form.values.species}
+                                onValueChange={(v) => form.setField("species", v)}
+                                required
+                            >
+                                <SelectTrigger><SelectValue placeholder="Choose an animal" /></SelectTrigger>
+                                <SelectContent>
+                                    {PET_SPECIES.map((s) =>
+                                        <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)
                                     }
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        {form.values.pet_type === "group" && (
+                            <Field label="How many?" error={form.errors.group_size} className="col-span-2">
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    step={1}
+                                    value={form.values.group_size}
+                                    onChange={(e) => form.setField("group_size", e.target.value)}
+                                    placeholder="e.g. 42"
+                                    required
                                 />
                             </Field>
-                        </>
-                    )}
-                    <Button
-                        type="button"
-                        variant="link"
-                        onClick={() => setShowMore((v) => !v)}
-                        className="col-span-2 justify-start"
-                    >
-                        {showMore ? "Hide details" : "More details (optional)"}
+                        )}
+                        {form.values.species === "other" && (
+                            <Field label="What animal is it?" className="col-span-2">
+                                <Input
+                                    value={form.values.other_species}
+                                    onChange={(e) => form.setField("other_species", e.target.value)}
+                                    placeholder="e.g. Turtle"
+                                    required={form.values.species === "other"}
+                                />
+                            </Field>
+                        )}
+                        {showMore && (
+                            <>
+                                {form.values.pet_type === "individual" && (
+                                    <>
+                                        <Field label="Type / Breed">
+                                            <Input value={form.values.breed} onChange={(e) => form.setField("breed", e.target.value)} placeholder="e.g. Labrador, Persian, Mixed" />
+                                        </Field>
+                                        <Field label="Weight (kg)">
+                                            <Input type="number" step="0.1" value={form.values.weight_kg} onChange={(e) => form.setField("weight_kg", e.target.value)} placeholder="e.g. 25.5" />
+                                        </Field>
+                                        <div className="col-span-2">
+                                            {useBirthday ? (
+                                                <Field label="Birthdate" className="col-span-2">
+                                                    <DatePicker
+                                                        value={form.values.birthdate}
+                                                        onChange={(date) => form.setField("birthdate", date)}
+                                                        placeholder="Select date"
+                                                    />
+                                                </Field>
+                                            ) : (
+                                                <Field label="Age" className="col-span-2">
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Input
+                                                                type="number"
+                                                                min={0}
+                                                                max={50}
+                                                                placeholder="Years (e.g. 3)"
+                                                                value={form.values.age_years}
+                                                                onChange={(e) =>
+                                                                    form.setField("age_years", e.target.value)
+                                                                }
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Input
+                                                                type="number"
+                                                                min={0}
+                                                                max={11}
+                                                                placeholder="Months (e.g. 6)"
+                                                                value={form.values.age_months}
+                                                                onChange={(e) =>
+                                                                    form.setField("age_months", e.target.value)
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </Field>
+                                            )}
+                                            <Button
+                                                type="button"
+                                                variant="link"
+                                                className="col-span-2 justify-start"
+                                                onClick={() => setUseBirthday(!useBirthday)}
+                                            >
+                                                {useBirthday
+                                                    ? "Use age instead"
+                                                    : "Enter birthday instead"}
+                                            </Button>
+                                        </div>
+                                        <Field label="Gender">
+                                            <Select value={form.values.gender ?? ""} onValueChange={(v) => form.setField("gender", v as "male" | "female")}>
+                                                <SelectTrigger><SelectValue placeholder="Choose a gender" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="male">Male</SelectItem>
+                                                    <SelectItem value="female">Female</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
+                                        <Field label={form.values.gender === "female" ? "Spayed" : "Neutered"}>
+                                            <div className="flex items-center h-10 gap-2">
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={form.values.neutered}
+                                                    onClick={() => form.setField("neutered", !form.values.neutered)}
+                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.neutered ? "bg-primary" : "bg-input"}`}
+                                                >
+                                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.neutered ? "translate-x-6" : "translate-x-1"}`} />
+                                                </button>
+                                                <span className="text-sm text-muted-foreground">{form.values.neutered ? "Yes" : "No"}</span>
+                                            </div>
+                                        </Field>
+                                        <Field label="Microchip ID" className="col-span-2">
+                                            <Input value={form.values.microchip} onChange={(e) => form.setField("microchip", e.target.value)} placeholder="e.g. 981000123456789" />
+                                        </Field>
+                                    </>
+                                )}
+                                <Field className="col-span-2" label="Notes">
+                                    <Textarea
+                                        rows={3}
+                                        value={form.values.notes}
+                                        onChange={(e) => form.setField("notes", e.target.value)}
+                                        placeholder={
+                                            form.values.pet_type === "group"
+                                                ? "Enclosure details, feeding routine, anything you'd like to remember"
+                                                : "Anything you'd like to remember about your pet"
+                                        }
+                                    />
+                                </Field>
+                            </>
+                        )}
+                        <Button
+                            type="button"
+                            variant="link"
+                            onClick={() => setShowMore((v) => !v)}
+                            className="col-span-2 justify-start"
+                        >
+                            {showMore ? "Hide details" : "More details (optional)"}
+                        </Button>
+                    </div>
+                    <Button type="submit" className="w-full rounded-full" disabled={save.isPending || uploading}>
+                        {save.isPending || uploading
+                            ? "Saving…"
+                            : isEdit
+                                ? "Save changes"
+                                : form.values.pet_type === "group"
+                                    ? "Add group"
+                                    : "Add pet"}
                     </Button>
-                </div>
-                <Button type="submit" className="w-full rounded-full" disabled={save.isPending || uploading}>
-                    {save.isPending || uploading
-                        ? "Saving…"
-                        : isEdit
-                            ? "Save changes"
-                            : form.values.pet_type === "group"
-                                ? "Add group"
-                                : "Add pet"}
-                </Button>
-            </form>
-        </FormDialog>
+                </form>
+            </FormDialog>
         </>
     );
 }
