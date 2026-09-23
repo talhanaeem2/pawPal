@@ -4,6 +4,14 @@ import { Sunrise, Sun, Sunset, Moon, Clock3 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 
+export const MAX_SOURCE_PHOTO_BYTES = 15 * 1024 * 1024;
+
+export function revokeObjectUrl(url: string | null) {
+  if (url?.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

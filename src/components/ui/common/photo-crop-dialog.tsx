@@ -19,19 +19,19 @@ type Position = {
   y: number;
 };
 
-type PetPhotoCropDialogProps = {
+type PhotoCropDialogProps = {
   open: boolean;
   imageUrl: string;
   onCancel: () => void;
   onComplete: (file: File) => void;
 };
 
-export function PetPhotoCropDialog({
+export function PhotoCropDialog({
   open,
   imageUrl,
   onCancel,
   onComplete,
-}: PetPhotoCropDialogProps) {
+}: PhotoCropDialogProps) {
   const imageRef = useRef<HTMLImageElement>(null);
   const dragStart = useRef<{ pointerId: number; x: number; y: number; position: Position } | null>(
     null,
@@ -160,7 +160,7 @@ export function PetPhotoCropDialog({
       });
 
       onComplete(
-        new File([blob], "pet-photo.jpg", {
+        new File([blob], "photo.jpg", {
           type: "image/jpeg",
           lastModified: Date.now(),
         }),
@@ -185,8 +185,8 @@ export function PetPhotoCropDialog({
     >
       <DialogContent className="max-w-sm rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="font-display">Crop pet photo</DialogTitle>
-          <DialogDescription>Drag to reposition, then zoom until your pet fills the frame.</DialogDescription>
+          <DialogTitle className="font-display">Crop photo</DialogTitle>
+          <DialogDescription>Drag to reposition, then zoom until your photo fills the frame.</DialogDescription>
         </DialogHeader>
 
         <div
@@ -212,11 +212,11 @@ export function PetPhotoCropDialog({
             style={
               layout
                 ? {
-                    width: layout.width,
-                    height: layout.height,
-                    left: (CROP_SIZE - layout.width) / 2 + position.x,
-                    top: (CROP_SIZE - layout.height) / 2 + position.y,
-                  }
+                  width: layout.width,
+                  height: layout.height,
+                  left: (CROP_SIZE - layout.width) / 2 + position.x,
+                  top: (CROP_SIZE - layout.height) / 2 + position.y,
+                }
                 : { opacity: 0 }
             }
           />
