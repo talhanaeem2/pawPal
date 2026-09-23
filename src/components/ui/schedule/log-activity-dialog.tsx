@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../common/dial
 import { Field } from "../common/field";
 import { Input } from "../common/input";
 import { Button } from "../common/button";
+import { Textarea } from "../common/textarea";
 
 import { ScheduleWithPets } from "@/schemas/schedule";
 import { getPetDisplayName } from "@/schemas/pets";
@@ -23,7 +24,7 @@ interface LogActivityDialogProps {
     targetPetId?: string; // undefined = all pets
     today: string;
     pets: { id: string; name: string; pet_type?: "individual" | "group"; group_size?: number | null }[];
-    onMarkDone: () => void; // callback to actually mark done in schedule
+    onMarkDone: (note?: string) => void; // callback to actually mark done in schedule
 }
 
 interface UndoActivityDialogProps {
@@ -131,10 +132,12 @@ export function LogActivityDialog({
     const [inputs, setInputs] = useState<Record<string, string>>(
         () => Object.fromEntries(petsSorted.map((p) => [p.petId, ""]))
     );
+    const [note, setNote] = useState("");
 
     useEffect(() => {
         if (open) {
             setInputs(Object.fromEntries(petsSorted.map((p) => [p.petId, ""])));
+            setNote("");
         }
     }, [open]);
 
@@ -172,7 +175,7 @@ export function LogActivityDialog({
                             ? { weight: Number(inputs[p.petId]) }
                             : { duration_min: Number(inputs[p.petId]) }
                         ),
-                        notes: null,
+                        notes: note.trim() || null,
                     }))
             );
 
@@ -189,12 +192,12 @@ export function LogActivityDialog({
 
     async function handleSaveAndLog() {
         await logActivity.mutateAsync();
-        onMarkDone();
+        onMarkDone(note);
         onOpenChange(false);
     }
 
     async function handleJustMarkDone() {
-        onMarkDone();
+        onMarkDone(note);
         onOpenChange(false);
     }
 
@@ -234,6 +237,15 @@ export function LogActivityDialog({
                             </Field>
                         ))}
                     </div>
+
+                    <Field label="Note (optional)">
+                        <Textarea
+                            rows={2}
+                            value={note}
+                            onChange={(event) => setNote(event.target.value)}
+                            placeholder="Anything unusual or worth remembering?"
+                        />
+                    </Field>
 
                     <div className="flex flex-col gap-2">
                         <Button

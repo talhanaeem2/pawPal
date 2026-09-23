@@ -17,7 +17,9 @@ type ScheduleToggleInput = {
   scheduleItemId: string;
   scheduleItemPetId?: string;
   markDone: boolean;
+  wasSkipped?: boolean;
   timeSlots: (string | null)[];
+  note?: string;
 };
 
 type LogDialogState = {
@@ -32,6 +34,13 @@ type UndoDialogState = {
   schedule: ScheduleWithPets | null;
   timeSlots: (string | null)[];
   targetPetId?: string;
+};
+
+type CompletionNoteState = {
+  scheduleItemId: string;
+  scheduleItemPetId?: string;
+  timeSlots: (string | null)[];
+  title: string;
 };
 
 type UseScheduleActionsInput = {
@@ -54,6 +63,9 @@ export function useScheduleActions({
     schedule: null,
     timeSlots: [],
   });
+  const [completionNoteState, setCompletionNoteState] = useState<CompletionNoteState | null>(
+    null,
+  );
 
   const logActivity = useMutation({
     mutationFn: async ({
@@ -111,6 +123,7 @@ export function useScheduleActions({
       scheduleItemPetId,
       markDone,
       timeSlots,
+      note,
     }: ScheduleToggleInput) => {
       const schedule = items.find((item) => item.id === scheduleItemId);
 
@@ -131,6 +144,30 @@ export function useScheduleActions({
           throw new Error("Pet not found");
         }
 
+        const skippedCompletionIds = petsToComplete.flatMap((pet) =>
+          timeSlots.flatMap((timeSlot) =>
+            pet.schedule_completions
+              .filter(
+                (completion) =>
+                  completion.completed_on === today &&
+                  completion.time_slot === timeSlot &&
+                  completion.status === "skipped",
+              )
+              .map((completion) => completion.id),
+          ),
+        );
+
+        if (skippedCompletionIds.length > 0) {
+          const { error } = await supabase
+            .from("schedule_completions")
+            .delete()
+            .in("id", skippedCompletionIds);
+
+          if (error) {
+            throw error;
+          }
+        }
+
         const rows = petsToComplete.flatMap((pet) =>
           timeSlots
             .filter(
@@ -138,13 +175,16 @@ export function useScheduleActions({
                 !pet.schedule_completions.some(
                   (completion) =>
                     completion.completed_on === today &&
-                    completion.time_slot === timeSlot,
+                    completion.time_slot === timeSlot &&
+                    completion.status === "completed",
                 ),
             )
             .map((timeSlot) => ({
               schedule_item_pet_id: pet.id,
               completed_on: today,
               time_slot: timeSlot,
+              status: "completed",
+              note: note?.trim() || null,
             })),
         );
 
@@ -180,9 +220,23 @@ export function useScheduleActions({
         markDone,
         allPets: !scheduleItemPetId,
         multiplePets,
+        scheduleItemId,
+        scheduleItemPetId,
+        timeSlots,
+        title: schedule.title,
+        note,
       };
     },
-    onSuccess: ({ markDone, multiplePets, allPets }) => {
+    onSuccess: ({
+      markDone,
+      multiplePets,
+      allPets,
+      scheduleItemId,
+      scheduleItemPetId,
+      timeSlots,
+      title,
+      note,
+    }) => {
       queryClient.invalidateQueries({ queryKey: scheduleQuery.queryKey });
 
       const message = markDone
@@ -193,10 +247,69 @@ export function useScheduleActions({
           ? "Marked all reminders undone"
           : "Marked undone";
 
-      toast.success(message);
+      toast.success(message, {
+        action:
+          markDone && !note?.trim()
+            ? {
+                label: "Add note",
+                onClick: () =>
+                  setCompletionNoteState({
+                    scheduleItemId,
+                    scheduleItemPetId,
+                    timeSlots,
+                    title,
+                  }),
+              }
+            : undefined,
+      });
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed");
+    },
+  });
+
+  const skip = useMutation({
+    mutationFn: async (scheduleItemId: string) => {
+      const schedule = items.find((item) => item.id === scheduleItemId);
+
+      if (!schedule) {
+        throw new Error("Schedule not found");
+      }
+
+      const slots = schedule.times_of_day.length > 0
+        ? schedule.times_of_day
+        : [null];
+      const rows = schedule.schedule_item_pets.flatMap((pet) =>
+        slots
+          .filter(
+            (timeSlot) =>
+              !pet.schedule_completions.some(
+                (completion) =>
+                  completion.completed_on === today && completion.time_slot === timeSlot,
+              ),
+          )
+          .map((timeSlot) => ({
+            schedule_item_pet_id: pet.id,
+            completed_on: today,
+            time_slot: timeSlot,
+            status: "skipped",
+          })),
+      );
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from("schedule_completions").insert(rows);
+
+        if (error) {
+          throw error;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: scheduleQuery.queryKey });
+      toast.success("Skipped for today");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Couldn't skip this reminder");
     },
   });
 
@@ -217,16 +330,64 @@ export function useScheduleActions({
     },
   });
 
+  const saveCompletionNote = useMutation({
+    mutationFn: async (note: string) => {
+      const state = completionNoteState;
+      const schedule = state && items.find((item) => item.id === state.scheduleItemId);
+
+      if (!state || !schedule) {
+        throw new Error("Schedule not found");
+      }
+
+      const scheduleItemPetIds = state.scheduleItemPetId
+        ? [state.scheduleItemPetId]
+        : schedule.schedule_item_pets.map((pet) => pet.id);
+      let query = supabase
+        .from("schedule_completions")
+        .update({ note: note.trim() || null })
+        .in("schedule_item_pet_id", scheduleItemPetIds)
+        .eq("completed_on", today)
+        .eq("status", "completed");
+
+      query = applyTimeSlotFilter(query, state.timeSlots);
+      const { error } = await query;
+
+      if (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: scheduleQuery.queryKey });
+      setCompletionNoteState(null);
+      toast.success("Note saved");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Couldn't save the note");
+    },
+  });
+
   const handleToggle = useCallback(
     async ({
       scheduleItemId,
       scheduleItemPetId,
       markDone,
+      wasSkipped,
       timeSlots,
+      note,
     }: ScheduleToggleInput) => {
       const schedule = items.find((item) => item.id === scheduleItemId);
 
       if (!schedule) {
+        return;
+      }
+
+      if (!markDone && wasSkipped) {
+        toggle.mutate({
+          scheduleItemId,
+          scheduleItemPetId,
+          markDone: false,
+          timeSlots,
+        });
         return;
       }
 
@@ -247,6 +408,7 @@ export function useScheduleActions({
             scheduleItemPetId,
             markDone: true,
             timeSlots,
+            note,
           });
         } catch {
           // The involved mutations show their own error toast.
@@ -288,7 +450,7 @@ export function useScheduleActions({
     [items, logActivity, toggle],
   );
 
-  const markLoggedActivityDone = useCallback(() => {
+  const markLoggedActivityDone = useCallback((note?: string) => {
     const schedule = logDialogState.schedule;
 
     if (!schedule) {
@@ -308,6 +470,7 @@ export function useScheduleActions({
       timeSlots: logDialogState.timeSlots.length > 0
         ? logDialogState.timeSlots
         : [null],
+      note,
     });
   }, [logDialogState, toggle]);
 
@@ -370,11 +533,16 @@ export function useScheduleActions({
   );
 
   return {
+    completionNoteState,
     deleteSchedule,
     handleToggle,
-    isToggling: toggle.isPending,
+    handleSkip: (scheduleItemId: string) => skip.mutate(scheduleItemId),
+    isToggling: toggle.isPending || skip.isPending,
+    isSavingCompletionNote: saveCompletionNote.isPending,
     logDialogState,
     markLoggedActivityDone,
+    saveCompletionNote: (note: string) => saveCompletionNote.mutate(note),
+    setCompletionNoteState,
     setLogDialogState,
     setUndoDialogState,
     undoDialogState,

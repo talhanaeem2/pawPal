@@ -2,7 +2,7 @@ import { useEffect, useRef, type UIEvent } from "react";
 import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-import { petDewormingsQuery, petQuery, petVaccinationsQuery } from "@/lib/queries";
+import { petActivityQuery, petDewormingsQuery, petQuery, petVaccinationsQuery } from "@/lib/queries";
 import { getPreviewList } from "@/lib/utils";
 import { getActiveVaccinations } from "@/lib/vaccinations-utils";
 import { getActiveDewormings } from "@/lib/dewormings-utils";
@@ -17,12 +17,15 @@ import { PetVaccinationsCard } from "@/components/ui/pets/pet/pet-vaccinations-c
 import { PetInfoCard } from "@/components/ui/pets/pet/pet-info-card";
 import { PetDewormingsCard } from "@/components/ui/pets/pet/pet-dewormings-card";
 import { PetActions } from "@/components/ui/pets/pet/pet-actions";
+import { ActivityWeightHistory } from "@/components/ui/activity/activity-weight-history";
+import { PetActivityExport } from "@/components/ui/pets/pet/pet-activity-export";
 
 export const Route = createFileRoute("/_authenticated/pets/$petId/")({
     loader: async ({ context, params }) => await Promise.all([
         context.queryClient.ensureQueryData(petQuery(params.petId)),
         context.queryClient.ensureQueryData(petVaccinationsQuery(params.petId)),
         context.queryClient.ensureQueryData(petDewormingsQuery(params.petId)),
+        context.queryClient.ensureQueryData(petActivityQuery(params.petId)),
     ]),
     pendingComponent: () => <InlineLoader />,
     head: () => ({ meta: [{ title: "Pet · Pawpal" }] }),
@@ -37,6 +40,7 @@ function PetPage() {
     const { data: pet } = useSuspenseQuery(petQuery(petId));
     const { data: vaccinations } = useSuspenseQuery(petVaccinationsQuery(petId));
     const { data: dewormings } = useSuspenseQuery(petDewormingsQuery(petId));
+    const { data: activityLogs } = useSuspenseQuery(petActivityQuery(petId));
 
     const navigate = Route.useNavigate();
     const cardRef = useRef<HTMLDivElement>(null);
@@ -50,6 +54,18 @@ function PetPage() {
 
     const vaccinationData = getPreviewList(getActiveVaccinations(vaccinations), 3);
     const dewormingData = getPreviewList(getActiveDewormings(dewormings), 3);
+    const weightLogs = activityLogs.filter(
+        (log) => log.activity_type === "weight" && log.weight !== null,
+    );
+    const latestWeight = weightLogs[0];
+    const previousWeight = weightLogs[1];
+    const firstWeight = weightLogs[weightLogs.length - 1];
+    const weightChange = latestWeight && previousWeight
+        ? Number(latestWeight.weight) - Number(previousWeight.weight)
+        : null;
+    const totalWeightChange = latestWeight && firstWeight && latestWeight.id !== firstWeight.id
+        ? Number(latestWeight.weight) - Number(firstWeight.weight)
+        : null;
 
     useEffect(() => {
         return () => {
@@ -149,6 +165,17 @@ function PetPage() {
             <Page.Content onScroll={handleContentScroll}>
                 <div className="space-y-4">
                     <PetInfoCard pet={pet} />
+                    {latestWeight && (
+                        <ActivityWeightHistory
+                            latestWeight={latestWeight}
+                            selectedPetId={pet.id}
+                            selectedPetWeightLogs={weightLogs}
+                            weightChange={weightChange}
+                            totalWeightChange={totalWeightChange}
+                            weightHistoryCount={weightLogs.length}
+                            petName={pet.name}
+                        />
+                    )}
                     <PetVaccinationsCard
                         pet={pet}
                         vaccinations={vaccinationData}
@@ -157,6 +184,7 @@ function PetPage() {
                         pet={pet}
                         dewormings={dewormingData}
                     />
+                    <PetActivityExport pet={pet} logs={activityLogs} />
                     <PetActions
                         pet={pet}
                         onDeleted={() =>

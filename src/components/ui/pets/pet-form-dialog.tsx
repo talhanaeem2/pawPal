@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/common/textarea";
 import { DatePicker } from "../common/date-picker";
 import { Button } from "@/components/ui/common/button";
 import { Field } from "../common/field";
+import { PetPhotoCropDialog } from "./pet-photo-crop-dialog";
 
 import { createEmptyPetForm, Pet, petFormSchema, petToForm } from "@/schemas/pets";
 
@@ -27,7 +28,11 @@ interface IPetFormDialog {
     onOpenChange?: (open: boolean) => void;
 }
 
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_SOURCE_PHOTO_BYTES = 15 * 1024 * 1024;
+
+type PendingPhoto = {
+    url: string;
+};
 
 export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange }: IPetFormDialog) {
     const [internalOpen, setInternalOpen] = useState(false);
@@ -41,6 +46,7 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
     );
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(pet?.photo_url ?? null);
+    const [pendingPhoto, setPendingPhoto] = useState<PendingPhoto | null>(null);
     const [photoRemoved, setPhotoRemoved] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [showMore, setShowMore] = useState(false);
@@ -51,18 +57,38 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
         const file = e.target.files?.[0];
         if (!file) return;
         if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
-        if (file.size > MAX_PHOTO_BYTES) { toast.error("Image must be under 5MB"); return; }
-        setPhotoFile(file);
-        setPhotoPreview(URL.createObjectURL(file));
-        setPhotoRemoved(false);
+        if (file.size > MAX_SOURCE_PHOTO_BYTES) { toast.error("Image must be under 15MB"); return; }
+
+        if (pendingPhoto?.url) {
+            URL.revokeObjectURL(pendingPhoto.url);
+        }
+
+        setPendingPhoto({ url: URL.createObjectURL(file) });
+        e.target.value = "";
     }
 
     function onRemovePhoto(e: React.MouseEvent) {
         e.stopPropagation();
+        revokeObjectUrl(photoPreview);
         setPhotoFile(null);
         setPhotoPreview(null);
         setPhotoRemoved(true);
         if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+
+    function discardPendingPhoto() {
+        if (pendingPhoto?.url) {
+            URL.revokeObjectURL(pendingPhoto.url);
+        }
+        setPendingPhoto(null);
+    }
+
+    function useCroppedPhoto(file: File) {
+        discardPendingPhoto();
+        revokeObjectUrl(photoPreview);
+        setPhotoFile(file);
+        setPhotoPreview(URL.createObjectURL(file));
+        setPhotoRemoved(false);
     }
 
     function handleOpenChange(o: boolean) {
@@ -73,6 +99,8 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
 
     function resetForm() {
         form.reset(pet ? petToForm(pet) : createEmptyPetForm());
+        discardPendingPhoto();
+        revokeObjectUrl(photoPreview);
         setPhotoFile(null);
         setPhotoPreview(pet?.photo_url ?? null);
         setPhotoRemoved(false);
@@ -81,9 +109,12 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
 
 
     async function uploadNewPhoto(): Promise<string> {
-        const ext = photoFile!.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("pet-photos").upload(path, photoFile!, { upsert: false });
+        const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+        const { error: uploadError } = await supabase.storage.from("pet-photos").upload(path, photoFile!, {
+            upsert: false,
+            contentType: "image/jpeg",
+            cacheControl: "31536000",
+        });
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("pet-photos").getPublicUrl(path);
         return urlData.publicUrl;
@@ -158,6 +189,14 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
     });
 
     return (
+        <>
+          <PetPhotoCropDialog
+            open={pendingPhoto !== null}
+            imageUrl={pendingPhoto?.url ?? ""}
+            onCancel={discardPendingPhoto}
+            onComplete={useCroppedPhoto}
+          />
+
         <FormDialog
             open={open}
             onOpenChange={handleOpenChange}
@@ -184,8 +223,18 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
                             </button>
                         )}
                     </div>
-                    <input ref={fileInputRef} type="file" accept="image/*" onChange={onPickPhoto} className="hidden" />
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        capture="environment"
+                        onChange={onPickPhoto}
+                        className="hidden"
+                    />
                 </div>
+                <p className="-mt-1 text-center text-xs text-muted-foreground">
+                    Choose a photo, then crop and zoom it to fit.
+                </p>
 
                 {/* Individual / Group toggle */}
                 {!isEdit && (
@@ -390,5 +439,12 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
                 </Button>
             </form>
         </FormDialog>
+        </>
     );
+}
+
+function revokeObjectUrl(url: string | null) {
+    if (url?.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+    }
 }

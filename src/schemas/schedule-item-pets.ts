@@ -4,6 +4,8 @@ export const scheduleCompletionSchema = z.object({
     id: z.string(),
     completed_on: z.string(),
     time_slot: z.string().nullable(),
+    status: z.enum(["completed", "skipped"]).default("completed"),
+    note: z.string().nullable().default(null),
 });
 
 // DB SCHEMA (Supabase shape)

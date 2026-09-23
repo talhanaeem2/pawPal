@@ -31,6 +31,8 @@ export type ScheduleListItem = {
   hasDetails: boolean;
   useAccordion: boolean;
   allDone: boolean;
+  allSettled: boolean;
+  allSkipped: boolean;
   petLabel: string;
   preview: string;
 };
@@ -47,30 +49,43 @@ export function getScheduleDashboard(
 ): ScheduleDashboard {
   const petsById = new Map(pets.map((pet) => [pet.id, pet]));
   const scheduleItems = items.map((schedule) => {
-    const times = schedule.times_of_day.length > 0
-      ? schedule.times_of_day
-      : [null];
+    const times = schedule.times_of_day.length > 0 ? schedule.times_of_day : [null];
     const petsForSchedule = [...schedule.schedule_item_pets]
       .map((schedulePet) => ({
         ...schedulePet,
         pet: petsById.get(schedulePet.pet_id),
       }))
-      .sort((left, right) =>
-        (left.pet?.name ?? "").localeCompare(right.pet?.name ?? ""),
-      );
-    const hasTime =
-      requiresScheduleTime(schedule.kind) && schedule.times_of_day.length > 0;
-    const detailRows = petsForSchedule.filter(
-      (pet) => pet.dosage || pet.notes,
+      .sort((left, right) => (left.pet?.name ?? "").localeCompare(right.pet?.name ?? ""));
+    const hasTime = requiresScheduleTime(schedule.kind) && schedule.times_of_day.length > 0;
+    const detailRows = petsForSchedule.filter((pet) => pet.dosage || pet.notes);
+    const allSettled = times.every((time) =>
+      petsForSchedule.every((pet) =>
+        pet.schedule_completions.some(
+          (completion) => completion.completed_on === today && completion.time_slot === time,
+        ),
+      ),
     );
     const allDone = times.every((time) =>
       petsForSchedule.every((pet) =>
         pet.schedule_completions.some(
           (completion) =>
-            completion.completed_on === today && completion.time_slot === time,
+            completion.completed_on === today &&
+            completion.time_slot === time &&
+            completion.status === "completed",
         ),
       ),
     );
+    const allSkipped = allSettled &&
+      times.every((time) =>
+        petsForSchedule.every((pet) =>
+          pet.schedule_completions.some(
+            (completion) =>
+              completion.completed_on === today &&
+              completion.time_slot === time &&
+              completion.status === "skipped",
+          ),
+        ),
+      );
     const repeatText = formatFrequency({
       repeat_every: schedule.repeat_every,
       repeat_unit: schedule.repeat_unit,
@@ -96,21 +111,35 @@ export function getScheduleDashboard(
         detailRows.some((pet) => (pet.notes?.length ?? 0) > 120) ||
         schedule.times_of_day.length > 1,
       allDone,
+      allSettled,
+      allSkipped,
       petLabel: formatPetNames(
         petsForSchedule
           .map((pet) => (pet.pet ? getPetDisplayName(pet.pet) : undefined))
           .filter((name): name is string => Boolean(name)),
       ),
-      preview: timeSummary
-        ? repeatText + " · " + timeSummary
-        : repeatText,
+      preview: timeSummary ? repeatText + " · " + timeSummary : repeatText,
     };
   });
 
-  const totalSlots = scheduleItems.reduce(
-    (total, item) => total + item.times.length,
-    0,
-  );
+  scheduleItems.sort((left, right) => {
+    // Today's unfinished reminders should stay together at the top. Within
+    // each group, use the earliest scheduled time so the list follows the day.
+    if (left.allSettled !== right.allSettled) {
+      return Number(left.allSettled) - Number(right.allSettled);
+    }
+
+    const leftTime = getEarliestTime(left.times);
+    const rightTime = getEarliestTime(right.times);
+
+    if (leftTime !== rightTime) {
+      return leftTime - rightTime;
+    }
+
+    return left.schedule.title.localeCompare(right.schedule.title);
+  });
+
+  const totalSlots = scheduleItems.reduce((total, item) => total + item.times.length, 0);
   const completedSlots = scheduleItems.reduce(
     (total, item) =>
       total +
@@ -119,7 +148,8 @@ export function getScheduleDashboard(
           pet.schedule_completions.some(
             (completion) =>
               completion.completed_on === today &&
-              completion.time_slot === time,
+              completion.time_slot === time &&
+              completion.status === "completed",
           ),
         ),
       ).length,
@@ -130,9 +160,19 @@ export function getScheduleDashboard(
     progress: {
       totalSlots,
       completedSlots,
-      progress:
-        totalSlots === 0 ? 0 : Math.round((completedSlots / totalSlots) * 100),
+      progress: totalSlots === 0 ? 0 : Math.round((completedSlots / totalSlots) * 100),
     },
     scheduleItems,
   };
+}
+
+function getEarliestTime(times: (string | null)[]) {
+  const earliestTime = times.filter((time): time is string => time !== null).sort()[0];
+
+  if (!earliestTime) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const [hours, minutes] = earliestTime.split(":").map(Number);
+  return hours * 60 + minutes;
 }

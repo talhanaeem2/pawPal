@@ -49,6 +49,7 @@ import {
   ScheduleForm,
   scheduleFormSchema,
   scheduleToForm,
+  ScheduleKind,
   ScheduleWithPets,
 } from "@/schemas/schedule";
 import { Pet } from "@/schemas/pets";
@@ -56,9 +57,10 @@ import { Pet } from "@/schemas/pets";
 type ScheduleDialogProps = {
   pets: Pet[];
   item?: ScheduleWithPets;
-  trigger: ReactNode;
-  initialOpen?: boolean;
-  onClose?: () => void;
+  trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  initialKind?: ScheduleKind;
 };
 
 type ExpandedFields = Record<string, { dosage: boolean; notes: boolean }>;
@@ -67,30 +69,24 @@ export function ScheduleDialog({
   pets,
   item,
   trigger,
-  initialOpen,
-  onClose,
+  open: controlledOpen,
+  onOpenChange,
+  initialKind,
 }: ScheduleDialogProps) {
   const isEdit = Boolean(item);
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
   const [expandedFields, setExpandedFields] = useState<ExpandedFields>({});
   const [isTitleCustomized, setIsTitleCustomized] = useState(false);
   const [kindHasChanged, setKindHasChanged] = useState(false);
-  const [savedTimes, setSavedTimes] = useState<string[]>(
-    item?.times_of_day ?? ["07:00", "19:00"],
-  );
+  const [savedTimes, setSavedTimes] = useState<string[]>(item?.times_of_day ?? ["07:00", "19:00"]);
   const dosageRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const notesRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const form = useZodForm(
     scheduleFormSchema,
     item ? scheduleToForm(item) : createEmptyScheduleForm(),
   );
-
-  useEffect(() => {
-    if (initialOpen) {
-      setOpen(true);
-    }
-  }, [initialOpen]);
 
   useEffect(() => {
     if (open) {
@@ -100,21 +96,21 @@ export function ScheduleDialog({
   }, [open]);
 
   useEffect(() => {
+    if (open && !isEdit && initialKind) {
+      form.reset({
+        ...createEmptyScheduleForm(),
+        kind: initialKind,
+      });
+    }
+  }, [initialKind, isEdit, open]);
+
+  useEffect(() => {
     if (isTitleCustomized || (isEdit && !kindHasChanged)) {
       return;
     }
 
-    form.setField(
-      "title",
-      generateScheduleTitle(form.values.kind, form.values.times_of_day),
-    );
-  }, [
-    form.values.kind,
-    form.values.times_of_day,
-    isEdit,
-    isTitleCustomized,
-    kindHasChanged,
-  ]);
+    form.setField("title", generateScheduleTitle(form.values.kind, form.values.times_of_day));
+  }, [form.values.kind, form.values.times_of_day, isEdit, isTitleCustomized, kindHasChanged]);
 
   useEffect(() => {
     if (!requiresScheduleTime(form.values.kind)) {
@@ -135,6 +131,15 @@ export function ScheduleDialog({
     setSavedTimes(item?.times_of_day ?? ["07:00", "19:00"]);
   }
 
+  function handleOpenChange(isOpen: boolean) {
+    setInternalOpen(isOpen);
+    onOpenChange?.(isOpen);
+
+    if (!isOpen) {
+      resetForm();
+    }
+  }
+
   function updatePetDetail(
     index: number,
     changes: Partial<(typeof form.values.pet_details)[number]>,
@@ -147,11 +152,7 @@ export function ScheduleDialog({
     form.setField("pet_details", petDetails);
   }
 
-  function setExpanded(
-    petId: string,
-    field: "dosage" | "notes",
-    value: boolean,
-  ) {
+  function setExpanded(petId: string, field: "dosage" | "notes", value: boolean) {
     setExpandedFields((current) => ({
       ...current,
       [petId]: {
@@ -167,14 +168,10 @@ export function ScheduleDialog({
       const payload = {
         kind: data.kind,
         title: data.title.trim(),
-        times_of_day: requiresScheduleTime(data.kind)
-          ? data.times_of_day
-          : [],
+        times_of_day: requiresScheduleTime(data.kind) ? data.times_of_day : [],
         repeat_every: data.repeat_every,
         repeat_unit: data.repeat_unit,
-        start_date: requiresScheduleStartDate(data.kind)
-          ? data.start_date
-          : todayDateString(),
+        start_date: requiresScheduleStartDate(data.kind) ? data.start_date : todayDateString(),
       };
 
       const petLinks = (scheduleId: string) =>
@@ -186,10 +183,7 @@ export function ScheduleDialog({
         }));
 
       if (item) {
-        const { error } = await supabase
-          .from("schedule_items")
-          .update(payload)
-          .eq("id", item.id);
+        const { error } = await supabase.from("schedule_items").update(payload).eq("id", item.id);
 
         if (error) {
           throw error;
@@ -197,9 +191,7 @@ export function ScheduleDialog({
 
         const newPetIds = data.pet_details.map((detail) => detail.pet_id);
         const oldPetIds = item.schedule_item_pets.map((pet) => pet.pet_id);
-        const petsToRemove = oldPetIds.filter(
-          (petId) => !newPetIds.includes(petId),
-        );
+        const petsToRemove = oldPetIds.filter((petId) => !newPetIds.includes(petId));
 
         if (petsToRemove.length > 0) {
           const { error: deleteError } = await supabase
@@ -213,24 +205,18 @@ export function ScheduleDialog({
           }
         }
 
-        const petsToAdd = data.pet_details.filter(
-          (detail) => !oldPetIds.includes(detail.pet_id),
-        );
-        const petsToUpdate = data.pet_details.filter((detail) =>
-          oldPetIds.includes(detail.pet_id),
-        );
+        const petsToAdd = data.pet_details.filter((detail) => !oldPetIds.includes(detail.pet_id));
+        const petsToUpdate = data.pet_details.filter((detail) => oldPetIds.includes(detail.pet_id));
 
         if (petsToAdd.length > 0) {
-          const { error: insertError } = await supabase
-            .from("schedule_item_pets")
-            .insert(
-              petsToAdd.map((detail) => ({
-                schedule_item_id: item.id,
-                pet_id: detail.pet_id,
-                dosage: detail.dosage.trim() || null,
-                notes: detail.notes.trim() || null,
-              })),
-            );
+          const { error: insertError } = await supabase.from("schedule_item_pets").insert(
+            petsToAdd.map((detail) => ({
+              schedule_item_id: item.id,
+              pet_id: detail.pet_id,
+              dosage: detail.dosage.trim() || null,
+              notes: detail.notes.trim() || null,
+            })),
+          );
 
           if (insertError) {
             throw insertError;
@@ -274,22 +260,12 @@ export function ScheduleDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scheduleQuery.queryKey });
       toast.success(isEdit ? "Updated" : "Added");
-      setOpen(false);
-
-      if (!isEdit) {
-        resetForm();
-      }
+      handleOpenChange(false);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed");
     },
   });
-
-  function clearCreateSearch() {
-    if (!isEdit) {
-      onClose?.();
-    }
-  }
 
   if (pets.length === 0 && !isEdit) {
     return (
@@ -309,15 +285,10 @@ export function ScheduleDialog({
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        setOpen(isOpen);
-
-        if (!isOpen) {
-          resetForm();
-          clearCreateSearch();
-        }
+        handleOpenChange(isOpen);
       }}
     >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="flex max-h-[95dvh] flex-col overflow-hidden rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display">
@@ -349,9 +320,7 @@ export function ScheduleDialog({
                     "pet_details",
                     petIds.map(
                       (petId) =>
-                        existingDetails.find(
-                          (detail) => detail.pet_id === petId,
-                        ) ?? {
+                        existingDetails.find((detail) => detail.pet_id === petId) ?? {
                           pet_id: petId,
                           dosage: "",
                           notes: "",
@@ -367,10 +336,7 @@ export function ScheduleDialog({
                     ...grouped.measurements,
                   ];
 
-                  if (
-                    allowedKinds.length > 0 &&
-                    !allowedKinds.includes(form.values.kind)
-                  ) {
+                  if (allowedKinds.length > 0 && !allowedKinds.includes(form.values.kind)) {
                     form.setField("kind", allowedKinds[0]);
 
                     if (isEdit) {
@@ -465,28 +431,20 @@ export function ScheduleDialog({
 
             <Field label="Repeat every">
               <div className="flex items-center gap-2">
-                <span className="whitespace-nowrap text-sm text-muted-foreground">
-                  Every
-                </span>
+                <span className="whitespace-nowrap text-sm text-muted-foreground">Every</span>
                 <Input
                   type="number"
                   min={1}
                   className="w-24"
                   value={form.values.repeat_every}
                   onChange={(event) =>
-                    form.setField(
-                      "repeat_every",
-                      Number(event.target.value) || 1,
-                    )
+                    form.setField("repeat_every", Number(event.target.value) || 1)
                   }
                 />
                 <Select
                   value={form.values.repeat_unit}
                   onValueChange={(value) =>
-                    form.setField(
-                      "repeat_unit",
-                      value as ScheduleForm["repeat_unit"],
-                    )
+                    form.setField("repeat_unit", value as ScheduleForm["repeat_unit"])
                   }
                 >
                   <SelectTrigger className="flex-1">
@@ -495,9 +453,7 @@ export function ScheduleDialog({
                   <SelectContent>
                     {repeatUnitOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {form.values.repeat_every === 1
-                          ? option.singular
-                          : option.plural}
+                        {form.values.repeat_every === 1 ? option.singular : option.plural}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -527,23 +483,16 @@ export function ScheduleDialog({
             <div className="mb-3 space-y-2">
               {form.values.pet_details.map((detail, index) => {
                 const pet = pets.find((itemPet) => itemPet.id === detail.pet_id);
-                const showDosage =
-                  detail.dosage !== "" ||
-                  expandedFields[detail.pet_id]?.dosage;
-                const showNotes =
-                  detail.notes !== "" || expandedFields[detail.pet_id]?.notes;
+                const showDosage = detail.dosage !== "" || expandedFields[detail.pet_id]?.dosage;
+                const showNotes = detail.notes !== "" || expandedFields[detail.pet_id]?.notes;
 
                 return (
                   <div
                     key={detail.pet_id}
-                    className={cn(
-                      multiplePets && "rounded-2xl border bg-muted/20 p-4",
-                    )}
+                    className={cn(multiplePets && "rounded-2xl border bg-muted/20 p-4")}
                   >
                     {multiplePets && (
-                      <div className="text-base font-medium capitalize">
-                        {pet?.name}
-                      </div>
+                      <div className="text-base font-medium capitalize">{pet?.name}</div>
                     )}
 
                     {!multiplePets ? (
@@ -667,16 +616,8 @@ export function ScheduleDialog({
           </div>
 
           <div className="border-t">
-            <Button
-              type="submit"
-              className="w-full rounded-full"
-              disabled={save.isPending}
-            >
-              {save.isPending
-                ? "Saving…"
-                : isEdit
-                  ? "Save changes"
-                  : "Create reminder"}
+            <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
+              {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Create reminder"}
             </Button>
           </div>
         </form>

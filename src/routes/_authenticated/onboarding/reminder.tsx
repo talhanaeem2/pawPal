@@ -54,7 +54,9 @@ function ReminderPage() {
 
     const [open, setOpen] = useState(false);
     const initialForm = {
-        ...createEmptyScheduleForm(petId),
+        ...createEmptyScheduleForm(),
+        pet_ids: [petId],
+        pet_details: [{ pet_id: petId, dosage: "", notes: "" }],
         times_of_day: ["07:00"],
     };
     const form = useZodForm(
@@ -105,7 +107,7 @@ function ReminderPage() {
             qc.invalidateQueries({ queryKey: scheduleQuery.queryKey });
             toast.success("Reminder added");
             setOpen(false);
-            form.reset(createEmptyScheduleForm(petId));
+            form.reset(initialForm);
             navigate({ to: "/onboarding/complete" })
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),

@@ -289,7 +289,9 @@ export type Database = {
           completed_on: string
           created_at: string
           id: string
+          note: string | null
           schedule_item_pet_id: string
+          status: string
           time_slot: string | null
           user_id: string
         }
@@ -298,7 +300,9 @@ export type Database = {
           completed_on?: string
           created_at?: string
           id?: string
+          note?: string | null
           schedule_item_pet_id: string
+          status?: string
           time_slot?: string | null
           user_id?: string
         }
@@ -307,7 +311,9 @@ export type Database = {
           completed_on?: string
           created_at?: string
           id?: string
+          note?: string | null
           schedule_item_pet_id?: string
+          status?: string
           time_slot?: string | null
           user_id?: string
         }
