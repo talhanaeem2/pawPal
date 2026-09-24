@@ -4,7 +4,7 @@ export const scheduleCompletionSchema = z.object({
     id: z.string(),
     completed_on: z.string(),
     time_slot: z.string().nullable(),
-    status: z.enum(["completed", "skipped"]).default("completed"),
+    status: z.enum(["completed", "skipped", "pending"]).default("pending"),
     note: z.string().nullable().default(null),
 });
 
