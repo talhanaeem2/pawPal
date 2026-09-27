@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/common/button";
 import { Input } from "@/components/ui/common/input";
 import { UserAvatar } from "@/components/ui/common/user-avatar";
 import { ProfileFormDialog } from "@/components/ui/profile/profile-form-dialog";
+import { useTheme } from "@/contexts/theme-context";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/profile")({
     pendingComponent: () => <InlineLoader />,
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
     const { profile, user, signOut, signingOut } = useAuth();
+    const { theme, setTheme } = useTheme();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteText, setDeleteText] = useState("");
@@ -196,6 +199,33 @@ function ProfilePage() {
                             <span className="truncate text-sm text-muted-foreground">
                                 {profile.notifications_enabled ? "Enabled" : "Disabled"}
                             </span>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="space-y-3">
+                    <h3 className="px-1 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                        Appearance
+                    </h3>
+
+                    <div className="flex w-full items-center justify-between text-sm font-medium border-b last:border-b-0 rounded-3xl bg-card shadow-(--shadow-soft) py-4 px-5">
+                        <span>Theme</span>
+                        <div className="flex items-center rounded-full bg-secondary p-0.5">
+                            {(["light", "system", "dark"] as const).map((option) => (
+                                <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => setTheme(option)}
+                                    className={cn(
+                                        "rounded-full px-3 py-1 text-xs font-medium capitalize transition-all",
+                                        theme === option
+                                            ? "bg-card text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground",
+                                    )}
+                                >
+                                    {option}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </section>

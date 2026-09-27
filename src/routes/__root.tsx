@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import ErrorState from "@/components/ui/common/error-state";
 import NotFoundState from "@/components/ui/common/not-found-state";
-import { Toaster } from "@/components/ui/common/sonner";
+// import { Toaster } from "@/components/ui/common/sonner";
 
 import appCss from "../styles.css?url";
 
@@ -62,7 +62,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const t = localStorage.getItem("pawpal-theme");
+                if (
+                  t === "dark" ||
+                  ((!t || t === "system") &&
+                    matchMedia("(prefers-color-scheme: dark)").matches)
+                ) {
+                  document.documentElement.classList.add("dark");
+                  document.documentElement.style.colorScheme = "dark";
+                }
+              } catch {}
+            `,
+          }}
+        />
+        <HeadContent />
+      </head>
       <body>{children}<Scripts /></body>
     </html>
   );
@@ -85,7 +104,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <Toaster />
+      {/* <Toaster /> */}
     </QueryClientProvider>
   );
 }

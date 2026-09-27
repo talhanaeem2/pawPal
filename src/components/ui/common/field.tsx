@@ -5,7 +5,9 @@ export function Field({ label, children, className = "", error = "", description
     return (
         <div className={className}>
             <Label className="text-xs text-muted-foreground">{label}</Label>
-            {children}
+            <div className="mt-1">
+                {children}
+            </div>
             {description && (
                 <p className="text-xs text-primary-foreground mt-1">{description}</p>
             )}

@@ -33,6 +33,7 @@ export type ScheduleListItem = {
   allDone: boolean;
   allSettled: boolean;
   allSkipped: boolean;
+  dueToday: boolean;
   petLabel: string;
   preview: string;
 };
@@ -86,6 +87,7 @@ export function getScheduleDashboard(
           ),
         ),
       );
+    const dueToday = isDueToday(schedule, today);
     const repeatText = formatFrequency({
       repeat_every: schedule.repeat_every,
       repeat_unit: schedule.repeat_unit,
@@ -113,6 +115,7 @@ export function getScheduleDashboard(
       allDone,
       allSettled,
       allSkipped,
+      dueToday,
       petLabel: formatPetNames(
         petsForSchedule
           .map((pet) => (pet.pet ? getPetDisplayName(pet.pet) : undefined))
@@ -139,8 +142,13 @@ export function getScheduleDashboard(
     return left.schedule.title.localeCompare(right.schedule.title);
   });
 
-  const totalSlots = scheduleItems.reduce((total, item) => total + item.times.length, 0);
-  const completedSlots = scheduleItems.reduce(
+  // Only count schedules that are actually due today toward progress.
+  // A monthly weight check or quarterly bath shouldn't show as "pending"
+  // on days when they're not due.
+  const dueTodayItems = scheduleItems.filter((item) => item.dueToday);
+
+  const totalSlots = dueTodayItems.reduce((total, item) => total + item.times.length, 0);
+  const completedSlots = dueTodayItems.reduce(
     (total, item) =>
       total +
       item.times.filter((time) =>
@@ -164,6 +172,55 @@ export function getScheduleDashboard(
     },
     scheduleItems,
   };
+}
+
+// Returns true if a schedule is due on the given date string (YYYY-MM-DD).
+// Daily schedules are always due. Weekly/monthly/yearly schedules are only due
+// on the days that fall within their recurrence cycle from start_date.
+function isDueToday(
+  schedule: ScheduleWithPets,
+  today: string,
+): boolean {
+  const [sy, sm, sd] = schedule.start_date.slice(0, 10).split("-").map(Number);
+  const [ty, tm, td] = today.slice(0, 10).split("-").map(Number);
+
+  const start = new Date(sy, sm - 1, sd);
+  const target = new Date(ty, tm - 1, td);
+
+  // Schedule hasn't started yet
+  if (target < start) return false;
+
+  const { repeat_every, repeat_unit } = schedule;
+
+  if (repeat_unit === "day") {
+    // Every N days: check if the day difference is divisible by N
+    const diffDays = Math.round((target.getTime() - start.getTime()) / 86_400_000);
+    return diffDays % repeat_every === 0;
+  }
+
+  if (repeat_unit === "week") {
+    // Every N weeks: same weekday, and week difference divisible by N
+    if (start.getDay() !== target.getDay()) return false;
+    const diffDays = Math.round((target.getTime() - start.getTime()) / 86_400_000);
+    const diffWeeks = Math.round(diffDays / 7);
+    return diffWeeks % repeat_every === 0;
+  }
+
+  if (repeat_unit === "month") {
+    // Every N months: same day-of-month, month difference divisible by N
+    if (sd !== td) return false;
+    const diffMonths = (ty - sy) * 12 + (tm - sm);
+    return diffMonths >= 0 && diffMonths % repeat_every === 0;
+  }
+
+  if (repeat_unit === "year") {
+    // Every N years: same month+day, year difference divisible by N
+    if (sm !== tm || sd !== td) return false;
+    const diffYears = ty - sy;
+    return diffYears >= 0 && diffYears % repeat_every === 0;
+  }
+
+  return false;
 }
 
 function getEarliestTime(times: (string | null)[]) {
