@@ -12,8 +12,6 @@ import InstallPrompt from "@/components/ui/common/install-prompt";
 import Header from "@/components/layout/header";
 import BottomNav from "@/components/layout/bottomNav";
 import ErrorState from "@/components/ui/common/error-state";
-import { ThemeProvider } from "@/contexts/theme-context";
-import { Toaster } from "@/components/ui/common/sonner";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -119,22 +117,19 @@ function AuthedLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthContext.Provider value={{ user, profile, refetchProfile: refetch, signOut, signingOut, }}>
-        {isOnboarding ? (
-          <Outlet />
-        ) : (
-          <div className="h-dvh flex flex-col overflow-hidden">
-            <Header />
-            <main className="flex-1 min-h-0 mx-auto max-w-2xl px-5 py-2 w-full">
-              <Outlet />
-            </main>
-            <BottomNav pathname={pathname} />
-            <InstallPrompt />
-          </div>
-        )}
-      </AuthContext.Provider>
-      <Toaster />
-    </ThemeProvider>
+    <AuthContext.Provider value={{ user, profile, refetchProfile: refetch, signOut, signingOut, }}>
+      {isOnboarding ? (
+        <Outlet />
+      ) : (
+        <div className="h-dvh flex flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 min-h-0 mx-auto max-w-2xl px-5 py-2 w-full">
+            <Outlet />
+          </main>
+          <BottomNav pathname={pathname} />
+          <InstallPrompt />
+        </div>
+      )}
+    </AuthContext.Provider>
   );
 }

@@ -10,10 +10,11 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeProvider } from "@/contexts/theme-context";
 
 import ErrorState from "@/components/ui/common/error-state";
 import NotFoundState from "@/components/ui/common/not-found-state";
-// import { Toaster } from "@/components/ui/common/sonner";
+import { Toaster } from "@/components/ui/common/sonner";
 
 import appCss from "../styles.css?url";
 
@@ -103,8 +104,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      {/* <Toaster /> */}
+      <ThemeProvider>
+        <Outlet />
+        <Toaster />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

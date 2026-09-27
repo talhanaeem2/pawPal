@@ -13,7 +13,13 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = "pawpal-theme";
 
 function getSystemTheme(): "light" | "dark" {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    if (typeof window === "undefined") {
+        return "light";
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
 }
 
 function applyTheme(resolved: "light" | "dark") {
@@ -29,6 +35,10 @@ function applyTheme(resolved: "light" | "dark") {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<Theme>(() => {
+        if (typeof window === "undefined") {
+            return "system";
+        }
+
         try {
             return (localStorage.getItem(STORAGE_KEY) as Theme) ?? "system";
         } catch {

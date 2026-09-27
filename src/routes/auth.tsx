@@ -113,8 +113,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 py-10"
-      style={{ background: "linear-gradient(160deg, var(--sage-soft) 0%, var(--cream) 45%, var(--peach-soft) 100%)" }}>
+    <div className="min-h-screen flex items-center justify-center px-5 py-10 bg-background">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8 text-center">
           <div className="h-14 w-14 rounded-2xl bg-card shadow-(--shadow-soft) flex items-center justify-center">
