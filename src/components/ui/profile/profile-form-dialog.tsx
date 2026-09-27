@@ -13,9 +13,9 @@ import { FormDialog } from "../common/form-dialog";
 import { Input } from "../common/input";
 import { UserAvatar } from "../common/user-avatar";
 import { Button } from "../common/button";
+import { PhotoCropDialog } from "../common/photo-crop-dialog";
 
 import { createEmptyProfileForm, Profile, profileFormSchema, profileToForm } from "@/schemas/profile";
-import { PhotoCropDialog } from "../common/photo-crop-dialog";
 
 interface IProfileFormDialog {
     profile?: Profile;
@@ -207,37 +207,38 @@ export function ProfileFormDialog({ profile, trigger, open: controlledOpen, onOp
                         <Input ref={inputRef} type="text" value={form.values.display_name} onChange={(e) => form.setField("display_name", e.target.value)} required />
                     </Field>
                     <Field label="Notifications">
-                        <div className="flex items-center h-10 gap-2">
-                            <button
-                                type="button"
-                                role="switch"
-                                aria-checked={form.values.notifications_enabled}
-                                onClick={() =>
-                                    form.setField(
-                                        "notifications_enabled",
-                                        !form.values.notifications_enabled
-                                    )
-                                }
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.notifications_enabled
-                                    ? "bg-primary"
-                                    : "bg-input"
-                                    }`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.notifications_enabled
-                                        ? "translate-x-6"
-                                        : "translate-x-1"
+                        <div className="flex gap-2 flex-col">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={form.values.notifications_enabled}
+                                    onClick={() =>
+                                        form.setField(
+                                            "notifications_enabled",
+                                            !form.values.notifications_enabled
+                                        )
+                                    }
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.notifications_enabled
+                                        ? "bg-primary"
+                                        : "bg-input"
                                         }`}
-                                />
-                            </button>
-
-                            <span className="text-sm text-muted-foreground">
-                                {form.values.notifications_enabled ? "Enabled" : "Disabled"}
-                            </span>
+                                >
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.notifications_enabled
+                                            ? "translate-x-6"
+                                            : "translate-x-1"
+                                            }`}
+                                    />
+                                </button>
+                                <span className="text-sm text-muted-foreground">
+                                    {form.values.notifications_enabled ? "Enabled" : "Disabled"}
+                                </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Receive reminders and other updates
+                            </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Receive reminders and other updates
-                        </p>
                     </Field>
                     <Button type="submit" className="w-full rounded-full" disabled={save.isPending || uploading}>
                         {save.isPending || uploading ? "Saving…" : "Save changes"}

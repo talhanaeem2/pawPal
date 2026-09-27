@@ -122,6 +122,7 @@ export function useScheduleActions({
       scheduleItemId,
       scheduleItemPetId,
       markDone,
+      wasSkipped,
       timeSlots,
       note,
     }: ScheduleToggleInput) => {
@@ -218,6 +219,7 @@ export function useScheduleActions({
 
       return {
         markDone,
+        wasSkipped,
         allPets: !scheduleItemPetId,
         multiplePets,
         scheduleItemId,
@@ -229,6 +231,7 @@ export function useScheduleActions({
     },
     onSuccess: ({
       markDone,
+      wasSkipped,
       multiplePets,
       allPets,
       scheduleItemId,
@@ -239,27 +242,29 @@ export function useScheduleActions({
     }) => {
       queryClient.invalidateQueries({ queryKey: scheduleQuery.queryKey });
 
-      const message = markDone
-        ? allPets && multiplePets
-          ? "Marked all reminders done"
-          : "Reminder completed"
-        : allPets && multiplePets
-          ? "Marked all reminders undone"
-          : "Marked undone";
+      const message = wasSkipped
+        ? "Reminder unskipped"
+        : markDone
+          ? allPets && multiplePets
+            ? "Marked all reminders done"
+            : "Reminder done"
+          : allPets && multiplePets
+            ? "Marked all reminders undone"
+            : "Reminder undone";
 
       toast.success(message, {
         action:
           markDone && !note?.trim()
             ? {
-                label: "Add note",
-                onClick: () =>
-                  setCompletionNoteState({
-                    scheduleItemId,
-                    scheduleItemPetId,
-                    timeSlots,
-                    title,
-                  }),
-              }
+              label: "Add note",
+              onClick: () =>
+                setCompletionNoteState({
+                  scheduleItemId,
+                  scheduleItemPetId,
+                  timeSlots,
+                  title,
+                }),
+            }
             : undefined,
       });
     },
@@ -306,7 +311,7 @@ export function useScheduleActions({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scheduleQuery.queryKey });
-      toast.success("Skipped for today");
+      toast.success("Reminder skipped");
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Couldn't skip this reminder");
@@ -386,6 +391,7 @@ export function useScheduleActions({
           scheduleItemId,
           scheduleItemPetId,
           markDone: false,
+          wasSkipped: true,
           timeSlots,
         });
         return;

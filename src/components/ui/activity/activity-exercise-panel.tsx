@@ -49,9 +49,9 @@ export function ActivityExercisePanel({ pets, exercise }: ActivityExercisePanelP
               className={cn(
                 "rounded-full px-3 py-1.5 text-xs font-semibold",
                 exercise.change > 0
-                  ? "bg-green-100 text-green-700"
+                  ? "bg-primary/90 text-primary-foreground/90"
                   : exercise.change < 0
-                    ? "bg-amber-100 text-amber-700"
+                    ? "bg-destructive/15"
                     : "bg-secondary text-muted-foreground",
               )}
             >
@@ -84,7 +84,7 @@ export function ActivityExercisePanel({ pets, exercise }: ActivityExercisePanelP
           </div>
           {exercise.streak > 0 && (
             <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium">
-              <Flame className="h-3.5 w-3.5 text-red-500" />
+              <Flame className="h-3.5 w-3.5 text-accent" />
               {exercise.streak} day streak
             </div>
           )}

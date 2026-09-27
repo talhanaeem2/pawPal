@@ -1,10 +1,14 @@
 import { Toaster as Sonner } from "sonner";
+import { useTheme } from "@/contexts/theme-context";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { resolvedTheme } = useTheme();
+
   return (
     <Sonner
+      theme={resolvedTheme}
       position="top-center"
       closeButton
       richColors={false}
@@ -22,9 +26,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           closeButton:
             "group-[.toast]:bg-card group-[.toast]:border-border group-[.toast]:text-muted-foreground hover:group-[.toast]:text-foreground",
           success:
-            "group-[.toaster]:!bg-sage-soft group-[.toaster]:!text-foreground group-[.toaster]:!border-sage",
+            "group-[.toaster]:!bg-[var(--toast-success-bg)] group-[.toaster]:!text-foreground group-[.toaster]:!border-[var(--toast-success-border)]",
           error:
-            "group-[.toaster]:!bg-destructive/10 group-[.toaster]:!text-destructive group-[.toaster]:!border-destructive/30",
+            "group-[.toaster]:!bg-[var(--toast-error-bg)] group-[.toaster]:!text-foreground group-[.toaster]:!border-[var(--toast-error-border)]",
         },
       }}
       {...props}

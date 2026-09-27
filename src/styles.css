@@ -74,6 +74,11 @@
 
   --shadow-soft: 0 8px 24px -12px oklch(0.5 0.05 60 / 0.18);
   --gradient-warm: linear-gradient(135deg, var(--sage-soft) 0%, var(--peach-soft) 100%);
+  /* Solid toast backgrounds — avoids transparency bleed */
+  --toast-success-bg: oklch(0.91 0.045 155);
+  --toast-success-border: oklch(0.82 0.06 155);
+  --toast-error-bg: oklch(0.93 0.04 25);
+  --toast-error-border: oklch(0.82 0.12 25);
 }
 
 .dark {
@@ -94,6 +99,15 @@
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
   --ring: var(--sage);
+  /* Darker, deeper shadow for dark backgrounds */
+  --shadow-soft: 0 8px 24px -12px oklch(0 0 0 / 0.40);
+  /* Muted gradient for dark mode */
+  --gradient-warm: linear-gradient(135deg, oklch(0.32 0.025 155) 0%, oklch(0.32 0.02 35) 100%);
+  /* Solid toast backgrounds for dark mode */
+  --toast-success-bg: oklch(0.32 0.04 155);
+  --toast-success-border: oklch(0.42 0.055 155);
+  --toast-error-bg: oklch(0.30 0.04 25);
+  --toast-error-border: oklch(0.45 0.10 25);
 }
 
 @layer base {
@@ -111,15 +125,11 @@
 
 @layer utilities {
   .scrollbar-hide {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   .scrollbar-hide::-webkit-scrollbar {
-    display: none; /* Chrome, Safari */
+    display: none;
   }
-
-  input[type="date"] {
-  color-scheme: light;
-}
 }
