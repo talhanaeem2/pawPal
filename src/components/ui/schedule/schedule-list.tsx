@@ -391,7 +391,7 @@ function ScheduleItemActions({
           </Button>
         }
       />
-      {!item.allDone && (
+      {!item.allDone && !item.allSkipped && (
         <Button
           variant="ghost"
           size="icon"
