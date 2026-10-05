@@ -9,34 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
-import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
-import { Route as AuthenticatedPetsRouteRouteImport } from './routes/_authenticated/pets/route'
-import { Route as AuthenticatedOnboardingRouteRouteImport } from './routes/_authenticated/onboarding/route'
 import { Route as AuthenticatedHealthRouteRouteImport } from './routes/_authenticated/health/route'
-import { Route as AuthenticatedPetsIndexRouteImport } from './routes/_authenticated/pets/index'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedOnboardingRouteRouteImport } from './routes/_authenticated/onboarding/route'
+import { Route as AuthenticatedPetsRouteRouteImport } from './routes/_authenticated/pets/route'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedHealthIndexRouteImport } from './routes/_authenticated/health/index'
-import { Route as AuthenticatedOnboardingWelcomeRouteImport } from './routes/_authenticated/onboarding/welcome'
-import { Route as AuthenticatedOnboardingReminderRouteImport } from './routes/_authenticated/onboarding/reminder'
-import { Route as AuthenticatedOnboardingPetRouteImport } from './routes/_authenticated/onboarding/pet'
-import { Route as AuthenticatedOnboardingCompleteRouteImport } from './routes/_authenticated/onboarding/complete'
-import { Route as AuthenticatedHealthVetRouteImport } from './routes/_authenticated/health/vet'
-import { Route as AuthenticatedHealthVaccinationsRouteImport } from './routes/_authenticated/health/vaccinations'
 import { Route as AuthenticatedHealthDewormingsRouteImport } from './routes/_authenticated/health/dewormings'
+import { Route as AuthenticatedHealthVaccinationsRouteImport } from './routes/_authenticated/health/vaccinations'
+import { Route as AuthenticatedHealthVetRouteImport } from './routes/_authenticated/health/vet'
+import { Route as AuthenticatedOnboardingCompleteRouteImport } from './routes/_authenticated/onboarding/complete'
+import { Route as AuthenticatedOnboardingPetRouteImport } from './routes/_authenticated/onboarding/pet'
+import { Route as AuthenticatedOnboardingReminderRouteImport } from './routes/_authenticated/onboarding/reminder'
+import { Route as AuthenticatedOnboardingWelcomeRouteImport } from './routes/_authenticated/onboarding/welcome'
+import { Route as AuthenticatedPetsIndexRouteImport } from './routes/_authenticated/pets/index'
 import { Route as AuthenticatedPetsPetIdRouteRouteImport } from './routes/_authenticated/pets/$petId/route'
 import { Route as AuthenticatedPetsPetIdIndexRouteImport } from './routes/_authenticated/pets/$petId/index'
-import { Route as AuthenticatedPetsPetIdVaccinationsRouteImport } from './routes/_authenticated/pets/$petId/vaccinations'
 import { Route as AuthenticatedPetsPetIdDewormingsRouteImport } from './routes/_authenticated/pets/$petId/dewormings'
+import { Route as AuthenticatedPetsPetIdVaccinationsRouteImport } from './routes/_authenticated/pets/$petId/vaccinations'
 
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -44,38 +48,25 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedScheduleRoute = AuthenticatedScheduleRouteImport.update({
-  id: '/schedule',
-  path: '/schedule',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPetsRouteRoute = AuthenticatedPetsRouteRouteImport.update({
-  id: '/pets',
-  path: '/pets',
+const AuthenticatedHealthRouteRoute =
+  AuthenticatedHealthRouteRouteImport.update({
+    id: '/health',
+    path: '/health',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOnboardingRouteRoute =
@@ -84,56 +75,25 @@ const AuthenticatedOnboardingRouteRoute =
     path: '/onboarding',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedHealthRouteRoute =
-  AuthenticatedHealthRouteRouteImport.update({
-    id: '/health',
-    path: '/health',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPetsIndexRoute = AuthenticatedPetsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedPetsRouteRoute,
+const AuthenticatedPetsRouteRoute = AuthenticatedPetsRouteRouteImport.update({
+  id: '/pets',
+  path: '/pets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedScheduleRoute = AuthenticatedScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHealthIndexRoute =
   AuthenticatedHealthIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AuthenticatedHealthRouteRoute,
-  } as any)
-const AuthenticatedOnboardingWelcomeRoute =
-  AuthenticatedOnboardingWelcomeRouteImport.update({
-    id: '/welcome',
-    path: '/welcome',
-    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
-  } as any)
-const AuthenticatedOnboardingReminderRoute =
-  AuthenticatedOnboardingReminderRouteImport.update({
-    id: '/reminder',
-    path: '/reminder',
-    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
-  } as any)
-const AuthenticatedOnboardingPetRoute =
-  AuthenticatedOnboardingPetRouteImport.update({
-    id: '/pet',
-    path: '/pet',
-    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
-  } as any)
-const AuthenticatedOnboardingCompleteRoute =
-  AuthenticatedOnboardingCompleteRouteImport.update({
-    id: '/complete',
-    path: '/complete',
-    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
-  } as any)
-const AuthenticatedHealthVetRoute = AuthenticatedHealthVetRouteImport.update({
-  id: '/vet',
-  path: '/vet',
-  getParentRoute: () => AuthenticatedHealthRouteRoute,
-} as any)
-const AuthenticatedHealthVaccinationsRoute =
-  AuthenticatedHealthVaccinationsRouteImport.update({
-    id: '/vaccinations',
-    path: '/vaccinations',
     getParentRoute: () => AuthenticatedHealthRouteRoute,
   } as any)
 const AuthenticatedHealthDewormingsRoute =
@@ -142,6 +102,46 @@ const AuthenticatedHealthDewormingsRoute =
     path: '/dewormings',
     getParentRoute: () => AuthenticatedHealthRouteRoute,
   } as any)
+const AuthenticatedHealthVaccinationsRoute =
+  AuthenticatedHealthVaccinationsRouteImport.update({
+    id: '/vaccinations',
+    path: '/vaccinations',
+    getParentRoute: () => AuthenticatedHealthRouteRoute,
+  } as any)
+const AuthenticatedHealthVetRoute = AuthenticatedHealthVetRouteImport.update({
+  id: '/vet',
+  path: '/vet',
+  getParentRoute: () => AuthenticatedHealthRouteRoute,
+} as any)
+const AuthenticatedOnboardingCompleteRoute =
+  AuthenticatedOnboardingCompleteRouteImport.update({
+    id: '/complete',
+    path: '/complete',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
+  } as any)
+const AuthenticatedOnboardingPetRoute =
+  AuthenticatedOnboardingPetRouteImport.update({
+    id: '/pet',
+    path: '/pet',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
+  } as any)
+const AuthenticatedOnboardingReminderRoute =
+  AuthenticatedOnboardingReminderRouteImport.update({
+    id: '/reminder',
+    path: '/reminder',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
+  } as any)
+const AuthenticatedOnboardingWelcomeRoute =
+  AuthenticatedOnboardingWelcomeRouteImport.update({
+    id: '/welcome',
+    path: '/welcome',
+    getParentRoute: () => AuthenticatedOnboardingRouteRoute,
+  } as any)
+const AuthenticatedPetsIndexRoute = AuthenticatedPetsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedPetsRouteRoute,
+} as any)
 const AuthenticatedPetsPetIdRouteRoute =
   AuthenticatedPetsPetIdRouteRouteImport.update({
     id: '/$petId',
@@ -154,16 +154,16 @@ const AuthenticatedPetsPetIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPetsPetIdRouteRoute,
   } as any)
-const AuthenticatedPetsPetIdVaccinationsRoute =
-  AuthenticatedPetsPetIdVaccinationsRouteImport.update({
-    id: '/vaccinations',
-    path: '/vaccinations',
-    getParentRoute: () => AuthenticatedPetsPetIdRouteRoute,
-  } as any)
 const AuthenticatedPetsPetIdDewormingsRoute =
   AuthenticatedPetsPetIdDewormingsRouteImport.update({
     id: '/dewormings',
     path: '/dewormings',
+    getParentRoute: () => AuthenticatedPetsPetIdRouteRoute,
+  } as any)
+const AuthenticatedPetsPetIdVaccinationsRoute =
+  AuthenticatedPetsPetIdVaccinationsRouteImport.update({
+    id: '/vaccinations',
+    path: '/vaccinations',
     getParentRoute: () => AuthenticatedPetsPetIdRouteRoute,
   } as any)
 
@@ -326,18 +326,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -347,53 +340,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/schedule': {
-      id: '/_authenticated/schedule'
-      path: '/schedule'
-      fullPath: '/schedule'
-      preLoaderRoute: typeof AuthenticatedScheduleRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/profile': {
-      id: '/_authenticated/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AuthenticatedProfileRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/home': {
-      id: '/_authenticated/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof AuthenticatedHomeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/activity': {
       id: '/_authenticated/activity'
       path: '/activity'
       fullPath: '/activity'
       preLoaderRoute: typeof AuthenticatedActivityRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/pets': {
-      id: '/_authenticated/pets'
-      path: '/pets'
-      fullPath: '/pets'
-      preLoaderRoute: typeof AuthenticatedPetsRouteRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/onboarding': {
-      id: '/_authenticated/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthenticatedOnboardingRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/health': {
@@ -403,12 +368,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/pets/': {
-      id: '/_authenticated/pets/'
-      path: '/'
-      fullPath: '/pets/'
-      preLoaderRoute: typeof AuthenticatedPetsIndexRouteImport
-      parentRoute: typeof AuthenticatedPetsRouteRoute
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pets': {
+      id: '/_authenticated/pets'
+      path: '/pets'
+      fullPath: '/pets'
+      preLoaderRoute: typeof AuthenticatedPetsRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/schedule': {
+      id: '/_authenticated/schedule'
+      path: '/schedule'
+      fullPath: '/schedule'
+      preLoaderRoute: typeof AuthenticatedScheduleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/health/': {
       id: '/_authenticated/health/'
@@ -417,39 +410,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthIndexRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
     }
-    '/_authenticated/onboarding/welcome': {
-      id: '/_authenticated/onboarding/welcome'
-      path: '/welcome'
-      fullPath: '/onboarding/welcome'
-      preLoaderRoute: typeof AuthenticatedOnboardingWelcomeRouteImport
-      parentRoute: typeof AuthenticatedOnboardingRouteRoute
-    }
-    '/_authenticated/onboarding/reminder': {
-      id: '/_authenticated/onboarding/reminder'
-      path: '/reminder'
-      fullPath: '/onboarding/reminder'
-      preLoaderRoute: typeof AuthenticatedOnboardingReminderRouteImport
-      parentRoute: typeof AuthenticatedOnboardingRouteRoute
-    }
-    '/_authenticated/onboarding/pet': {
-      id: '/_authenticated/onboarding/pet'
-      path: '/pet'
-      fullPath: '/onboarding/pet'
-      preLoaderRoute: typeof AuthenticatedOnboardingPetRouteImport
-      parentRoute: typeof AuthenticatedOnboardingRouteRoute
-    }
-    '/_authenticated/onboarding/complete': {
-      id: '/_authenticated/onboarding/complete'
-      path: '/complete'
-      fullPath: '/onboarding/complete'
-      preLoaderRoute: typeof AuthenticatedOnboardingCompleteRouteImport
-      parentRoute: typeof AuthenticatedOnboardingRouteRoute
-    }
-    '/_authenticated/health/vet': {
-      id: '/_authenticated/health/vet'
-      path: '/vet'
-      fullPath: '/health/vet'
-      preLoaderRoute: typeof AuthenticatedHealthVetRouteImport
+    '/_authenticated/health/dewormings': {
+      id: '/_authenticated/health/dewormings'
+      path: '/dewormings'
+      fullPath: '/health/dewormings'
+      preLoaderRoute: typeof AuthenticatedHealthDewormingsRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
     }
     '/_authenticated/health/vaccinations': {
@@ -459,12 +424,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthVaccinationsRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
     }
-    '/_authenticated/health/dewormings': {
-      id: '/_authenticated/health/dewormings'
-      path: '/dewormings'
-      fullPath: '/health/dewormings'
-      preLoaderRoute: typeof AuthenticatedHealthDewormingsRouteImport
+    '/_authenticated/health/vet': {
+      id: '/_authenticated/health/vet'
+      path: '/vet'
+      fullPath: '/health/vet'
+      preLoaderRoute: typeof AuthenticatedHealthVetRouteImport
       parentRoute: typeof AuthenticatedHealthRouteRoute
+    }
+    '/_authenticated/onboarding/complete': {
+      id: '/_authenticated/onboarding/complete'
+      path: '/complete'
+      fullPath: '/onboarding/complete'
+      preLoaderRoute: typeof AuthenticatedOnboardingCompleteRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
+    }
+    '/_authenticated/onboarding/pet': {
+      id: '/_authenticated/onboarding/pet'
+      path: '/pet'
+      fullPath: '/onboarding/pet'
+      preLoaderRoute: typeof AuthenticatedOnboardingPetRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
+    }
+    '/_authenticated/onboarding/reminder': {
+      id: '/_authenticated/onboarding/reminder'
+      path: '/reminder'
+      fullPath: '/onboarding/reminder'
+      preLoaderRoute: typeof AuthenticatedOnboardingReminderRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
+    }
+    '/_authenticated/onboarding/welcome': {
+      id: '/_authenticated/onboarding/welcome'
+      path: '/welcome'
+      fullPath: '/onboarding/welcome'
+      preLoaderRoute: typeof AuthenticatedOnboardingWelcomeRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRouteRoute
+    }
+    '/_authenticated/pets/': {
+      id: '/_authenticated/pets/'
+      path: '/'
+      fullPath: '/pets/'
+      preLoaderRoute: typeof AuthenticatedPetsIndexRouteImport
+      parentRoute: typeof AuthenticatedPetsRouteRoute
     }
     '/_authenticated/pets/$petId': {
       id: '/_authenticated/pets/$petId'
@@ -480,18 +480,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPetsPetIdIndexRouteImport
       parentRoute: typeof AuthenticatedPetsPetIdRouteRoute
     }
-    '/_authenticated/pets/$petId/vaccinations': {
-      id: '/_authenticated/pets/$petId/vaccinations'
-      path: '/vaccinations'
-      fullPath: '/pets/$petId/vaccinations'
-      preLoaderRoute: typeof AuthenticatedPetsPetIdVaccinationsRouteImport
-      parentRoute: typeof AuthenticatedPetsPetIdRouteRoute
-    }
     '/_authenticated/pets/$petId/dewormings': {
       id: '/_authenticated/pets/$petId/dewormings'
       path: '/dewormings'
       fullPath: '/pets/$petId/dewormings'
       preLoaderRoute: typeof AuthenticatedPetsPetIdDewormingsRouteImport
+      parentRoute: typeof AuthenticatedPetsPetIdRouteRoute
+    }
+    '/_authenticated/pets/$petId/vaccinations': {
+      id: '/_authenticated/pets/$petId/vaccinations'
+      path: '/vaccinations'
+      fullPath: '/pets/$petId/vaccinations'
+      preLoaderRoute: typeof AuthenticatedPetsPetIdVaccinationsRouteImport
       parentRoute: typeof AuthenticatedPetsPetIdRouteRoute
     }
   }
