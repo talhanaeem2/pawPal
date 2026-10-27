@@ -8,6 +8,7 @@ import {
   ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import i18n, { isRTL } from "@/i18n/config";
 
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeProvider } from "@/contexts/theme-context";
@@ -62,7 +63,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html
+      lang={i18n.language}
+      dir={isRTL(i18n.language) ? "rtl" : "ltr"}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
