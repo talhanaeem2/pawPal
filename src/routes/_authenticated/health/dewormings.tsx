@@ -58,6 +58,7 @@ function DewormingPage() {
 
     function getDewormingStatus(d: Deworming) {
         if (d.completed_at) return "completed";
+        if (d.next_due_at === null) return "no_due_date";
 
         if (new Date(d.next_due_at).getTime() < now) {
             return "overdue";
@@ -66,17 +67,19 @@ function DewormingPage() {
         return "upcoming";
     }
 
-    const upcoming = dewormings
-        .filter((v) => getDewormingStatus(v) === "upcoming")
-        .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
+    // const history = dewormings
+    //     .filter((d) => getDewormingStatus(d) === "completed")
+    //     .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime());
 
-    const overdue = dewormings
-        .filter((v) => getDewormingStatus(v) === "overdue")
-        .sort((a, b) => new Date(b.next_due_at!).getTime() - new Date(a.next_due_at!).getTime());
-
-    const history = dewormings
-        .filter((d) => getDewormingStatus(d) === "completed")
-        .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime());
+    const STATUS_ORDER: Record<string, number> = { overdue: 0, due_soon: 1, upcoming: 2, scheduled: 3, no_due_date: 4, completed: 5 };
+    const sorted = [...dewormings].sort((a, b) => {
+        const sa = getDewormingStatus(a);
+        const sb = getDewormingStatus(b);
+        const orderDiff = (STATUS_ORDER[sa] ?? 9) - (STATUS_ORDER[sb] ?? 9);
+        if (orderDiff !== 0) return orderDiff;
+        if (a.next_due_at && b.next_due_at) return new Date(a.next_due_at).getTime() - new Date(b.next_due_at).getTime();
+        return new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime();
+    });
 
     const del = useMutation({
         mutationFn: async ({ dewormingId }: {
@@ -130,19 +133,14 @@ function DewormingPage() {
 
     const sections = [
         {
-            title: "Upcoming",
-            emptyMessage: "No upcoming dewormings.",
-            items: upcoming,
-        },
-        {
-            title: "Overdue",
-            emptyMessage: "No overdue dewormings.",
-            items: overdue,
+            title: "Active",
+            emptyMessage: "No dewormings yet.",
+            items: sorted.filter((d) => getDewormingStatus(d) !== "completed"),
         },
         {
             title: "History",
-            emptyMessage: "No completed dewormings.",
-            items: history,
+            emptyMessage: "No completed dewormings yet.",
+            items: sorted.filter((d) => getDewormingStatus(d) === "completed"),
         },
     ];
 

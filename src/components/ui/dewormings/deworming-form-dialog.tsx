@@ -1,21 +1,37 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { useZodForm } from "@/hooks/use-zod-form";
 import { supabase } from "@/integrations/supabase/client";
 import { dewormingsQuery, petDewormingsQuery } from "@/lib/queries";
+import { todayDateString } from "@/lib/utils";
 
 import { Button } from "../common/button";
-import { FormDialog } from "../common/form-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../common/select";
 import { Input } from "../common/input";
-import { DatePicker } from "../common/date-picker";
 import { Textarea } from "../common/textarea";
+import { DatePicker } from "../common/date-picker";
+import { FormDialog } from "../common/form-dialog";
 import { Field } from "../common/field";
 
-import { Pet } from "@/schemas/pets";
-import { createEmptyDewormingForm, Deworming, DewormingForm, dewormingFormSchema, dewormingToForm } from "@/schemas/deworming";
+import { Pet, getPetDisplayName } from "@/schemas/pets";
+import { Deworming, DewormingForm, dewormingFormSchema, dewormingToForm, createEmptyDewormingForm } from "@/schemas/deworming";
+
+const NEXT_DUE_PRESETS = [
+    { label: "2 weeks", weeks: 2 },
+    { label: "3 weeks", weeks: 3 },
+    { label: "4 weeks", weeks: 4 },
+    { label: "3 months", weeks: 13 },
+    { label: "6 months", weeks: 26 },
+    { label: "1 year", weeks: 52 },
+];
+
+function addWeeks(dateStr: string, weeks: number): string {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + weeks * 7);
+    return d.toISOString().slice(0, 10);
+}
 
 interface IDewormingFormDialog {
     pets: Pet[];
@@ -27,7 +43,7 @@ interface IDewormingFormDialog {
     onOpenChange?: (open: boolean) => void;
 }
 
-export function DewormingFormDialog({ pets, item, trigger, hidePetSelector, defaultPetId, open: controlledOpen, onOpenChange }: IDewormingFormDialog) {
+export function DewormingFormDialog({ pets, item, trigger, hidePetSelector = false, defaultPetId, open: controlledOpen, onOpenChange }: IDewormingFormDialog) {
     const [internalOpen, setInternalOpen] = useState(false);
     const isEdit = !!item;
     const qc = useQueryClient();
@@ -53,51 +69,30 @@ export function DewormingFormDialog({ pets, item, trigger, hidePetSelector, defa
         });
     }
 
+    function applyPreset(weeks: number) {
+        const base = form.values.administered_at || todayDateString();
+        form.setField("next_due_at", addWeeks(base, weeks));
+    }
+
+    const today = todayDateString();
+
     const save = useMutation({
         mutationFn: async (data: DewormingForm) => {
-
             const payload = {
                 pet_id: data.pet_id,
                 product_name: data.product_name.trim(),
                 administered_at: data.administered_at,
-                next_due_at: data.next_due_at,
+                next_due_at: data.next_due_at || null,
+                completed_at: data.completed_at || null,
                 administered_by: data.administered_by || null,
                 notes: data.notes || null,
             };
 
-            if (item) {
-                const { error } = await supabase.from("dewormings").update(payload).eq("id", item.id);
+            const query = item
+                ? supabase.from("dewormings").update(payload).eq("id", item.id)
+                : supabase.from("dewormings").insert(payload);
 
-                if (error) throw error;
-                return;
-            }
-
-            // Close previous active deworming
-            const { data: previous } = await supabase
-                .from("dewormings")
-                .select("id")
-                .eq("pet_id", data.pet_id)
-                .is("completed_at", null)
-                .order("administered_at", { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (previous) {
-                const { error } = await supabase
-                    .from("dewormings")
-                    .update({
-                        completed_at: data.administered_at,
-                    })
-                    .eq("id", previous.id);
-
-                if (error) throw error;
-            }
-
-            // Insert new active deworming
-            const { error } = await supabase
-                .from("dewormings")
-                .insert(payload);
-
+            const { error } = await query;
             if (error) throw error;
         },
         onSuccess: async (_, data) => {
@@ -114,6 +109,8 @@ export function DewormingFormDialog({ pets, item, trigger, hidePetSelector, defa
 
     if (pets.length === 0 && !isEdit) return <Button disabled variant="outline" className="rounded-full">Add a pet first</Button>;
 
+    const seriesComplete = !!form.values.completed_at;
+
     return (
         <FormDialog
             open={open}
@@ -125,43 +122,42 @@ export function DewormingFormDialog({ pets, item, trigger, hidePetSelector, defa
                 onSubmit={(e) => {
                     e.preventDefault();
                     const data = form.getValidated();
-
                     if (!data) return;
                     save.mutate(data);
                 }}
                 className="space-y-3"
             >
                 {!hidePetSelector && (
-                    <Field label="Pet">
+                    <Field label="Pet" error={form.errors.pet_id}>
                         <Select value={form.values.pet_id} onValueChange={(v) => form.setField("pet_id", v)} required>
                             <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
                             <SelectContent>
                                 {pets.map((p) =>
-                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                    <SelectItem key={p.id} value={p.id}>{getPetDisplayName(p)}</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
                     </Field>
                 )}
-                <Field label="Dewormer" error={form.errors.product_name}>
-                    <Input type="text" value={form.values.product_name} onChange={(e) => form.setField("product_name", e.target.value)} placeholder="e.g. Drontal, Milbemax, Panacur" required />
+
+                <Field label="Product" error={form.errors.product_name}>
+                    <Input
+                        type="text"
+                        value={form.values.product_name}
+                        onChange={(e) => form.setField("product_name", e.target.value)}
+                        placeholder="Drontal, Milbemax, Panacur…"
+                        required
+                    />
                 </Field>
+
                 <Field label="Date given" error={form.errors.administered_at}>
-                    {/* <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required /> */}
                     <DatePicker
                         value={form.values.administered_at}
                         onChange={(date) => form.setField("administered_at", date)}
                         placeholder="Select date"
                     />
                 </Field>
-                <Field label="Next dose due" error={form.errors.next_due_at}>
-                    {/* <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} required /> */}
-                    <DatePicker
-                        value={form.values.next_due_at}
-                        onChange={(date) => form.setField("next_due_at", date)}
-                        placeholder="Select date"
-                    />
-                </Field>
+
                 <Field label="Vet or clinic">
                     <Input
                         value={form.values.administered_by}
@@ -169,9 +165,51 @@ export function DewormingFormDialog({ pets, item, trigger, hidePetSelector, defa
                         placeholder="Happy Paws Clinic"
                     />
                 </Field>
+
+                {/* Series complete toggle — clear, non-inverted label */}
+                <Field label="Treatment complete">
+                    <div className="flex items-center h-10 gap-2">
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={seriesComplete}
+                            onClick={() => form.setField("completed_at", seriesComplete ? "" : today)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${seriesComplete ? "bg-primary" : "bg-input"}`}
+                        >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${seriesComplete ? "translate-x-6" : "translate-x-1"}`} />
+                        </button>
+                        <span className="text-sm text-muted-foreground">
+                            {seriesComplete ? "No follow-up needed" : "Follow-up dose expected"}
+                        </span>
+                    </div>
+                </Field>
+
+                {!seriesComplete && (
+                    <Field label="Next dose due">
+                        <DatePicker
+                            value={form.values.next_due_at}
+                            onChange={(date) => form.setField("next_due_at", date)}
+                            placeholder="Select date"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {NEXT_DUE_PRESETS.map((p) => (
+                                <button
+                                    key={p.weeks}
+                                    type="button"
+                                    onClick={() => applyPreset(p.weeks)}
+                                    className="rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-secondary/70 hover:text-foreground"
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+                    </Field>
+                )}
+
                 <Field label="Notes">
                     <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember" />
                 </Field>
+
                 <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
                     {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save deworming"}
                 </Button>
