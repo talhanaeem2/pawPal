@@ -18,7 +18,7 @@ import { PetInfoCard } from "@/components/ui/pets/pet/pet-info-card";
 import { PetDewormingsCard } from "@/components/ui/pets/pet/pet-dewormings-card";
 import { PetActions } from "@/components/ui/pets/pet/pet-actions";
 import { ActivityWeightHistory } from "@/components/ui/activity/activity-weight-history";
-import { PetActivityExport } from "@/components/ui/pets/pet/pet-activity-export";
+// import { PetActivityExport } from "@/components/ui/pets/pet/pet-activity-export";
 
 export const Route = createFileRoute("/_authenticated/pets/$petId/")({
     loader: async ({ context, params }) => await Promise.all([
@@ -184,7 +184,7 @@ function PetPage() {
                         pet={pet}
                         dewormings={dewormingData}
                     />
-                    <PetActivityExport pet={pet} logs={activityLogs} />
+                    {/* <PetActivityExport pet={pet} logs={activityLogs} /> */}
                     <PetActions
                         pet={pet}
                         onDeleted={() =>

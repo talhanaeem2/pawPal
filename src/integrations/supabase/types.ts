@@ -96,7 +96,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
-          next_due_at: string
+          next_due_at: string | null
           notes: string | null
           pet_id: string
           product_name: string
@@ -109,7 +109,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
-          next_due_at: string
+          next_due_at?: string | null
           notes?: string | null
           pet_id: string
           product_name: string
@@ -122,7 +122,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
-          next_due_at?: string
+          next_due_at?: string | null
           notes?: string | null
           pet_id?: string
           product_name?: string

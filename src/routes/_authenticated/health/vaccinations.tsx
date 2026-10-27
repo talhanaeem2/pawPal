@@ -68,21 +68,23 @@ function VaccinationsPage() {
         return "upcoming";
     }
 
-    const upcoming = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "upcoming")
-        .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
+    // const noDueDate = vaccinations
+    //     .filter((v) => getVaccinationStatus(v) === "no_due_date")
+    //     .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
 
-    const overdue = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "overdue")
-        .sort((a, b) => new Date(a.next_due_at!).getTime() - new Date(b.next_due_at!).getTime());
+    // const history = vaccinations
+    //     .filter((v) => getVaccinationStatus(v) === "completed")
+    //     .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
 
-    const noDueDate = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "no_due_date")
-        .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
-
-    const history = vaccinations
-        .filter((v) => getVaccinationStatus(v) === "completed")
-        .sort((a, b) => new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime());
+    const STATUS_ORDER: Record<string, number> = { overdue: 0, due_soon: 1, upcoming: 2, scheduled: 3, no_due_date: 4, completed: 5 };
+    const sorted = [...vaccinations].sort((a, b) => {
+        const sa = getVaccinationStatus(a);
+        const sb = getVaccinationStatus(b);
+        const orderDiff = (STATUS_ORDER[sa] ?? 9) - (STATUS_ORDER[sb] ?? 9);
+        if (orderDiff !== 0) return orderDiff;
+        if (a.next_due_at && b.next_due_at) return new Date(a.next_due_at).getTime() - new Date(b.next_due_at).getTime();
+        return new Date(b.administered_at).getTime() - new Date(a.administered_at).getTime();
+    });
 
     const del = useMutation({
         mutationFn: async ({ vaccinationId }: {
@@ -136,28 +138,14 @@ function VaccinationsPage() {
 
     const sections = [
         {
-            title: "Upcoming",
-            emptyMessage: "No upcoming vaccines.",
-            items: upcoming,
-            showWhenEmpty: true,
-        },
-        {
-            title: "Overdue",
-            emptyMessage: "No overdue vaccines.",
-            items: overdue,
-            showWhenEmpty: false,
-        },
-        {
-            title: "No due date",
-            emptyMessage: "No vaccines without a due date.",
-            items: noDueDate,
-            showWhenEmpty: false,
+            title: "Active",
+            emptyMessage: "No vaccinations yet.",
+            items: sorted.filter((v) => getVaccinationStatus(v) !== "completed"),
         },
         {
             title: "Completed",
             emptyMessage: "No completed vaccines yet.",
-            items: history,
-            showWhenEmpty: true,
+            items: sorted.filter((v) => getVaccinationStatus(v) === "completed"),
         },
     ];
 
@@ -209,7 +197,7 @@ function VaccinationsPage() {
                         to="/health/vaccinations"
                         search={{ new: true }}
                     />
-                ) : sections.filter(section => section.items.length > 0 || section.showWhenEmpty)
+                ) : sections.filter(section => section.items.length > 0)
                     .map(section => (
                         <HealthGroup
                             key={section.title}

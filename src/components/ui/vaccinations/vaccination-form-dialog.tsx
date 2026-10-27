@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { useZodForm } from "@/hooks/use-zod-form";
 import { supabase } from "@/integrations/supabase/client";
 import { petVaccinationsQuery, vaccinationsQuery } from "@/lib/queries";
+import { todayDateString } from "@/lib/utils";
 
 import { Button } from "../common/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../common/select";
@@ -16,6 +17,23 @@ import { Field } from "../common/field";
 
 import { Pet } from "@/schemas/pets";
 import { createEmptyVaccinationForm, Vaccination, VaccinationForm, vaccinationFormSchema, vaccinationToForm } from "@/schemas/vacination";
+import { getPetDisplayName } from "@/schemas/pets";
+
+// Weeks options for auto-calculating next due date
+const NEXT_DUE_PRESETS = [
+    { label: "3 weeks", weeks: 3 },
+    { label: "4 weeks", weeks: 4 },
+    { label: "3 months", weeks: 13 },
+    { label: "6 months", weeks: 26 },
+    { label: "1 year", weeks: 52 },
+    { label: "3 years", weeks: 156 },
+];
+
+function addWeeks(dateStr: string, weeks: number): string {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + weeks * 7);
+    return d.toISOString().slice(0, 10);
+}
 
 interface IVaccinationFormDialog {
     pets: Pet[];
@@ -53,9 +71,16 @@ export function VaccinationsFormDialog({ pets, item, trigger, hidePetSelector = 
         });
     }
 
+    // When a preset is picked, calculate next due from the administered date
+    function applyPreset(weeks: number) {
+        const base = form.values.administered_at || todayDateString();
+        form.setField("next_due_at", addWeeks(base, weeks));
+    }
+
+    const seriesComplete = !!form.values.completed_at;
+
     const save = useMutation({
         mutationFn: async (data: VaccinationForm) => {
-
             const payload = {
                 pet_id: data.pet_id,
                 vaccine_name: data.vaccine_name.trim(),
@@ -71,7 +96,6 @@ export function VaccinationsFormDialog({ pets, item, trigger, hidePetSelector = 
                 : supabase.from("vaccinations").insert(payload);
 
             const { error } = await query;
-
             if (error) throw error;
         },
         onSuccess: async (_, data) => {
@@ -88,7 +112,7 @@ export function VaccinationsFormDialog({ pets, item, trigger, hidePetSelector = 
 
     if (pets.length === 0 && !isEdit) return <Button disabled variant="outline" className="rounded-full">Add a pet first</Button>;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayDateString();
 
     return (
         <FormDialog
@@ -101,7 +125,6 @@ export function VaccinationsFormDialog({ pets, item, trigger, hidePetSelector = 
                 onSubmit={(e) => {
                     e.preventDefault();
                     const data = form.getValidated();
-
                     if (!data) return;
                     save.mutate(data);
                 }}
@@ -113,23 +136,25 @@ export function VaccinationsFormDialog({ pets, item, trigger, hidePetSelector = 
                             <SelectTrigger><SelectValue placeholder="Choose a pet" /></SelectTrigger>
                             <SelectContent>
                                 {pets.map((p) =>
-                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                    <SelectItem key={p.id} value={p.id}>{getPetDisplayName(p)}</SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
                     </Field>
                 )}
+
                 <Field label="Vaccine" error={form.errors.vaccine_name}>
                     <Input type="text" value={form.values.vaccine_name} onChange={(e) => form.setField("vaccine_name", e.target.value)} placeholder="Rabies, DHPP, FVRCP" required />
                 </Field>
+
                 <Field label="Date given" error={form.errors.administered_at}>
-                    {/* <Input type="date" value={form.values.administered_at} onChange={(e) => form.setField("administered_at", e.target.value)} required /> */}
                     <DatePicker
                         value={form.values.administered_at}
                         onChange={(date) => form.setField("administered_at", date)}
                         placeholder="Select date"
                     />
                 </Field>
+
                 <Field label="Vet or clinic">
                     <Input
                         value={form.values.administered_by}
@@ -137,37 +162,57 @@ export function VaccinationsFormDialog({ pets, item, trigger, hidePetSelector = 
                         placeholder="Happy Paws Clinic"
                     />
                 </Field>
-                {!form.values.completed_at && (
+
+                {/* Series complete toggle — OFF means more doses expected (the common case) */}
+                <Field label="Series complete">
+                    <div className="flex items-center h-10 gap-2">
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={seriesComplete}
+                            onClick={() => form.setField("completed_at", seriesComplete ? "" : today)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${seriesComplete ? "bg-primary" : "bg-input"}`}
+                        >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${seriesComplete ? "translate-x-6" : "translate-x-1"}`} />
+                        </button>
+                        <span className="text-sm text-muted-foreground">
+                            {seriesComplete ? "No more doses needed" : "More doses expected"}
+                        </span>
+                    </div>
+                </Field>
+
+                {/* Only show next due when series isn't complete */}
+                {!seriesComplete && (
                     <Field label="Next dose due">
-                        {/* <Input type="date" value={form.values.next_due_at} onChange={(e) => form.setField("next_due_at", e.target.value)} /> */}
                         <DatePicker
                             value={form.values.next_due_at}
                             onChange={(date) => form.setField("next_due_at", date)}
                             placeholder="Select date"
                         />
+                        {/* Quick presets — auto-calculate from the administered date */}
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {NEXT_DUE_PRESETS.map((p) => (
+                                <button
+                                    key={p.weeks}
+                                    type="button"
+                                    onClick={() => applyPreset(p.weeks)}
+                                    className="rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-secondary/70 hover:text-foreground"
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
                     </Field>
                 )}
-                <Field label="Another dose required?">
-                    <div className="flex items-center h-10 gap-2">
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={!!form.values.completed_at}
-                            onClick={() => form.setField("completed_at", form.values.completed_at ? "" : today)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${form.values.completed_at ? "bg-primary" : "bg-input"}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${form.values.completed_at ? "translate-x-6" : "translate-x-1"}`} />
-                        </button>
-                        <span className="text-sm text-muted-foreground">{form.values.completed_at ? "No, this series is complete" : "Yes, another dose is needed"}</span>
-                    </div>
-                </Field>
+
                 <Field label="Notes">
                     <Textarea rows={3} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} placeholder="Anything you'd like to remember" />
                 </Field>
+
                 <Button type="submit" className="w-full rounded-full" disabled={save.isPending}>
                     {save.isPending ? "Saving…" : isEdit ? "Save changes" : "Save vaccination"}
                 </Button>
             </form>
-        </FormDialog >
+        </FormDialog>
     );
 }
