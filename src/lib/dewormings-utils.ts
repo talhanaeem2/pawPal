@@ -66,5 +66,10 @@ export function getDewormingDisplay(d: Deworming) {
 export function getActiveDewormings(dewormings: Deworming[]) {
     return dewormings
         .filter((d) => !d.completed_at)
-        .sort((a, b) => new Date(a.next_due_at).getTime() - new Date(b.next_due_at).getTime());
+        .sort((a, b) => {
+            if (!a.next_due_at) return 1;
+            if (!b.next_due_at) return -1;
+
+            return new Date(a.next_due_at).getTime() - new Date(b.next_due_at).getTime();
+        });
 }
