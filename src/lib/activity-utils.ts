@@ -1,6 +1,26 @@
 import { ActivityType } from "@/schemas/activity";
 import { Pet } from "@/schemas/pets";
-import { ActivityIcon, Bird, Bug, Dumbbell, Ear, Eye, Fish, Footprints, Leaf, type LucideIcon, Pill, Ruler, Scale, Scissors, Sparkles, Sun, Utensils, Waves, Zap } from "lucide-react";
+import {
+    ActivityIcon,
+    Bird,
+    Bug,
+    Dumbbell,
+    Ear,
+    Eye,
+    Fish,
+    Footprints,
+    Leaf,
+    type LucideIcon,
+    Pill,
+    Ruler,
+    Scale,
+    Scissors,
+    Sparkles,
+    Sun,
+    Utensils,
+    Waves,
+    Zap
+} from "lucide-react";
 
 export const EXERCISE_TYPES = new Set<string>([
     "walk", "run", "play", "training", "free_roam", "swim",
