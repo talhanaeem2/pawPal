@@ -39,10 +39,10 @@ export function DeletePetButton({ pet, onDeleted }: { pet: Pet, onDeleted?: () =
       <Button
         variant="destructive"
         onClick={() => setConfirmOpen(true)}
-        aria-label="Delete pet"
+        aria-label="Remove"
       >
-        <Trash2 className="mr-2 h-4 w-4" />
-        Delete Pet
+        <Trash2 className="h-4 w-4" />
+        Remove
       </Button>
       <ConfirmDialog
         open={confirmOpen}

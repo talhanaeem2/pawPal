@@ -15,10 +15,10 @@ export function PetActions({ pet, onDeleted }: { pet: Pet, onDeleted?: () => voi
                 trigger={
                     <Button
                         variant="outline"
-                        aria-label="Edit pet"
+                        aria-label="Edit"
                     >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit Pet
+                        <Pencil className="h-4 w-4" />
+                        Edit
                     </Button>
                 }
             />
