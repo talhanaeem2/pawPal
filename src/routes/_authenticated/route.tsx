@@ -103,7 +103,7 @@ function AuthedLayout() {
     }
 
     void restorePushSubscription();
-  }, [user.id]);
+  }, [user?.id]);
 
   async function signOut() {
     try {
