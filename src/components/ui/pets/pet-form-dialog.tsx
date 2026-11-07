@@ -206,7 +206,7 @@ export function PetFormDialog({ pet, trigger, open: controlledOpen, onOpenChange
                     <div className="flex justify-center">
                         <div className="relative h-20 w-20">
                             <button type="button" onClick={() => fileInputRef.current?.click()}
-                                className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center overflow-hidden group">
+                                className="h-20 w-20 rounded-full bg-secondary/60 flex items-center justify-center overflow-hidden group">
                                 {photoPreview
                                     ? <img src={photoPreview} alt={pet?.name} className="h-full w-full object-cover" />
                                     : <Camera className="h-6 w-6 text-muted-foreground" strokeWidth={1.75} />}

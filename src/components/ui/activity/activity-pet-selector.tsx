@@ -57,23 +57,24 @@ export function ActivityPetSelector({
             onClick={() => onSelectPet(pet.id)}
             className="flex shrink-0 flex-col items-center gap-1.5"
           >
-            <PetAvatar
-              pet={pet}
-              className={cn(
-                "h-12 w-12 transition",
-                selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
-              )}
-              emojiSize="text-2xl"
-            />
-
-            <span
-              className={cn(
-                "max-w-16 truncate text-xs font-medium",
-                selected ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              {pet.name}
-            </span>
+            <div className={cn(
+              "h-12 w-12 transition rounded-full",
+              selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+            )}>
+              <PetAvatar
+                pet={pet}
+                className="h-full w-full"
+                emojiSize="text-2xl"
+              />
+              <span
+                className={cn(
+                  "max-w-16 truncate text-xs font-medium",
+                  selected ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {pet.name}
+              </span>
+            </div>
           </button>
         );
       })}

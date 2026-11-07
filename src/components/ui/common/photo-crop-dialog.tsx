@@ -190,7 +190,7 @@ export function PhotoCropDialog({
         </DialogHeader>
 
         <div
-          className="relative mx-auto h-70 w-70 max-w-full touch-none overflow-hidden rounded-3xl bg-secondary/70"
+          className="relative mx-auto h-70 w-70 max-w-full touch-none overflow-hidden rounded-full bg-secondary/70"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
