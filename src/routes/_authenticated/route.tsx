@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/queries";
+import {
+  getPushPermissionState,
+  syncPushSubscription,
+} from "@/lib/push-notifications";
 import { User } from "@supabase/supabase-js";
 import { AuthContext } from "@/contexts/auth-context";
 
@@ -82,6 +86,24 @@ function AuthedLayout() {
       }
     }
   }, [checked, user, profile, profileLoading, navigate, pathname]);
+
+  // Repair an expired server-side endpoint as soon as the user opens any
+  // authenticated screen. This is safe to do without a click because it only
+  // runs when notification permission has already been granted.
+  useEffect(() => {
+    if (!user) return;
+
+    async function restorePushSubscription() {
+      try {
+        if (await getPushPermissionState() !== "granted") return;
+        await syncPushSubscription();
+      } catch {
+        // The reminder prompt on Home can still offer a manual retry.
+      }
+    }
+
+    void restorePushSubscription();
+  }, [user.id]);
 
   async function signOut() {
     try {

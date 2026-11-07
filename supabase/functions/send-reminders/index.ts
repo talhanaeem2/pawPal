@@ -2,6 +2,8 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
+import { isDueOnDate } from "./recurrence.ts";
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
@@ -83,74 +85,14 @@ async function findDueScheduleNotifications(
   const today = todayDateStr(localNow);
 
   for (const item of items ?? []) {
-    const [year, month, day] = item.start_date.split("-").map(Number);
-
-    const start = new Date(year, month - 1, day);
-    start.setHours(0, 0, 0, 0);
-
-    const todayDate = new Date(localNow);
-    todayDate.setHours(0, 0, 0, 0);
-
-    if (todayDate < start) {
-      continue;
-    }
-
-    const daysSinceStart = Math.floor(
-      (todayDate.getTime() - start.getTime()) / 86400000,
-    );
-
-    let shouldRunToday = false;
-
-    switch (item.repeat_unit) {
-      case "day":
-        shouldRunToday = daysSinceStart % item.repeat_every === 0;
-        break;
-
-      case "week":
-        shouldRunToday = daysSinceStart % (item.repeat_every * 7) === 0;
-        break;
-
-      case "month": {
-        const monthsSinceStart =
-          (todayDate.getFullYear() - start.getFullYear()) * 12 +
-          (todayDate.getMonth() - start.getMonth());
-
-        const lastDayOfMonth = new Date(
-          todayDate.getFullYear(),
-          todayDate.getMonth() + 1,
-          0,
-        ).getDate();
-
-        const scheduledDay = Math.min(start.getDate(), lastDayOfMonth);
-
-        shouldRunToday = todayDate.getDate() === scheduledDay &&
-          monthsSinceStart >= 0 &&
-          monthsSinceStart % item.repeat_every === 0;
-
-        break;
-      }
-
-      case "year": {
-        const yearsSinceStart = todayDate.getFullYear() - start.getFullYear();
-
-        const lastDayOfMonth = new Date(
-          todayDate.getFullYear(),
-          start.getMonth() + 1,
-          0,
-        ).getDate();
-
-        const scheduledDay = Math.min(start.getDate(), lastDayOfMonth);
-
-        shouldRunToday = todayDate.getMonth() === start.getMonth() &&
-          todayDate.getDate() === scheduledDay &&
-          yearsSinceStart >= 0 &&
-          yearsSinceStart % item.repeat_every === 0;
-
-        break;
-      }
-    }
-
-    if (!shouldRunToday) {
+    if (
+      !isDueOnDate(
+        item.start_date,
+        item.repeat_every,
+        item.repeat_unit,
+        today,
+      )
+    ) {
       continue;
     }
 
@@ -174,9 +116,9 @@ async function findDueScheduleNotifications(
         const completions = pet.schedule_completions ?? [];
 
         return !completions.some(
-          c =>
+          (c) =>
             c.completed_on === today &&
-            c.time_slot === time
+            c.time_slot === time,
         );
       });
 
@@ -391,15 +333,38 @@ function buildScheduleBody(
 async function sendToUser(
   userId: string,
   payload: { title: string; body: string; tag?: string },
-) {
+): Promise<number> {
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("notifications_enabled")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error(
+      "Failed to load notification preference",
+      userId,
+      profileError,
+    );
+  }
+
+  if (profile?.notifications_enabled === false) {
+    return 0;
+  }
+
   const { data: subs, error } = await supabase
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth")
     .eq("user_id", userId);
 
-  if (error || !subs?.length) return;
+  if (error) {
+    console.error("Failed to load push subscriptions", userId, error);
+    return 0;
+  }
 
-  await Promise.all(
+  if (!subs?.length) return 0;
+
+  const results = await Promise.all(
     subs.map(async (sub) => {
       try {
         await webpush.sendNotification(
@@ -409,6 +374,7 @@ async function sendToUser(
           },
           JSON.stringify(payload),
         );
+        return true;
       } catch (err: unknown) {
         const statusCode = (err as { statusCode?: number })?.statusCode;
         if (statusCode === 404 || statusCode === 410) {
@@ -417,9 +383,12 @@ async function sendToUser(
         } else {
           console.error("Push send failed", sub.id, err);
         }
+        return false;
       }
     }),
   );
+
+  return results.filter(Boolean).length;
 }
 
 export default {
@@ -468,12 +437,33 @@ export default {
         continue;
       }
 
-      await sendToUser(n.userId, {
+      const delivered = await sendToUser(n.userId, {
         title: n.title,
         body: n.body,
         tag: `${n.refType}-${n.refId}`,
       });
-      sent++;
+
+      if (delivered === 0) {
+        // Do not permanently consume a reminder when the device subscription
+        // is missing or temporarily unavailable. A later cron run in this
+        // window can still deliver it after the app repairs the subscription.
+        const { error: releaseError } = await supabase
+          .from("notification_log")
+          .delete()
+          .eq("ref_type", n.refType)
+          .eq("ref_id", n.refId)
+          .eq("fire_date", n.fireDate);
+
+        if (releaseError) {
+          console.error(
+            "Failed to release undelivered notification",
+            releaseError,
+          );
+        }
+        continue;
+      }
+
+      sent += delivered;
     }
 
     return Response.json({ checked: due.length, sent });

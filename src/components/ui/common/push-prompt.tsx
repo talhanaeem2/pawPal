@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import {
     pushSupported,
     getPushPermissionState,
-    isSubscribed,
     subscribeToPush,
+    syncPushSubscription,
 } from "@/lib/push-notifications";
 
 import { isIos, isStandalone } from "@/components/ui/common/install-prompt";
@@ -44,13 +44,18 @@ export default function PushPrompt() {
             // Push not supported on this browser/OS at all
             if (!pushSupported()) return;
 
-            if (recentlyDismissed(DISMISS_KEY, DISMISS_DAYS)) return;
-
             const permission = await getPushPermissionState();
             if (permission === "denied" || permission === "unsupported") return;
 
-            const subscribed = await isSubscribed();
-            if (subscribed) return;
+            // An endpoint can expire server-side while the browser permission
+            // remains granted. Re-register it silently so a user does not have
+            // to tap "Enable" again for an already-approved browser.
+            if (permission === "granted") {
+                const result = await syncPushSubscription();
+                if (result.ok) return;
+            }
+
+            if (recentlyDismissed(DISMISS_KEY, DISMISS_DAYS)) return;
 
             setMode("push");
         })();
