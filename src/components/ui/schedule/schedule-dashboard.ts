@@ -9,6 +9,8 @@ import { getPetDisplayName, Pet } from "@/schemas/pets";
 import { ScheduleItemPet } from "@/schemas/schedule-item-pets";
 import { ScheduleWithPets } from "@/schemas/schedule";
 
+const DEFAULT_REMINDER_TIME = "09:00";
+
 export type ScheduleProgress = {
   totalSlots: number;
   completedSlots: number;
@@ -92,11 +94,11 @@ export function getScheduleDashboard(
       repeat_every: schedule.repeat_every,
       repeat_unit: schedule.repeat_unit,
     });
-    const timeSummary = hasTime
+    const timeSummary = schedule.times_of_day.length > 0
       ? times.length === 1
         ? formatTime(times[0]!)
         : String(times.length) + " times/day"
-      : null;
+      : `${formatTime(DEFAULT_REMINDER_TIME)} (default)`;
 
     return {
       schedule,
@@ -121,7 +123,7 @@ export function getScheduleDashboard(
           .map((pet) => (pet.pet ? getPetDisplayName(pet.pet) : undefined))
           .filter((name): name is string => Boolean(name)),
       ),
-      preview: timeSummary ? repeatText + " · " + timeSummary : repeatText,
+      preview: repeatText + " · " + timeSummary,
     };
   });
 
@@ -228,7 +230,7 @@ function getEarliestTime(times: (string | null)[]) {
   const earliestTime = times.filter((time): time is string => time !== null).sort()[0];
 
   if (!earliestTime) {
-    return Number.POSITIVE_INFINITY;
+    return 9 * 60;
   }
 
   const [hours, minutes] = earliestTime.split(":").map(Number);

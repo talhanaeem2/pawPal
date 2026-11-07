@@ -33,14 +33,45 @@ export async function isSubscribed() {
   return !!sub;
 }
 
-export async function subscribeToPush(): Promise<{ ok: boolean; error?: string }> {
+type PushResult = { ok: boolean; error?: string };
+
+async function saveSubscription(sub: PushSubscription): Promise<PushResult> {
+  const json = sub.toJSON();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Not signed in." };
+
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+    return { ok: false, error: "The browser returned an invalid push subscription." };
+  }
+
+  const { error } = await supabase.from("push_subscriptions").upsert(
+    {
+      user_id: userData.user.id,
+      endpoint: json.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth,
+    },
+    { onConflict: "endpoint" },
+  );
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/**
+ * Restores a browser subscription after the server has discarded an expired
+ * endpoint. This never opens a permission prompt: it only runs after the
+ * browser has already granted notification permission.
+ */
+export async function syncPushSubscription(): Promise<PushResult> {
   if (!pushSupported()) return { ok: false, error: "Push isn't supported on this browser." };
 
   const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
   if (!vapidPublicKey) return { ok: false, error: "Missing VAPID public key." };
 
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return { ok: false, error: "Permission was not granted." };
+  if (Notification.permission !== "granted") {
+    return { ok: false, error: "Permission was not granted." };
+  }
 
   const reg = await navigator.serviceWorker.register("/sw.js");
   await navigator.serviceWorker.ready;
@@ -53,22 +84,19 @@ export async function subscribeToPush(): Promise<{ ok: boolean; error?: string }
     });
   }
 
-  const json = sub.toJSON();
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return { ok: false, error: "Not signed in." };
+  return saveSubscription(sub);
+}
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    {
-      user_id: userData.user.id,
-      endpoint: json.endpoint!,
-      p256dh: json.keys!.p256dh!,
-      auth: json.keys!.auth!,
-    },
-    { onConflict: "endpoint" },
-  );
+export async function subscribeToPush(): Promise<PushResult> {
+  if (!pushSupported()) return { ok: false, error: "Push isn't supported on this browser." };
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  // Browsers require this permission request to be initiated by a user action.
+  // Once it has been granted, syncPushSubscription handles future repairs
+  // without asking the user again.
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return { ok: false, error: "Permission was not granted." };
+
+  return syncPushSubscription();
 }
 
 export async function unsubscribeFromPush(): Promise<{ ok: boolean; error?: string }> {
