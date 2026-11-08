@@ -154,7 +154,7 @@ export function ActivityHistoryPanel({
                 </h3>
               </div>
 
-              <ul className="divide-y divide-border/60 rounded-3xl bg-card shadow-(--shadow-soft)">
+              <ul className="divide-y divide-border/60 overflow-hidden rounded-3xl bg-card shadow-(--shadow-soft)">
                 {dateLogs.map((log) => (
                   <ActivityRow
                     key={log.id}
