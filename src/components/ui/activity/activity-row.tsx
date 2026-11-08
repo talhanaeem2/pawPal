@@ -71,14 +71,16 @@ export function ActivityRow({ item, pets, onDelete }: ActivityRowProps) {
   return (
     <li className="relative overflow-hidden">
       <div
-        className="absolute inset-y-0 left-0 flex w-24 items-center justify-center bg-destructive text-destructive-foreground"
+        className="absolute inset-y-0 left-0 flex w-24 items-center justify-center bg-destructive text-destructive-foreground transition-opacity duration-200"
+        style={{ opacity: swipeOffset > 0 ? 1 : 0 }}
         aria-hidden="true"
       >
         <Trash2 className="h-4 w-4" />
         <span className="ml-1 text-xs font-medium">Delete</span>
       </div>
       <div
-        className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-primary text-primary-foreground"
+        className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-primary text-primary-foreground transition-opacity duration-200"
+        style={{ opacity: swipeOffset < 0 ? 1 : 0 }}
         aria-hidden="true"
       >
         <Pencil className="h-4 w-4" />
